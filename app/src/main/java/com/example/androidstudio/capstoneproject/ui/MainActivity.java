@@ -156,6 +156,7 @@ public class MainActivity extends AppCompatActivity implements
         // Insert data for testing
         TestUtil.insertFakeData(this);
 
+        mLoadingIndicator.setVisibility(View.VISIBLE);
 
         // Query the database and set the adapter with the cursor data
         getSupportLoaderManager().initLoader(ID_LESSONS_LOADER, null, this);
@@ -278,76 +279,6 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
-//    private void deleteDatabase() {
-//
-//        LessonsDbHelper dbHelper = new LessonsDbHelper(this);
-//        SQLiteDatabase mDb = dbHelper.getWritableDatabase();
-//        DatabaseUtil.deleteDatabase(mDb);
-//        mDb.close();
-//    }
-
-
-//    private void insertLessonsInDatabase(List<Lesson> lessons) {
-//
-//        // Get the content resolver
-//        ContentResolver resolver = getContentResolver();
-//
-//        // This is necessary to pass the values
-//        ContentValues cv = new ContentValues();
-//
-//        int numberOfLessons = lessons.size();
-//
-//        for (int i=0; i < numberOfLessons; i++) {
-//
-//            Lesson lesson = lessons.get(i);
-//
-//            String name = lesson.getName();
-
-//            try {
-//
-//                cv.put(RecipesContract.RecipeslistEntry.COLUMN_RECIPE_NAME, name);
-//                cv.put(RecipesContract.RecipeslistEntry.COLUMN_RECIPE_INGREDIENTS_JSON, ingredientsJSON);
-//                cv.put(RecipesContract.RecipeslistEntry.COLUMN_RECIPE_STEPS_JSON, stepsJSON);
-//                cv.put(RecipesContract.RecipeslistEntry.COLUMN_RECIPE_SERVINGS, servings);
-//                cv.put(RecipesContract.RecipeslistEntry.COLUMN_RECIPE_IMAGE, imageURL);
-//
-//                // Call the insert method on the resolver with the correct Uri from the contract class
-//                resolver.insert(RecipesContract.RecipeslistEntry.CONTENT_URI, cv);
-//
-//            } catch (Exception e) {
-//                e.printStackTrace();
-//            }
-//
-//        }
-//
-//    }
-
-    // This method is called by the Controller when Retrofit finishes the loading
-//    @Override
-//    public void onDataLoaded(List<Lesson> lessons) {
-//
-//        // Try to handle error on loading
-//        if(lessons == null){
-//            showErrorMessage();
-//            if (mIdlingResource != null) {
-//                mIdlingResource.setIdleState(true);
-//            }
-//            return;
-//        }
-//
-//        for(Lesson lesson: lessons) {
-//            Log.v(TAG, "onDataLoaded lessons' names:" + lesson.getName());
-//        }
-//
-//        // Store the data on the database
-//        deleteDatabase();
-//        insertLessonsInDatabase(lessons);
-//
-//        // Query the database and set the adapter with the cursor data
-//        getSupportLoaderManager().initLoader(ID_LESSONS_LOADER, null, this);
-//
-//    }
-
 
     /**
      * Called by the {@link android.support.v4.app.LoaderManagerImpl} when a new Loader needs to be
@@ -394,6 +325,8 @@ public class MainActivity extends AppCompatActivity implements
         if (mIdlingResource != null) {
             mIdlingResource.setIdleState(true);
         }
+
+        mLoadingIndicator.setVisibility(View.INVISIBLE);
 
         // Try to handle error on loading
         if(data == null){
