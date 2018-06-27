@@ -21,14 +21,26 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
 
         // Create a table to hold the lesson data
-        final String SQL_CREATE_MY_LESSONS_TABLE = "CREATE TABLE " +
-                LessonsContract.MyLessonsEntry.TABLE_NAME + " (" +
-                LessonsContract.MyLessonsEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
-                LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME + " TEXT NOT NULL," +
+        final String SQL_CREATE_MY_LESSONS_TABLE =
+
+                "CREATE TABLE " +  LessonsContract.MyLessonsEntry.TABLE_NAME + " (" +
+
                 /*
-                 * To ensure this table can only contain one recipe _id, we declare
-                 * the id column to be unique. We also specify "ON CONFLICT REPLACE". This tells
-                 * SQLite that if we have a recipe id entry, we replace the old.
+                 * MyLessonsEntry did not explicitly declare a column called "_ID". However,
+                 * MyLessonsEntry implements the interface, "BaseColumns", which does have a field
+                 * named "_ID". We use that here to designate our table's primary key.
+                 */
+                LessonsContract.MyLessonsEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+
+                //LessonsContract.MyLessonsEntry.COLUMN_LESSON_ID + " TEXT NOT NULL," +
+
+                LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME + " TEXT NOT NULL," +
+
+                /*
+                 * To ensure this table can only contain one entry per local lesson, we declare the "_id"
+                 * column to be unique.
+                 * We also specify "ON CONFLICT REPLACE". This tells SQLite that if we have a lesson
+                 * with the same "_id" entry, we replace the old.
                  */
                 " UNIQUE (" + LessonsContract.MyLessonsEntry._ID + ") ON CONFLICT REPLACE);";
 

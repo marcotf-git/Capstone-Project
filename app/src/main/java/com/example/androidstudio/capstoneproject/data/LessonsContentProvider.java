@@ -71,9 +71,9 @@ public class LessonsContentProvider extends ContentProvider {
             case MY_LESSONS:
                 // Insert new values into the database
                 // Inserting values into my_lessons table
-                long id = db.insert(LessonsContract.MyLessonsEntry.TABLE_NAME, null, values);
-                if ( id > 0 ) {
-                    returnUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, id);
+                long _id = db.insert(LessonsContract.MyLessonsEntry.TABLE_NAME, null, values);
+                if ( _id > 0 ) {
+                    returnUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, _id);
                 } else {
                     throw new SQLException("Failed to insert row into " + uri);
                 }
@@ -146,11 +146,11 @@ public class LessonsContentProvider extends ContentProvider {
         switch (match) {
             // Handle the single item case, recognized by the ID included in the URI path
             case MY_LESSON_WITH_ID:
-                // Get the lesson ID from the URI path
+                // Get the lesson "id" from the URI path
                 String id = uri.getPathSegments().get(1);
-                // Use selections/selectionArgs to filter for this ID
+                // Use selections/selectionArgs to filter for this "id"
                 lessonsDeleted = db.delete(LessonsContract.MyLessonsEntry.TABLE_NAME,
-                        "_id=?", new String[]{id});
+                        "id=?", new String[]{id});
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
@@ -180,11 +180,11 @@ public class LessonsContentProvider extends ContentProvider {
 
         switch (match) {
             case MY_LESSON_WITH_ID:
-                // update a single lesson by getting the id
+                // update a single lesson by getting the "id"
                 String id = uri.getPathSegments().get(1);
                 // Use selections/selectionArgs to filter for this ID
                 lessonsUpdated = db.update(LessonsContract.MyLessonsEntry.TABLE_NAME, values,
-                        "_id=?", new String[]{id});
+                        "id=?", new String[]{id});
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);

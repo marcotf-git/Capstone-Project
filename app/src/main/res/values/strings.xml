@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Capstone Project</string>
+    <string name="file_loading_error_message">Failed to load</string>
+    <string name="illustration_not_available">Illustration Not Available</string>
+    <string name="lesson_image">Class Image</string>
+    <string name="lesson_name">Class Name</string>
+    <string name="menu_action_refresh_label">Refresh</string>
 </resources>
