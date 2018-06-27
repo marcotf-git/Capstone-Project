@@ -50,10 +50,6 @@ dependencies {
     // ExoPlayer
     implementation 'com.google.android.exoplayer:exoplayer:2.8.1'
 
-    // ButterKnife
-    //implementation 'com.jakewharton:butterknife:8.8.1'
-    //annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'
-
     // Espresso idling resources
     implementation 'com.android.support.test.espresso:espresso-idling-resource:3.0.2'
 
