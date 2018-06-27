@@ -27,7 +27,7 @@ import com.example.androidstudio.capstoneproject.R;
  * the item will be deleted after a confirmation. If the user select to edit and then click, it will
  * open an activity EditLessonActivity to edit that item.
  *
- * 
+ *
  *
  *
  */
