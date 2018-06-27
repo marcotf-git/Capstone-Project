@@ -272,6 +272,87 @@ public class TestLessonsContentProvider {
 
 
     //================================================================================
+    // Test Update (for my_lessons directory)
+    //================================================================================
+
+
+    /**
+     * Tests updating a single row of data via a ContentResolver
+     */
+    @Test
+    public void testUpdate() {
+
+        /* Create values to insert */
+        ContentValues testLessonValues = new ContentValues();
+        testLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME, "Lesson name 1");
+
+        /* TestContentObserver allows us to test if notifyChange was called appropriately */
+        TestUtilities.TestContentObserver lessonObserver = TestUtilities.getTestContentObserver();
+
+        ContentResolver contentResolver = mContext.getContentResolver();
+
+        /* Register a content observer to be notified of changes to data at a given URI (tasks) */
+        contentResolver.registerContentObserver(
+                /* URI that we would like to observe changes to */
+                LessonsContract.MyLessonsEntry.CONTENT_URI,
+                /* Whether or not to notify us if descendants of this URI change */
+                true,
+                /* The observer to register (that will receive notifyChange callbacks) */
+                lessonObserver);
+
+
+        Uri uri = contentResolver.insert(LessonsContract.MyLessonsEntry.CONTENT_URI, testLessonValues);
+
+        int testId = Integer.parseInt(uri.getLastPathSegment());
+
+        /* Create values to update */
+        ContentValues testEditLessonValues = new ContentValues();
+        final String TEST_UPDATE_STRING = "Lesson name 2";
+        testEditLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME, TEST_UPDATE_STRING);
+
+        Uri updateUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, testId);
+
+        int lessonUpdated = contentResolver.update(updateUri,
+                testEditLessonValues, null, null);
+
+        String updateProviderFailed = "Unable to update item through Provider";
+        assertEquals(updateProviderFailed, 1, lessonUpdated);
+
+        /* Perform the ContentProvider query */
+        Cursor lessonCursor = mContext.getContentResolver().query(
+                LessonsContract.MyLessonsEntry.CONTENT_URI,
+                /* Columns; leaving this null returns every column in the table */
+                null,
+                /* Optional specification for columns in the "where" clause above */
+                null,
+                /* Values for "where" clause */
+                null,
+                /* Sort order to return in Cursor */
+                null);
+
+        lessonCursor.moveToLast();
+
+        String testString = lessonCursor.getString(lessonCursor.
+                getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME));
+
+        updateProviderFailed = "Update item is different";
+        assertEquals(updateProviderFailed, TEST_UPDATE_STRING, testString);
+
+        /*
+         * If this fails, it's likely you didn't call notifyChange in your insert method from
+         * your ContentProvider.
+         */
+        lessonObserver.waitForNotificationOrFail();
+
+        /*
+         * waitForNotificationOrFail is synchronous, so after that call, we are done observing
+         * changes to content and should therefore unregister this observer.
+         */
+        contentResolver.unregisterContentObserver(lessonObserver);
+    }
+
+
+    //================================================================================
     // Test Delete (for my_lessons directory; for a single item)
     //================================================================================
 
