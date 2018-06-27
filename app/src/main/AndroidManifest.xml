@@ -13,7 +13,7 @@
         android:theme="@style/AppTheme">
         <provider
             android:name=".data.LessonsContentProvider"
-            android:authorities="com.example.androidstudio.bakingapp"
+            android:authorities="com.example.androidstudio.capstoneproject"
             android:exported="false" />
 
         <activity android:name=".ui.MainActivity">
