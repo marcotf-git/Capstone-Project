@@ -83,6 +83,8 @@ public class MainActivity extends AppCompatActivity implements
     private RecyclerView mClassesList;
 
     private View mSelectedView;
+    private long selectedLesson_id;
+    private Menu mMenu;
 
     // flag for preference updates
     private static boolean flag_preferences_updates = false;
@@ -230,16 +232,25 @@ public class MainActivity extends AppCompatActivity implements
 
         super.onPrepareOptionsMenu(menu);
 
+        // Save a reference to the menu
+        mMenu = menu;
+
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
                 this.getString(R.string.pref_mode_view));
 
         if (queryOption.equals(this.getString(R.string.pref_mode_view))) {
             menu.findItem(R.id.select_view).setChecked(true);
+            // Prepare the visibility of the creation action items
+            mMenu.findItem(R.id.action_delete).setVisible(false);
+            mMenu.findItem(R.id.action_refresh).setVisible(true);
         }
 
         if (queryOption.equals(this.getString(R.string.pref_mode_create))) {
             menu.findItem(R.id.select_create).setChecked(true);
+            // Prepare the visibility of the creation action items
+            mMenu.findItem(R.id.action_delete).setVisible(true);
+            mMenu.findItem(R.id.action_refresh).setVisible(false);
         }
 
         return true;
@@ -250,19 +261,18 @@ public class MainActivity extends AppCompatActivity implements
 
         int itemThatWasClickedId = item.getItemId();
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
+                this.getString(R.string.pref_mode_view));
 
         switch (itemThatWasClickedId) {
-
-            case R.id.action_refresh:
-                Toast.makeText(this, "Reloading the data", Toast.LENGTH_LONG)
-                        .show();
-                refreshActivity();
-                break;
 
             case R.id.select_view:
                 sharedPreferences.edit()
                         .putString(this.getString(R.string.pref_mode_key),
                                 this.getString(R.string.pref_mode_view)).apply();
+                // Set visibility of action icons
+                mMenu.findItem(R.id.action_delete).setVisible(false);
+                mMenu.findItem(R.id.action_refresh).setVisible(true);
                 Log.v(TAG, "View mode selected");
                 break;
 
@@ -270,7 +280,24 @@ public class MainActivity extends AppCompatActivity implements
                 sharedPreferences.edit()
                         .putString(this.getString(R.string.pref_mode_key),
                                 this.getString(R.string.pref_mode_create)).apply();
+                // Set visibility of action icons
+                mMenu.findItem(R.id.action_delete).setVisible(true);
+                mMenu.findItem(R.id.action_refresh).setVisible(false);
                 Log.v(TAG, "Create mode selected");
+                break;
+
+            case R.id.action_refresh:
+                Toast.makeText(this, "Reloading the data", Toast.LENGTH_LONG)
+                        .show();
+                refreshActivity();
+                break;
+
+            case R.id.action_delete:
+                Log.v(TAG, "Deletion action selected");
+                if(queryOption.equals(this.getString(R.string.pref_mode_create))) {
+                    long _id = (long) mSelectedView.getTag();
+                    deleteLesson(_id);
+                }
                 break;
 
             default:
@@ -284,48 +311,48 @@ public class MainActivity extends AppCompatActivity implements
     /**
      * Interface implementation for the contextual menu
      */
-    private ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
-
-
-        // Called when the action mode is created; startActionMode() was called
-        @Override
-        public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-            // Inflate a menu resource providing context menu items
-            MenuInflater inflater = mode.getMenuInflater();
-            inflater.inflate(R.menu.context_menu, menu);
-            return true;
-        }
-
-        // Called each time the action mode is shown. Always called after onCreateActionMode, but
-        // may be called multiple times if the mode is invalidated.
-        @Override
-        public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-            return false;// Return false if nothing is done
-        }
-
-        // Called when the user selects a contextual menu item
-        @Override
-        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-
-            switch (item.getItemId()) {
-                case R.id.action_delete:
-                    //deleteCurrentItem();
-                    mode.finish(); // Action picked, so close the CAB
-                    mSelectedView.setSelected(false);
-                    return true;
-                default:
-                    return false;
-            }
-
-        }
-
-        // Called when the user exits the action mode
-        @Override
-        public void onDestroyActionMode(ActionMode mode) {
-            mActionMode = null;
-            mSelectedView.setSelected(false);
-        }
-    };
+//    private ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
+//
+//
+//        // Called when the action mode is created; startActionMode() was called
+//        @Override
+//        public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+//            // Inflate a menu resource providing context menu items
+//            MenuInflater inflater = mode.getMenuInflater();
+//            inflater.inflate(R.menu.context_menu, menu);
+//            return true;
+//        }
+//
+//        // Called each time the action mode is shown. Always called after onCreateActionMode, but
+//        // may be called multiple times if the mode is invalidated.
+//        @Override
+//        public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+//            return false;// Return false if nothing is done
+//        }
+//
+//        // Called when the user selects a contextual menu item
+//        @Override
+//        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+//
+//            switch (item.getItemId()) {
+//                case R.id.action_delete:
+//                    //deleteCurrentItem();
+//                    mode.finish(); // Action picked, so close the CAB
+//                    mSelectedView.setSelected(false);
+//                    return true;
+//                default:
+//                    return false;
+//            }
+//
+//        }
+//
+//        // Called when the user exits the action mode
+//        @Override
+//        public void onDestroyActionMode(ActionMode mode) {
+//            mActionMode = null;
+//            mSelectedView.setSelected(false);
+//        }
+//    };
 
 
     @Override
@@ -380,7 +407,7 @@ public class MainActivity extends AppCompatActivity implements
      * @param clickedItemIndex Index in the list of the item that was clicked.
      */
     @Override
-    public void onListItemClick(int clickedItemIndex, int lesson_id, String lessonName) {
+    public void onListItemClick(View view, int clickedItemIndex, long lesson_id, String lessonName) {
 
         Log.v(TAG, "onListItemClick lessonName:" + lessonName);
 
@@ -397,6 +424,12 @@ public class MainActivity extends AppCompatActivity implements
 //
 //        startActivity(startChildActivityIntent);
 
+        // Deselect the view with only one click also
+        if (view.isSelected()) {
+            view.setSelected(false);
+            mSelectedView = null;
+        }
+
     }
 
 
@@ -409,18 +442,32 @@ public class MainActivity extends AppCompatActivity implements
      * @param clickedItemIndex Index in the list of the item that was clicked.
      */
     @Override
-    public void onListItemLongClick(View view, int clickedItemIndex, int lesson_id, String lessonName) {
+    public void onListItemLongClick(View view, int clickedItemIndex, long lesson_id, String lessonName) {
 
         Log.v(TAG, "onListItemLongClick lessonName:" + lessonName);
 
-        if (mActionMode != null) {
-            return;
-        }
+//        if (mActionMode != null) {
+//            return;
+//        }
+//
+//        // Start the CAB using the ActionMode.Callback defined above
+//        mActionMode = this.startActionMode(mActionModeCallback);
 
-        // Start the CAB using the ActionMode.Callback defined above
-        mActionMode = this.startActionMode(mActionModeCallback);
+        // Deselect the last view selected
+        if (null != mSelectedView) {
+            mSelectedView.setSelected(false);
+        }
+        // Set the state of the view to "selected"
+        if (!view.isSelected()) {
+            view.setSelected(true);
+        } else {
+            view.setSelected(false);
+        }
+        // Save a reference to the view
         mSelectedView = view;
-        mSelectedView.setSelected(true);
+
+        // Save the _id of the lesson selected
+        selectedLesson_id = lesson_id;
 
     }
 
@@ -536,6 +583,16 @@ public class MainActivity extends AppCompatActivity implements
         Log.v(TAG, "updateView");
 
         flag_preferences_updates = false;
+
+    }
+
+
+    /**
+     * Helper function to delete data and update the view
+     */
+    private void deleteLesson(long _id) {
+
+        Log.v(TAG, "deleteLesson _id:" + _id);
 
     }
 

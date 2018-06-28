@@ -31,8 +31,7 @@ public class LessonsContract {
         public static final String TABLE_NAME = "my_lessons";
 
         /* Since MyContentEntry implements the interface "BaseColumns", it has an automatically produced
-         * "_ID" column in addition to the column "id" below. The "id" below is the global id of the
-         * lesson, retrieved form the remote database. This will uniquely identify the lesson.
+         * "_id" column in addition to the column "id" below.
          */
         //public static final String COLUMN_LESSON_ID = "id";
 

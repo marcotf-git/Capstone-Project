@@ -29,6 +29,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
+import android.util.Log;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -193,7 +194,7 @@ public class TestLessonsContentProvider {
 
         Uri uri = contentResolver.insert(LessonsContract.MyLessonsEntry.CONTENT_URI, testLessonValues);
 
-        int testId = Integer.parseInt(uri.getLastPathSegment());
+        long testId = Integer.parseInt(uri.getLastPathSegment());
 
         uri = contentResolver.insert(LessonsContract.MyLessonsEntry.CONTENT_URI, testLessonValues);
 
@@ -303,7 +304,7 @@ public class TestLessonsContentProvider {
 
         Uri uri = contentResolver.insert(LessonsContract.MyLessonsEntry.CONTENT_URI, testLessonValues);
 
-        int testId = Integer.parseInt(uri.getLastPathSegment());
+        long testId = Long.parseLong(uri.getLastPathSegment());
 
         /* Create values to update */
         ContentValues testEditLessonValues = new ContentValues();
@@ -312,11 +313,11 @@ public class TestLessonsContentProvider {
 
         Uri updateUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, testId);
 
-        int lessonUpdated = contentResolver.update(updateUri,
+        int numberOfLessonsUpdated = contentResolver.update(updateUri,
                 testEditLessonValues, null, null);
 
         String updateProviderFailed = "Unable to update item through Provider";
-        assertEquals(updateProviderFailed, 1, lessonUpdated);
+        assertEquals(updateProviderFailed, 1, numberOfLessonsUpdated);
 
         /* Perform the ContentProvider query */
         Cursor lessonCursor = mContext.getContentResolver().query(
@@ -371,7 +372,7 @@ public class TestLessonsContentProvider {
         testLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME, "Lesson name");
 
         /* Insert ContentValues into database and get a row ID back */
-        long lessonRowId = database.insert(
+        long lessonRow_id = database.insert(
                 /* Table to insert values into */
                 LessonsContract.MyLessonsEntry.TABLE_NAME,
                 null,
@@ -382,7 +383,7 @@ public class TestLessonsContentProvider {
         database.close();
 
         String insertFailed = "Unable to insert into the database";
-        assertTrue(insertFailed, lessonRowId != -1);
+        assertTrue(insertFailed, lessonRow_id != -1);
 
 
         /* TestContentObserver allows us to test if notifyChange was called appropriately */
@@ -400,13 +401,18 @@ public class TestLessonsContentProvider {
                 lessonObserver);
 
 
-        /* The delete method deletes the previously inserted row */
+        /* The delete method deletes the previously inserted row by its _id */
         Uri uriToDelete = LessonsContract.MyLessonsEntry.CONTENT_URI.buildUpon()
-                .appendPath("" + lessonRowId + "").build();
-        int lessonsDeleted = contentResolver.delete(uriToDelete, null, null);
+                .appendPath("" + lessonRow_id + "").build();
+
+        Log.v("Testing", "Uri to delete:" + uriToDelete.toString());
+
+        int numberOfLessonsDeleted = contentResolver.delete(uriToDelete, null, null);
+
+
 
         String deleteFailed = "Unable to delete item in the database";
-        assertTrue(deleteFailed, lessonsDeleted != 0);
+        assertTrue(deleteFailed, numberOfLessonsDeleted != 0);
 
         /*
          * If this fails, it's likely you didn't call notifyChange in your delete method from

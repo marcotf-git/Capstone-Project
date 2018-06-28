@@ -37,13 +37,14 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
      * with the MainActivity).
      */
     public interface ListItemClickListener {
-        void onListItemClick(int clickedItemIndex,
-                             int lesson_id,
+        void onListItemClick(View view,
+                             int clickedItemIndex,
+                             long lesson_id,
                              String lessonName);
 
         void onListItemLongClick(View view,
                                  int clickedItemIndex,
-                                 int lesson_id,
+                                 long lesson_id,
                                  String lessonName);
     }
 
@@ -125,6 +126,11 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
         }
 
         Log.v(TAG, "onBindViewHolder lessonName:" + lessonName);
+
+        // Retrieve the id from the cursor and
+        long id = lessonsCursor.getLong(lessonsCursor.getColumnIndex(LessonsContract.MyLessonsEntry._ID));
+        // Set the tag of the itemView in the holder to the id
+        holder.itemView.setTag(id);
 
 //        Log.v(TAG, "onBindViewHolder imageURL:" + imageURL);
 //
@@ -214,17 +220,17 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
 
         /**
          * Called whenever a user clicks on an item in the list.
-         * @param v The View that was clicked
+         * @param view The View that was clicked
          */
         @Override
-        public void onClick(View v) {
+        public void onClick(View view) {
 
             int clickedItemIndex = getAdapterPosition();
 
             if(!lessonsCursor.moveToPosition(clickedItemIndex))
                 return;
 
-            int lesson_id = lessonsCursor.getInt(lessonsCursor.
+            long lesson_id = lessonsCursor.getLong(lessonsCursor.
                     getColumnIndex(LessonsContract.MyLessonsEntry._ID));
             String lessonName = lessonsCursor.getString(lessonsCursor.
                     getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME));
@@ -233,6 +239,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
 
             // Calls the method implemented in the main activity
             mOnClickListener.onListItemClick(
+                    view,
                     clickedItemIndex,
                     lesson_id,
                     lessonName);
@@ -250,7 +257,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
             if(!lessonsCursor.moveToPosition(clickedItemIndex))
                 return true;
 
-            int lesson_id = lessonsCursor.getInt(lessonsCursor.
+            long lesson_id = lessonsCursor.getLong(lessonsCursor.
                     getColumnIndex(LessonsContract.MyLessonsEntry._ID));
             String lessonName = lessonsCursor.getString(lessonsCursor.
                     getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME));

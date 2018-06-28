@@ -26,9 +26,9 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
                 "CREATE TABLE " +  LessonsContract.MyLessonsEntry.TABLE_NAME + " (" +
 
                 /*
-                 * MyLessonsEntry did not explicitly declare a column called "_ID". However,
+                 * MyLessonsEntry did not explicitly declare a column called "_id". However,
                  * MyLessonsEntry implements the interface, "BaseColumns", which does have a field
-                 * named "_ID". We use that here to designate our table's primary key.
+                 * named "_id". We use that here to designate our table's primary key.
                  */
                 LessonsContract.MyLessonsEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
 

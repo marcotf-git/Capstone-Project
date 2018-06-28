@@ -144,13 +144,13 @@ public class LessonsContentProvider extends ContentProvider {
         // Write the code to delete a single row of data
         // [Hint] Use selections to delete an item by its row ID
         switch (match) {
-            // Handle the single item case, recognized by the ID included in the URI path
+            // Handle the single item case, recognized by the _id included in the URI path
             case MY_LESSON_WITH_ID:
-                // Get the lesson "id" from the URI path
-                String id = uri.getPathSegments().get(1);
-                // Use selections/selectionArgs to filter for this "id"
+                // Get the lesson "_id" from the URI path
+                String _id = uri.getPathSegments().get(1);
+                // Use selections/selectionArgs to filter for this "_id"
                 lessonsDeleted = db.delete(LessonsContract.MyLessonsEntry.TABLE_NAME,
-                        "id=?", new String[]{id});
+                        "_id=?", new String[]{_id});
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
@@ -180,11 +180,11 @@ public class LessonsContentProvider extends ContentProvider {
 
         switch (match) {
             case MY_LESSON_WITH_ID:
-                // update a single lesson by getting the "id"
-                String id = uri.getPathSegments().get(1);
+                // update a single lesson by getting the "_id"
+                String _id = uri.getPathSegments().get(1);
                 // Use selections/selectionArgs to filter for this ID
                 lessonsUpdated = db.update(LessonsContract.MyLessonsEntry.TABLE_NAME, values,
-                        "id=?", new String[]{id});
+                        "_id=?", new String[]{_id});
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
