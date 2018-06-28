@@ -295,8 +295,8 @@ public class MainActivity extends AppCompatActivity implements
             case R.id.action_delete:
                 Log.v(TAG, "Deletion action selected");
                 if(queryOption.equals(this.getString(R.string.pref_mode_create))) {
-                    long _id = (long) mSelectedView.getTag();
-                    deleteLesson(_id);
+                    if (null != mSelectedView && selectedLesson_id != -1)
+                    deleteLesson(selectedLesson_id);
                 }
                 break;
 
@@ -424,10 +424,12 @@ public class MainActivity extends AppCompatActivity implements
 //
 //        startActivity(startChildActivityIntent);
 
-        // Deselect the view with only one click also
-        if (view.isSelected()) {
-            view.setSelected(false);
+        // Deselect with one click
+        // Deselect the last view selected
+        if (null != mSelectedView) {
+            mSelectedView.setSelected(false);
             mSelectedView = null;
+            selectedLesson_id = -1;
         }
 
     }
@@ -453,19 +455,29 @@ public class MainActivity extends AppCompatActivity implements
 //        // Start the CAB using the ActionMode.Callback defined above
 //        mActionMode = this.startActionMode(mActionModeCallback);
 
+        // If the actual view is selected, deselect it
+        if (view.isSelected()) {
+            view.setSelected(false);
+             // Deselect also the last reference
+            if (null != mSelectedView) {
+                mSelectedView.setSelected(false);
+                mSelectedView = null;
+                selectedLesson_id = -1;
+            }
+            return;
+        } 
+
         // Deselect the last view selected
         if (null != mSelectedView) {
             mSelectedView.setSelected(false);
+            mSelectedView = null;
+            selectedLesson_id = -1;
         }
-        // Set the state of the view to "selected"
-        if (!view.isSelected()) {
-            view.setSelected(true);
-        } else {
-            view.setSelected(false);
-        }
+
+        // Select the actual view
+        view.setSelected(true);
         // Save a reference to the view
         mSelectedView = view;
-
         // Save the _id of the lesson selected
         selectedLesson_id = lesson_id;
 

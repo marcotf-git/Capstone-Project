@@ -127,10 +127,10 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
 
         Log.v(TAG, "onBindViewHolder lessonName:" + lessonName);
 
-        // Retrieve the id from the cursor and
-        long id = lessonsCursor.getLong(lessonsCursor.getColumnIndex(LessonsContract.MyLessonsEntry._ID));
-        // Set the tag of the itemView in the holder to the id
-        holder.itemView.setTag(id);
+        // Retrieve the _id from the cursor and
+        //long _id = lessonsCursor.getLong(lessonsCursor.getColumnIndex(LessonsContract.MyLessonsEntry._ID));
+        // Set the tag of the itemView in the holder to the _id
+        //holder.itemView.setTag(_id);
 
 //        Log.v(TAG, "onBindViewHolder imageURL:" + imageURL);
 //
