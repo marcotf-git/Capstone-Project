@@ -1,8 +1,11 @@
 package com.example.androidstudio.capstoneproject.ui;
 
+import android.content.ContentResolver;
 import android.content.Context;
 import android.database.Cursor;
+import android.net.Uri;
 import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -65,6 +68,25 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
         this.lessonsCursor = cursor;
         notifyDataSetChanged();
     }
+
+
+//    int removeItem(Context context, long _id, int position) {
+//
+//        ContentResolver contentResolver = context.getContentResolver();
+//
+//        /* The delete method deletes the row by its _id */
+//        Uri uriToDelete = LessonsContract.MyLessonsEntry.CONTENT_URI.buildUpon()
+//                .appendPath("" + _id + "").build();
+//
+//        Log.v(TAG, "Uri to delete:" + uriToDelete.toString());
+//
+//        int numberOfLessonsDeleted = contentResolver.delete(uriToDelete, null, null);
+//
+//        notifyItemRemoved(position);
+//
+//        return numberOfLessonsDeleted;
+//
+//    }
 
 
     /**

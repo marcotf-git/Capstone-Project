@@ -17,5 +17,6 @@
 
     <string name="pref_create_label">Create</string>
     <string name="pref_mode_create" translatable="false">create</string>
+    <string name="menu_action_delete_label">Delete</string>
 
 </resources>

@@ -7,11 +7,13 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.opengl.Visibility;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
+import android.support.design.widget.Snackbar;
 import android.support.test.espresso.IdlingResource;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
@@ -21,6 +23,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SimpleItemAnimator;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.ActionMode;
@@ -84,6 +87,7 @@ public class MainActivity extends AppCompatActivity implements
 
     private View mSelectedView;
     private long selectedLesson_id;
+    private int selectedPosition;
     private Menu mMenu;
 
     // flag for preference updates
@@ -168,7 +172,7 @@ public class MainActivity extends AppCompatActivity implements
         //controller.start(this);
 
         // Insert data for testing
-        //TestUtil.insertFakeData(this);
+        TestUtil.insertFakeData(this);
 
         mLoadingIndicator.setVisibility(View.VISIBLE);
 
@@ -273,6 +277,12 @@ public class MainActivity extends AppCompatActivity implements
                 // Set visibility of action icons
                 mMenu.findItem(R.id.action_delete).setVisible(false);
                 mMenu.findItem(R.id.action_refresh).setVisible(true);
+                // Deselect the last view selected
+                if (null != mSelectedView) {
+                    mSelectedView.setSelected(false);
+                    mSelectedView = null;
+                    selectedLesson_id = -1;
+                }
                 Log.v(TAG, "View mode selected");
                 break;
 
@@ -294,9 +304,11 @@ public class MainActivity extends AppCompatActivity implements
 
             case R.id.action_delete:
                 Log.v(TAG, "Deletion action selected");
-                if(queryOption.equals(this.getString(R.string.pref_mode_create))) {
-                    if (null != mSelectedView && selectedLesson_id != -1)
-                    deleteLesson(selectedLesson_id);
+                if (null != mSelectedView && selectedLesson_id != -1) {
+                    deleteLesson(selectedLesson_id, selectedPosition);
+                } else {
+                    Toast.makeText(this,
+                            "Please, select an item to delete!", Toast.LENGTH_LONG).show();
                 }
                 break;
 
@@ -463,23 +475,33 @@ public class MainActivity extends AppCompatActivity implements
                 mSelectedView.setSelected(false);
                 mSelectedView = null;
                 selectedLesson_id = -1;
+                selectedPosition = -1;
             }
             return;
-        } 
+        }
 
         // Deselect the last view selected
         if (null != mSelectedView) {
             mSelectedView.setSelected(false);
             mSelectedView = null;
             selectedLesson_id = -1;
+            selectedPosition = -1;
         }
 
-        // Select the actual view
-        view.setSelected(true);
-        // Save a reference to the view
-        mSelectedView = view;
-        // Save the _id of the lesson selected
-        selectedLesson_id = lesson_id;
+        // Select the view if the app is in create mode
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
+                this.getString(R.string.pref_mode_view));
+
+        if (queryOption.equals(this.getString(R.string.pref_mode_create))) {
+            // Select the actual view
+            view.setSelected(true);
+            // Save a reference to the view
+            mSelectedView = view;
+            // Save the _id of the lesson selected
+            selectedLesson_id = lesson_id;
+            selectedPosition = clickedItemIndex;
+        }
 
     }
 
@@ -602,9 +624,33 @@ public class MainActivity extends AppCompatActivity implements
     /**
      * Helper function to delete data and update the view
      */
-    private void deleteLesson(long _id) {
+    private void deleteLesson(long _id, int position) {
 
         Log.v(TAG, "deleteLesson _id:" + _id);
+
+        ContentResolver contentResolver = mContext.getContentResolver();
+
+        /* The delete method deletes the row by its _id */
+        Uri uriToDelete = LessonsContract.MyLessonsEntry.CONTENT_URI.buildUpon()
+                .appendPath("" + _id + "").build();
+
+        Log.v("Testing", "Uri to delete:" + uriToDelete.toString());
+
+        int numberOfLessonsDeleted = contentResolver.delete(uriToDelete, null, null);
+
+//        int numberOfLessonsDeleted = mAdapter.removeItem(this, _id, position);
+
+        if (numberOfLessonsDeleted > 0) {
+            Snackbar mySnackbar = Snackbar.make(mClassesList, numberOfLessonsDeleted + " item removed", Snackbar.LENGTH_LONG);
+            mySnackbar.show();
+        }
+
+        // Deselect the last view selected
+        if (null != mSelectedView) {
+            mSelectedView.setSelected(false);
+            mSelectedView = null;
+            selectedLesson_id = -1;
+        }
 
     }
 
