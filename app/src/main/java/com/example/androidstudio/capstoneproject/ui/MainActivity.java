@@ -1,13 +1,10 @@
 package com.example.androidstudio.capstoneproject.ui;
 
 import android.content.ContentResolver;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
-import android.opengl.Visibility;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
@@ -16,17 +13,14 @@ import android.support.annotation.VisibleForTesting;
 import android.support.design.widget.Snackbar;
 import android.support.test.espresso.IdlingResource;
 import android.support.v4.app.LoaderManager;
-import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.SimpleItemAnimator;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -37,15 +31,9 @@ import android.widget.Toast;
 
 import com.example.androidstudio.capstoneproject.IdlingResource.SimpleIdlingResource;
 import com.example.androidstudio.capstoneproject.R;
-import com.example.androidstudio.capstoneproject.data.DatabaseUtil;
-import com.example.androidstudio.capstoneproject.data.Lesson;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
-import com.example.androidstudio.capstoneproject.data.LessonsDbHelper;
 import com.example.androidstudio.capstoneproject.data.TestUtil;
 
-import java.io.IOException;
-import java.net.URL;
-import java.util.List;
 
 /**
  * The app has two modes: 'view' mode and 'create' mode.
@@ -87,7 +75,6 @@ public class MainActivity extends AppCompatActivity implements
 
     private View mSelectedView;
     private long selectedLesson_id;
-    private int selectedPosition;
     private Menu mMenu;
 
     // flag for preference updates
@@ -95,9 +82,6 @@ public class MainActivity extends AppCompatActivity implements
 
     private LessonsListAdapter mAdapter;
     private Context mContext;
-
-    // holds the contextual menu
-    private ActionMode mActionMode;
 
     // Fields for handling the saving and restoring of view state
     private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
@@ -172,7 +156,7 @@ public class MainActivity extends AppCompatActivity implements
         //controller.start(this);
 
         // Insert data for testing
-        TestUtil.insertFakeData(this);
+        //TestUtil.insertFakeData(this);
 
         mLoadingIndicator.setVisibility(View.VISIBLE);
 
@@ -265,8 +249,6 @@ public class MainActivity extends AppCompatActivity implements
 
         int itemThatWasClickedId = item.getItemId();
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
-                this.getString(R.string.pref_mode_view));
 
         switch (itemThatWasClickedId) {
 
@@ -305,7 +287,7 @@ public class MainActivity extends AppCompatActivity implements
             case R.id.action_delete:
                 Log.v(TAG, "Deletion action selected");
                 if (null != mSelectedView && selectedLesson_id != -1) {
-                    deleteLesson(selectedLesson_id, selectedPosition);
+                    deleteLesson(selectedLesson_id);
                 } else {
                     Toast.makeText(this,
                             "Please, select an item to delete!", Toast.LENGTH_LONG).show();
@@ -318,53 +300,6 @@ public class MainActivity extends AppCompatActivity implements
 
         return super.onOptionsItemSelected(item);
     }
-
-
-    /**
-     * Interface implementation for the contextual menu
-     */
-//    private ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
-//
-//
-//        // Called when the action mode is created; startActionMode() was called
-//        @Override
-//        public boolean onCreateActionMode(ActionMode mode, Menu menu) {
-//            // Inflate a menu resource providing context menu items
-//            MenuInflater inflater = mode.getMenuInflater();
-//            inflater.inflate(R.menu.context_menu, menu);
-//            return true;
-//        }
-//
-//        // Called each time the action mode is shown. Always called after onCreateActionMode, but
-//        // may be called multiple times if the mode is invalidated.
-//        @Override
-//        public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
-//            return false;// Return false if nothing is done
-//        }
-//
-//        // Called when the user selects a contextual menu item
-//        @Override
-//        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-//
-//            switch (item.getItemId()) {
-//                case R.id.action_delete:
-//                    //deleteCurrentItem();
-//                    mode.finish(); // Action picked, so close the CAB
-//                    mSelectedView.setSelected(false);
-//                    return true;
-//                default:
-//                    return false;
-//            }
-//
-//        }
-//
-//        // Called when the user exits the action mode
-//        @Override
-//        public void onDestroyActionMode(ActionMode mode) {
-//            mActionMode = null;
-//            mSelectedView.setSelected(false);
-//        }
-//    };
 
 
     @Override
@@ -460,13 +395,6 @@ public class MainActivity extends AppCompatActivity implements
 
         Log.v(TAG, "onListItemLongClick lessonName:" + lessonName);
 
-//        if (mActionMode != null) {
-//            return;
-//        }
-//
-//        // Start the CAB using the ActionMode.Callback defined above
-//        mActionMode = this.startActionMode(mActionModeCallback);
-
         // If the actual view is selected, deselect it
         if (view.isSelected()) {
             view.setSelected(false);
@@ -475,7 +403,6 @@ public class MainActivity extends AppCompatActivity implements
                 mSelectedView.setSelected(false);
                 mSelectedView = null;
                 selectedLesson_id = -1;
-                selectedPosition = -1;
             }
             return;
         }
@@ -485,7 +412,6 @@ public class MainActivity extends AppCompatActivity implements
             mSelectedView.setSelected(false);
             mSelectedView = null;
             selectedLesson_id = -1;
-            selectedPosition = -1;
         }
 
         // Select the view if the app is in create mode
@@ -500,11 +426,9 @@ public class MainActivity extends AppCompatActivity implements
             mSelectedView = view;
             // Save the _id of the lesson selected
             selectedLesson_id = lesson_id;
-            selectedPosition = clickedItemIndex;
         }
 
     }
-
 
 
     // Helper method for calc the number of columns based on screen
@@ -521,7 +445,6 @@ public class MainActivity extends AppCompatActivity implements
 
         return nColumns;
     }
-
 
 
     /**
@@ -624,7 +547,7 @@ public class MainActivity extends AppCompatActivity implements
     /**
      * Helper function to delete data and update the view
      */
-    private void deleteLesson(long _id, int position) {
+    private void deleteLesson(long _id) {
 
         Log.v(TAG, "deleteLesson _id:" + _id);
 
@@ -637,8 +560,6 @@ public class MainActivity extends AppCompatActivity implements
         Log.v("Testing", "Uri to delete:" + uriToDelete.toString());
 
         int numberOfLessonsDeleted = contentResolver.delete(uriToDelete, null, null);
-
-//        int numberOfLessonsDeleted = mAdapter.removeItem(this, _id, position);
 
         if (numberOfLessonsDeleted > 0) {
             Snackbar mySnackbar = Snackbar.make(mClassesList, numberOfLessonsDeleted + " item removed", Snackbar.LENGTH_LONG);
