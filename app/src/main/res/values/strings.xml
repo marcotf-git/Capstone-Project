@@ -1,8 +1,21 @@
 <resources>
-    <string name="app_name">Capstone Project</string>
+    <string name="app_name">Learning App</string>
     <string name="file_loading_error_message">Failed to load</string>
     <string name="illustration_not_available">Illustration Not Available</string>
     <string name="lesson_image">Class Image</string>
     <string name="lesson_name">Class Name</string>
     <string name="menu_action_refresh_label">Refresh</string>
+
+    <string name="view">View</string>
+    <string name="create">Create</string>
+
+    <string name="pref_mode_label">Mode Type</string>
+    <string name="pref_mode_key" translatable="false">mode</string>
+
+    <string name="pref_view_label">View</string>
+    <string name="pref_mode_view" translatable="false">view</string>
+
+    <string name="pref_create_label">Create</string>
+    <string name="pref_mode_create" translatable="false">create</string>
+
 </resources>

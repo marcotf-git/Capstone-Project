@@ -3,10 +3,12 @@ package com.example.androidstudio.capstoneproject.ui;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Parcelable;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
@@ -21,6 +23,7 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -55,7 +58,7 @@ import java.util.List;
  * The database and its tables are handled by a content provider LessonsContentProvider.
  * The provider is queried by a cursor loader, which returns a cursor object.
  * In the 'view' mode, the view layout will be the activity_main.xml, which has a RecyclerView,
- * populated with a GridLayoutManager and a custom adapter LessonsCursorAdapter.
+ * populated with a GridLayoutManager and a custom adapter LessonsListAdapter.
  * The cursor provided by the loader is passed to the adapter with the data that will be shown.
  * In the 'view' mode, if the user shows the option to sync the database, it will call a task ....
  * In the 'create' mode, if the user selects the option to add a lesson title, it will open another
@@ -69,6 +72,7 @@ import java.util.List;
  */
 public class MainActivity extends AppCompatActivity implements
         LessonsListAdapter.ListItemClickListener,
+        SharedPreferences.OnSharedPreferenceChangeListener,
         LoaderManager.LoaderCallbacks<Cursor> {
 
 
@@ -78,8 +82,16 @@ public class MainActivity extends AppCompatActivity implements
     private ProgressBar mLoadingIndicator;
     private RecyclerView mClassesList;
 
+    private View mSelectedView;
+
+    // flag for preference updates
+    private static boolean flag_preferences_updates = false;
+
     private LessonsListAdapter mAdapter;
     private Context mContext;
+
+    // holds the contextual menu
+    private ActionMode mActionMode;
 
     // Fields for handling the saving and restoring of view state
     private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
@@ -154,7 +166,7 @@ public class MainActivity extends AppCompatActivity implements
         //controller.start(this);
 
         // Insert data for testing
-        TestUtil.insertFakeData(this);
+        //TestUtil.insertFakeData(this);
 
         mLoadingIndicator.setVisibility(View.VISIBLE);
 
@@ -181,6 +193,26 @@ public class MainActivity extends AppCompatActivity implements
         mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
     }
 
+    // In onStart, if preferences have been changed, refresh the view
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        Log.v("onStart", "on start");
+
+        if (flag_preferences_updates) {
+            Log.v("onStart", "preferences changed");
+            updateView();
+        }
+
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        PreferenceManager.getDefaultSharedPreferences(this)
+                .unregisterOnSharedPreferenceChangeListener(this);
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -189,20 +221,125 @@ public class MainActivity extends AppCompatActivity implements
         return true;
     }
 
+    /**
+     * This method sets the option menu that choose which kind of movie search will be executed,
+     * if popular or top rated
+     */
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+
+        super.onPrepareOptionsMenu(menu);
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
+                this.getString(R.string.pref_mode_view));
+
+        if (queryOption.equals(this.getString(R.string.pref_mode_view))) {
+            menu.findItem(R.id.select_view).setChecked(true);
+        }
+
+        if (queryOption.equals(this.getString(R.string.pref_mode_create))) {
+            menu.findItem(R.id.select_create).setChecked(true);
+        }
+
+        return true;
+    }
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
-        switch (item.getItemId()) {
+        int itemThatWasClickedId = item.getItemId();
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        switch (itemThatWasClickedId) {
+
             case R.id.action_refresh:
                 Toast.makeText(this, "Reloading the data", Toast.LENGTH_LONG)
                         .show();
                 refreshActivity();
                 break;
+
+            case R.id.select_view:
+                sharedPreferences.edit()
+                        .putString(this.getString(R.string.pref_mode_key),
+                                this.getString(R.string.pref_mode_view)).apply();
+                Log.v(TAG, "View mode selected");
+                break;
+
+            case R.id.select_create:
+                sharedPreferences.edit()
+                        .putString(this.getString(R.string.pref_mode_key),
+                                this.getString(R.string.pref_mode_create)).apply();
+                Log.v(TAG, "Create mode selected");
+                break;
+
             default:
                 break;
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+
+    /**
+     * Interface implementation for the contextual menu
+     */
+    private ActionMode.Callback mActionModeCallback = new ActionMode.Callback() {
+
+
+        // Called when the action mode is created; startActionMode() was called
+        @Override
+        public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+            // Inflate a menu resource providing context menu items
+            MenuInflater inflater = mode.getMenuInflater();
+            inflater.inflate(R.menu.context_menu, menu);
+            return true;
+        }
+
+        // Called each time the action mode is shown. Always called after onCreateActionMode, but
+        // may be called multiple times if the mode is invalidated.
+        @Override
+        public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+            return false;// Return false if nothing is done
+        }
+
+        // Called when the user selects a contextual menu item
+        @Override
+        public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+
+            switch (item.getItemId()) {
+                case R.id.action_delete:
+                    //deleteCurrentItem();
+                    mode.finish(); // Action picked, so close the CAB
+                    mSelectedView.setSelected(false);
+                    return true;
+                default:
+                    return false;
+            }
+
+        }
+
+        // Called when the user exits the action mode
+        @Override
+        public void onDestroyActionMode(ActionMode mode) {
+            mActionMode = null;
+            mSelectedView.setSelected(false);
+        }
+    };
+
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+
+        flag_preferences_updates = true;
+
+        String lessonsQueryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
+                this.getString(R.string.pref_mode_view));
+
+        Log.v(TAG, "onSharedPreferenceChanged lessonsQueryOption:" + lessonsQueryOption);
+
+        updateView();
+
     }
 
 
@@ -261,6 +398,32 @@ public class MainActivity extends AppCompatActivity implements
 //        startActivity(startChildActivityIntent);
 
     }
+
+
+    /**
+     * This is where we receive our callback from the classes list adapter
+     * {@link com.example.androidstudio.capstoneproject.ui.LessonsListAdapter.ListItemClickListener}
+     *
+     * This callback is invoked when you long click on an item in the list.
+     *
+     * @param clickedItemIndex Index in the list of the item that was clicked.
+     */
+    @Override
+    public void onListItemLongClick(View view, int clickedItemIndex, int lesson_id, String lessonName) {
+
+        Log.v(TAG, "onListItemLongClick lessonName:" + lessonName);
+
+        if (mActionMode != null) {
+            return;
+        }
+
+        // Start the CAB using the ActionMode.Callback defined above
+        mActionMode = this.startActionMode(mActionModeCallback);
+        mSelectedView = view;
+        mSelectedView.setSelected(true);
+
+    }
+
 
 
     // Helper method for calc the number of columns based on screen
@@ -332,6 +495,7 @@ public class MainActivity extends AppCompatActivity implements
         if(data == null){
             showErrorMessage();
         } else {
+            // Saves a reference to the cursor
             // Set the data for the adapter
             mAdapter.setLessonsCursorData(data);
             showClassesDataView();
@@ -360,6 +524,19 @@ public class MainActivity extends AppCompatActivity implements
         //Controller.clearRecipesList();
         finish();
         startActivity(getIntent());
+
+    }
+
+
+    /**
+     * Helper function to reload data and update the view, called by the shared preference listener
+     */
+    public void updateView() {
+
+        Log.v(TAG, "updateView");
+
+        flag_preferences_updates = false;
+
     }
 
 }

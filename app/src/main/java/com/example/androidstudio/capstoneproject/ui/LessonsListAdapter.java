@@ -13,12 +13,9 @@ import android.widget.TextView;
 
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
-import com.squareup.picasso.Callback;
-import com.squareup.picasso.Picasso;
 
 
-
-public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.RecipeViewHolder>{
+public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.LessonViewHolder>{
 
 
     private static final String TAG = LessonsListAdapter.class.getSimpleName();
@@ -43,6 +40,11 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
         void onListItemClick(int clickedItemIndex,
                              int lesson_id,
                              String lessonName);
+
+        void onListItemLongClick(View view,
+                                 int clickedItemIndex,
+                                 int lesson_id,
+                                 String lessonName);
     }
 
     /**
@@ -78,7 +80,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
      */
     @NonNull
     @Override
-    public RecipeViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int viewType) {
+    public LessonViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int viewType) {
 
         Context context = viewGroup.getContext();
 
@@ -87,7 +89,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
         boolean shouldAttachToParentImmediately = false;
 
         View view = inflater.inflate(layoutIdForListItem, viewGroup, shouldAttachToParentImmediately);
-        RecipeViewHolder viewHolder = new RecipeViewHolder(view);
+        LessonViewHolder viewHolder = new LessonViewHolder(view);
 
         viewHolderCount++;
         Log.d(TAG, "onCreateViewHolder: number of ViewHolders created: " + viewHolderCount);
@@ -107,7 +109,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
      * @param position The position of the item within the adapter's data set.
      */
     @Override
-    public void onBindViewHolder(@NonNull final RecipeViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull final LessonViewHolder holder, int position) {
 
         Log.d(TAG, "#" + position);
 
@@ -175,13 +177,12 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
     /**
      * Cache of the children views for a list item.
      */
-    class RecipeViewHolder extends RecyclerView.ViewHolder
-            implements View.OnClickListener {
+    class LessonViewHolder extends RecyclerView.ViewHolder
+            implements View.OnClickListener, View.OnLongClickListener {
 
         private ImageView lessonImageView;
         private TextView lessonTextView;
         private TextView errorTextView;
-
 
         final Context context;
 
@@ -192,7 +193,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
          * @param itemView The View that you inflated in
          *                 {@link LessonsListAdapter#onCreateViewHolder(ViewGroup, int)}
          */
-        private RecipeViewHolder(View itemView) {
+        private LessonViewHolder(View itemView) {
 
             super(itemView);
 
@@ -202,9 +203,13 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
             lessonTextView = itemView.findViewById(R.id.tv_main_lesson_name);
             errorTextView = itemView.findViewById(R.id.tv_lesson_image_error_message_label);
 
-
-            // Call setOnClickListener on the View passed into the constructor (use 'this' as the OnClickListener)
+            // Call setOnClickListener on the View passed into the constructor
+            // (use 'this' as the OnClickListener)
             itemView.setOnClickListener(this);
+
+            // Call setOnLongClickListener on the View passed into the constructor
+            // (use 'this' as the OnLongClickListener)
+            itemView.setOnLongClickListener(this);
         }
 
         /**
@@ -224,7 +229,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
             String lessonName = lessonsCursor.getString(lessonsCursor.
                     getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME));
 
-            Log.v(TAG, "onClick recipeName:" + lessonName);
+            //Log.v(TAG, "onClick recipeName:" + lessonName);
 
             // Calls the method implemented in the main activity
             mOnClickListener.onListItemClick(
@@ -232,6 +237,34 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
                     lesson_id,
                     lessonName);
 
+        }
+
+        /**
+         * Called whenever a user long clicks on an item in the list.
+         * @param view The View that was clicked
+         */
+        @Override
+        public boolean onLongClick(View view) {
+            int clickedItemIndex = getAdapterPosition();
+
+            if(!lessonsCursor.moveToPosition(clickedItemIndex))
+                return true;
+
+            int lesson_id = lessonsCursor.getInt(lessonsCursor.
+                    getColumnIndex(LessonsContract.MyLessonsEntry._ID));
+            String lessonName = lessonsCursor.getString(lessonsCursor.
+                    getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME));
+
+            //Log.v(TAG, "onLongClick recipeName:" + lessonName);
+
+            // Calls the method implemented in the main activity
+            mOnClickListener.onListItemLongClick(
+                    view,
+                    clickedItemIndex,
+                    lesson_id,
+                    lessonName);
+
+            return true;
         }
 
     }
