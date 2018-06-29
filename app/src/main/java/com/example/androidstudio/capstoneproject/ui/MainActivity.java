@@ -140,7 +140,8 @@ public class MainActivity extends AppCompatActivity implements
 
         // Create fragments if doesn't exist
         // The data for the fragment will be set up in the loader
-        if (mainFragment == null) {
+        if (savedInstanceState == null) {
+            Log.v(TAG, "creating fragment");
             mainFragment = new MainFragment();
             fragmentManager.beginTransaction()
                     .replace(R.id.lessons_container, mainFragment, "MainFragment")

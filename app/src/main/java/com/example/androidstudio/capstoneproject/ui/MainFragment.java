@@ -31,16 +31,20 @@ public class MainFragment extends Fragment implements
     private TextView mErrorMessageDisplay;
     private ProgressBar mLoadingIndicator;
     private RecyclerView mClassesList;
+    private GridLayoutManager layoutManager;
 
     private View mSelectedView;
     private long selectedLesson_id;
 
     private LessonsListAdapter mAdapter;
     private Context mContext;
+    private Bundle state;
 
     // Fields for handling the saving and restoring of view state
     private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
+    private static final String POSITION_STATE = "positionState";
     private Parcelable recyclerViewState;
+    private int mPosition;
 
     // Callbacks to the main activity
     OnLessonListener mCallback;
@@ -95,6 +99,8 @@ public class MainFragment extends Fragment implements
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
+        Log.v(TAG, "onCreateView");
+
         // Inflate the Ingredients fragment layout
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
@@ -106,7 +112,7 @@ public class MainFragment extends Fragment implements
 
         // Set the layout manager
         int nColumns = numberOfColumns();
-        GridLayoutManager layoutManager = new GridLayoutManager(mContext, nColumns);
+        layoutManager = new GridLayoutManager(mContext, nColumns);
         mClassesList.setLayoutManager(layoutManager);
 
         /*
@@ -126,23 +132,88 @@ public class MainFragment extends Fragment implements
         // This is loading the saved position of the recycler view
         // There is also a call on the post execute method in the loader, for updating the view
         if(savedInstanceState != null) {
-            recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
-            mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+//            recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
+//            mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+            Log.v(TAG, "recovering savedInstanceState");
+            mPosition =  savedInstanceState.getInt(POSITION_STATE);
         }
 
         mLoadingIndicator.setVisibility(View.VISIBLE);
+
+        Log.v(TAG, "onCreatedView mPosition:" + mPosition);
 
         // Return root view
         return rootView;
     }
 
 
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+//        final int position;
+//
+//        if (savedInstanceState != null) {
+//
+//            position = savedInstanceState.getInt(POSITION_STATE);
+//
+//            Log.v(TAG, "onViewCreated position:" + position);
+//
+//            if(position != -1) {
+//                //layoutManager.scrollToPosition(4);
+//            }
+//        }
+
+        Log.v(TAG, "onViewCreated mPosition:" + mPosition);
+
+        if (mPosition > 0) {
+            layoutManager.scrollToPosition(mPosition);
+        }
+    }
+
     // This method is saving the position of the recycler view
     @Override
     public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
-        Parcelable recyclerViewState = mClassesList.getLayoutManager().onSaveInstanceState();
-        savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
+//        Parcelable recyclerViewState = mClassesList.getLayoutManager().onSaveInstanceState();
+//        savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
+
+        int position = layoutManager.findFirstVisibleItemPosition();
+        Log.v(TAG, "onSaveInstanceState position:"+ position);
+
+        savedInstanceState.putInt(POSITION_STATE, position);
+
+        state = savedInstanceState;
+
         super.onSaveInstanceState(savedInstanceState);
+    }
+
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+
+        if(savedInstanceState != null) {
+//            recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
+//            mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+            Log.v(TAG, "recovering savedInstanceState");
+            mPosition =  savedInstanceState.getInt(POSITION_STATE);
+        }
+
+        Log.v(TAG, "onViewStateRestored mPosition:" + mPosition);
+
+        super.onViewStateRestored(savedInstanceState);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        if(state != null) {
+//            recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
+//            mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+            Log.v(TAG, "recovering savedInstanceState");
+            mPosition =  state.getInt(POSITION_STATE);
+        }
+
+        Log.v(TAG, "onStop mPosition:" + mPosition);
     }
 
     /**
@@ -254,7 +325,10 @@ public class MainFragment extends Fragment implements
     private int numberOfColumns() {
 
         DisplayMetrics displayMetrics = new DisplayMetrics();
-        getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+
+        if(null != getActivity()) {
+            getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        }
 
         // You can change this divider to adjust the size of the recipe card
         int widthDivider = 600;
@@ -262,7 +336,7 @@ public class MainFragment extends Fragment implements
         int nColumns = width / widthDivider;
         if (nColumns < 1) return 1;
 
-        Log.v(TAG, "nColumns:" + nColumns);
+        //Log.v(TAG, "nColumns:" + nColumns);
 
         return nColumns;
     }
