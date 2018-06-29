@@ -121,6 +121,8 @@ public class MainFragment extends Fragment implements
         mAdapter = new LessonsListAdapter(this);
         mClassesList.setAdapter(mAdapter);
 
+        // TODO: Correct to show the same position on device rotation
+
         // This is loading the saved position of the recycler view
         // There is also a call on the post execute method in the loader, for updating the view
         if(savedInstanceState != null) {
@@ -142,7 +144,6 @@ public class MainFragment extends Fragment implements
         savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
         super.onSaveInstanceState(savedInstanceState);
     }
-
 
     /**
      * This method will make the View for data visible and hide the error message.

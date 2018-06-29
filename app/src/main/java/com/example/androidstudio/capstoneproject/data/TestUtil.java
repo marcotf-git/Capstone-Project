@@ -1,9 +1,11 @@
 package com.example.androidstudio.capstoneproject.data;
 
+import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,44 +17,12 @@ public class TestUtil {
 
     public static void insertFakeData(Context context){
 
-        LessonsDbHelper dbHelper = new LessonsDbHelper(context);
-        SQLiteDatabase mDb = dbHelper.getWritableDatabase();
+        ContentResolver contentResolver = context.getContentResolver();
 
-        if(mDb == null){
-            return;
+        for (int i = 0; i < 10; i++) {
+            ContentValues testLessonValues = new ContentValues();
+            testLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME, "Lesson " + i);
+            Uri uri = contentResolver.insert(LessonsContract.MyLessonsEntry.CONTENT_URI, testLessonValues);
         }
-
-        //create a list of fake guests
-        List<ContentValues> list = new ArrayList<>();
-
-        ContentValues cv;
-        for (int i = 0; i < 10; i++){
-            cv = new ContentValues();
-            cv.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME, "Lesson " + i);
-            list.add(cv);
-        }
-
-        //insert all movies in one transaction
-        try
-        {
-            mDb.beginTransaction();
-            //clear the table first
-            mDb.delete (LessonsContract.MyLessonsEntry.TABLE_NAME,null,null);
-            //go through the list and add one by one
-            for(ContentValues row:list){
-                mDb.insert(LessonsContract.MyLessonsEntry.TABLE_NAME, null, row);
-            }
-            mDb.setTransactionSuccessful();
-        }
-        catch (SQLException e) {
-            e.printStackTrace();
-        }
-        finally
-        {
-            mDb.endTransaction();
-        }
-
-        mDb.close();
-
     }
 }
