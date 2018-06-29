@@ -12,6 +12,8 @@ import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
 import android.support.design.widget.Snackbar;
 import android.support.test.espresso.IdlingResource;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
@@ -25,6 +27,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -62,36 +65,47 @@ import com.example.androidstudio.capstoneproject.data.TestUtil;
  *
  */
 public class MainActivity extends AppCompatActivity implements
-        LessonsListAdapter.ListItemClickListener,
         SharedPreferences.OnSharedPreferenceChangeListener,
-        LoaderManager.LoaderCallbacks<Cursor> {
+        LoaderManager.LoaderCallbacks<Cursor>,
+        MainFragment.OnLessonListener {
 
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
-    private TextView mErrorMessageDisplay;
-    private ProgressBar mLoadingIndicator;
-    private RecyclerView mClassesList;
+    // Final string to store state information
+    private static final String CLICKED_LESSON_ID = "clickedLessonId";
+    private static final String SELECTED_LESSON_ID = "selectedLessonId";
 
-    private View mSelectedView;
+    private long clickedLesson_id;
     private long selectedLesson_id;
+
     private Menu mMenu;
 
     // flag for preference updates
     private static boolean flag_preferences_updates = false;
 
-    private LessonsListAdapter mAdapter;
     private Context mContext;
 
-    // Fields for handling the saving and restoring of view state
-    private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
-    private Parcelable recyclerViewState;
-
     private static final int ID_LESSONS_LOADER = 1;
+
+    private FrameLayout lessonsContainer;
+    private MainFragment mainFragment;
+
+    // Methods for receiving communication from the MainFragment
+    @Override
+    public void onLessonSelected(long _id) {
+        selectedLesson_id = _id;
+    }
+
+    @Override
+    public void onLessonClicked(long _id) {
+        clickedLesson_id = _id;
+    }
 
     // The Idling Resource which will be null in production.
     @Nullable
     private SimpleIdlingResource mIdlingResource;
+
 
     /**
      * Only called from test, creates and returns a new {@link SimpleIdlingResource}.
@@ -114,27 +128,26 @@ public class MainActivity extends AppCompatActivity implements
 
         mContext = this;
 
-        mErrorMessageDisplay = findViewById(R.id.tv_error_message_display);
-        mLoadingIndicator = findViewById(R.id.pb_loading_indicator);
-        mClassesList = findViewById(R.id.rv_classes);
+        lessonsContainer = findViewById(R.id.lessons_container);
 
-        // Set the layout manager
-        int nColumns = numberOfColumns();
-        GridLayoutManager layoutManager = new GridLayoutManager(this, nColumns);
-        mClassesList.setLayoutManager(layoutManager);
+        // Initialize the data vars for this class
+        if (null != savedInstanceState) {
+            clickedLesson_id = savedInstanceState.getLong(CLICKED_LESSON_ID);
+            selectedLesson_id = savedInstanceState.getLong(SELECTED_LESSON_ID);
+        }
 
-        /*
-         * Use this setting to improve performance if you know that changes in content do not
-         * change the child layout size in the RecyclerView
-         */
-        mClassesList.setHasFixedSize(true);
+        FragmentManager fragmentManager = getSupportFragmentManager();
 
-        /*
-         * The GreenAdapter is responsible for displaying each item in the list.
-         */
-        mAdapter = new LessonsListAdapter(this);
-        mClassesList.setAdapter(mAdapter);
-
+        // Create fragments if doesn't exist
+        // The data for the fragment will be set up in the loader
+        if (mainFragment == null) {
+            mainFragment = new MainFragment();
+            fragmentManager.beginTransaction()
+                    .replace(R.id.lessons_container, mainFragment, "MainFragment")
+                    .commit();
+        } else {
+            mainFragment = (MainFragment) fragmentManager.findFragmentByTag("MainFragment");
+        }
 
         // Get the IdlingResource instance
         getIdlingResource();
@@ -158,8 +171,6 @@ public class MainActivity extends AppCompatActivity implements
         // Insert data for testing
         //TestUtil.insertFakeData(this);
 
-        mLoadingIndicator.setVisibility(View.VISIBLE);
-
         // Query the database and set the adapter with the cursor data
         getSupportLoaderManager().initLoader(ID_LESSONS_LOADER, null, this);
 
@@ -169,19 +180,13 @@ public class MainActivity extends AppCompatActivity implements
     // This method is saving the position of the recycler view
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
-        Parcelable recyclerViewState = mClassesList.getLayoutManager().onSaveInstanceState();
-        savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
+
+        savedInstanceState.putLong(CLICKED_LESSON_ID, clickedLesson_id);
+        savedInstanceState.putLong(SELECTED_LESSON_ID, selectedLesson_id);
+
         super.onSaveInstanceState(savedInstanceState);
     }
 
-    // This method is loading the saved position of the recycler view
-    // There is also a call on the post execute method in the loader, for updating the view
-    @Override
-    protected void onRestoreInstanceState(Bundle savedInstanceState) {
-        super.onRestoreInstanceState(savedInstanceState);
-        recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
-        mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
-    }
 
     // In onStart, if preferences have been changed, refresh the view
     @Override
@@ -260,11 +265,8 @@ public class MainActivity extends AppCompatActivity implements
                 mMenu.findItem(R.id.action_delete).setVisible(false);
                 mMenu.findItem(R.id.action_refresh).setVisible(true);
                 // Deselect the last view selected
-                if (null != mSelectedView) {
-                    mSelectedView.setSelected(false);
-                    mSelectedView = null;
-                    selectedLesson_id = -1;
-                }
+                mainFragment.deselectViews();
+                selectedLesson_id = -1;
                 Log.v(TAG, "View mode selected");
                 break;
 
@@ -286,7 +288,7 @@ public class MainActivity extends AppCompatActivity implements
 
             case R.id.action_delete:
                 Log.v(TAG, "Deletion action selected");
-                if (null != mSelectedView && selectedLesson_id != -1) {
+                if (selectedLesson_id != -1) {
                     deleteLesson(selectedLesson_id);
                 } else {
                     Toast.makeText(this,
@@ -314,136 +316,6 @@ public class MainActivity extends AppCompatActivity implements
 
         updateView();
 
-    }
-
-
-    /**
-     * This method will make the View for data visible and hide the error message.
-     * <p>
-     * Since it is okay to redundantly set the visibility of a View, we don't
-     * need to check whether each view is currently visible or invisible.
-     */
-    private void showClassesDataView() {
-        // First, make sure the error is invisible
-        mErrorMessageDisplay.setVisibility(View.INVISIBLE);
-        // Then, make sure the JSON data is visible
-        mClassesList.setVisibility(View.VISIBLE);
-    }
-
-
-    /**
-     * This method will make the error message visible and hide data View.
-     *
-     * Since it is okay to redundantly set the visibility of a View, we don't
-     * need to check whether each view is currently visible or invisible.
-     */
-    private void showErrorMessage() {
-        // First, hide the currently visible data
-        mClassesList.setVisibility(View.INVISIBLE);
-        // Then, show the error
-        mErrorMessageDisplay.setVisibility(View.VISIBLE);
-    }
-
-
-    /**
-     * This is where we receive our callback from the classes list adapter
-     * {@link com.example.androidstudio.capstoneproject.ui.LessonsListAdapter.ListItemClickListener}
-     *
-     * This callback is invoked when you click on an item in the list.
-     *
-     * @param clickedItemIndex Index in the list of the item that was clicked.
-     */
-    @Override
-    public void onListItemClick(View view, int clickedItemIndex, long lesson_id, String lessonName) {
-
-        Log.v(TAG, "onListItemClick lessonName:" + lessonName);
-
-//        // Start RecipeDetail activity passing the specific recipe JSON string
-//        Context context = MainActivity.this;
-//        Class destinationActivity = RecipeDetailActivity.class;
-//        Intent startChildActivityIntent = new Intent(context, destinationActivity);
-//
-//        startChildActivityIntent.putExtra("clickedItemIndex", clickedItemIndex);
-//        startChildActivityIntent.putExtra("recipeName", recipeName);
-//        startChildActivityIntent.putExtra("ingredientsJSONString", ingredientsJSONString);
-//        startChildActivityIntent.putExtra("stepsJSONString", stepsJSONString);
-//        startChildActivityIntent.putExtra("servings", servings);
-//
-//        startActivity(startChildActivityIntent);
-
-        // Deselect with one click
-        // Deselect the last view selected
-        if (null != mSelectedView) {
-            mSelectedView.setSelected(false);
-            mSelectedView = null;
-            selectedLesson_id = -1;
-        }
-
-    }
-
-
-    /**
-     * This is where we receive our callback from the classes list adapter
-     * {@link com.example.androidstudio.capstoneproject.ui.LessonsListAdapter.ListItemClickListener}
-     *
-     * This callback is invoked when you long click on an item in the list.
-     *
-     * @param clickedItemIndex Index in the list of the item that was clicked.
-     */
-    @Override
-    public void onListItemLongClick(View view, int clickedItemIndex, long lesson_id, String lessonName) {
-
-        Log.v(TAG, "onListItemLongClick lessonName:" + lessonName);
-
-        // If the actual view is selected, deselect it
-        if (view.isSelected()) {
-            view.setSelected(false);
-             // Deselect also the last reference
-            if (null != mSelectedView) {
-                mSelectedView.setSelected(false);
-                mSelectedView = null;
-                selectedLesson_id = -1;
-            }
-            return;
-        }
-
-        // Deselect the last view selected
-        if (null != mSelectedView) {
-            mSelectedView.setSelected(false);
-            mSelectedView = null;
-            selectedLesson_id = -1;
-        }
-
-        // Select the view if the app is in create mode
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
-                this.getString(R.string.pref_mode_view));
-
-        if (queryOption.equals(this.getString(R.string.pref_mode_create))) {
-            // Select the actual view
-            view.setSelected(true);
-            // Save a reference to the view
-            mSelectedView = view;
-            // Save the _id of the lesson selected
-            selectedLesson_id = lesson_id;
-        }
-
-    }
-
-
-    // Helper method for calc the number of columns based on screen
-    private int numberOfColumns() {
-
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-
-        // You can change this divider to adjust the size of the recipe card
-        int widthDivider = 600;
-        int width = displayMetrics.widthPixels;
-        int nColumns = width / widthDivider;
-        if (nColumns < 1) return 1;
-
-        return nColumns;
     }
 
 
@@ -493,17 +365,8 @@ public class MainActivity extends AppCompatActivity implements
             mIdlingResource.setIdleState(true);
         }
 
-        mLoadingIndicator.setVisibility(View.INVISIBLE);
-
-        // Try to handle error on loading
-        if(data == null){
-            showErrorMessage();
-        } else {
-            // Saves a reference to the cursor
-            // Set the data for the adapter
-            mAdapter.setLessonsCursorData(data);
-            showClassesDataView();
-        }
+        // Pass the data to the fragment
+        mainFragment.setCursor(data);
 
     }
 
@@ -519,7 +382,9 @@ public class MainActivity extends AppCompatActivity implements
          * Since this Loader's data is now invalid, we need to clear the Adapter that is
          * displaying the data.
          */
-        mAdapter.setLessonsCursorData(null);
+
+        mainFragment.setCursor(null);
+
     }
 
 
@@ -562,17 +427,16 @@ public class MainActivity extends AppCompatActivity implements
         int numberOfLessonsDeleted = contentResolver.delete(uriToDelete, null, null);
 
         if (numberOfLessonsDeleted > 0) {
-            Snackbar mySnackbar = Snackbar.make(mClassesList, numberOfLessonsDeleted + " item removed", Snackbar.LENGTH_LONG);
+            Snackbar mySnackbar = Snackbar.make(lessonsContainer,
+                    numberOfLessonsDeleted + " item removed", Snackbar.LENGTH_LONG);
             mySnackbar.show();
         }
 
         // Deselect the last view selected
-        if (null != mSelectedView) {
-            mSelectedView.setSelected(false);
-            mSelectedView = null;
-            selectedLesson_id = -1;
-        }
+        mainFragment.deselectViews();
+        selectedLesson_id = -1;
 
     }
+
 
 }
