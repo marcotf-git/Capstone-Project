@@ -38,13 +38,11 @@ public class MainFragment extends Fragment implements
 
     private LessonsListAdapter mAdapter;
     private Context mContext;
-    private Bundle state;
+    //private Bundle state;
 
     // Fields for handling the saving and restoring of view state
     private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
-    private static final String POSITION_STATE = "positionState";
     private Parcelable recyclerViewState;
-    private int mPosition;
 
     // Callbacks to the main activity
     OnLessonListener mCallback;
@@ -127,94 +125,30 @@ public class MainFragment extends Fragment implements
         mAdapter = new LessonsListAdapter(this);
         mClassesList.setAdapter(mAdapter);
 
-        // TODO: Correct to show the same position on device rotation
-
-        // This is loading the saved position of the recycler view
-        // There is also a call on the post execute method in the loader, for updating the view
+        // This is loading the saved position of the recycler view.
+        // There is also a call on the post execute method in the loader, for updating the view.
         if(savedInstanceState != null) {
-//            recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
-//            mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
             Log.v(TAG, "recovering savedInstanceState");
-            mPosition =  savedInstanceState.getInt(POSITION_STATE);
+            recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
+            mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
         }
 
         mLoadingIndicator.setVisibility(View.VISIBLE);
-
-        Log.v(TAG, "onCreatedView mPosition:" + mPosition);
 
         // Return root view
         return rootView;
     }
 
 
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-
-//        final int position;
-//
-//        if (savedInstanceState != null) {
-//
-//            position = savedInstanceState.getInt(POSITION_STATE);
-//
-//            Log.v(TAG, "onViewCreated position:" + position);
-//
-//            if(position != -1) {
-//                //layoutManager.scrollToPosition(4);
-//            }
-//        }
-
-        Log.v(TAG, "onViewCreated mPosition:" + mPosition);
-
-        if (mPosition > 0) {
-            layoutManager.scrollToPosition(mPosition);
-        }
-    }
-
     // This method is saving the position of the recycler view
     @Override
     public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
-//        Parcelable recyclerViewState = mClassesList.getLayoutManager().onSaveInstanceState();
-//        savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
-
-        int position = layoutManager.findFirstVisibleItemPosition();
-        Log.v(TAG, "onSaveInstanceState position:"+ position);
-
-        savedInstanceState.putInt(POSITION_STATE, position);
-
-        state = savedInstanceState;
+        Parcelable recyclerViewState = mClassesList.getLayoutManager().onSaveInstanceState();
+        savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
 
         super.onSaveInstanceState(savedInstanceState);
     }
 
-    @Override
-    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
-
-        if(savedInstanceState != null) {
-//            recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
-//            mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
-            Log.v(TAG, "recovering savedInstanceState");
-            mPosition =  savedInstanceState.getInt(POSITION_STATE);
-        }
-
-        Log.v(TAG, "onViewStateRestored mPosition:" + mPosition);
-
-        super.onViewStateRestored(savedInstanceState);
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-
-        if(state != null) {
-//            recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
-//            mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
-            Log.v(TAG, "recovering savedInstanceState");
-            mPosition =  state.getInt(POSITION_STATE);
-        }
-
-        Log.v(TAG, "onStop mPosition:" + mPosition);
-    }
 
     /**
      * This method will make the View for data visible and hide the error message.
@@ -335,8 +269,6 @@ public class MainFragment extends Fragment implements
         int width = displayMetrics.widthPixels;
         int nColumns = width / widthDivider;
         if (nColumns < 1) return 1;
-
-        //Log.v(TAG, "nColumns:" + nColumns);
 
         return nColumns;
     }
