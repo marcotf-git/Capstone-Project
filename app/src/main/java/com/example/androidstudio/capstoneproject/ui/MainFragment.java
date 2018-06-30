@@ -3,12 +3,16 @@ package com.example.androidstudio.capstoneproject.ui;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
@@ -20,10 +24,12 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.example.androidstudio.capstoneproject.R;
+import com.example.androidstudio.capstoneproject.data.LessonsContract;
 
 
 public class MainFragment extends Fragment implements
-        LessonsListAdapter.ListItemClickListener {
+        LessonsListAdapter.ListItemClickListener,
+        LoaderManager.LoaderCallbacks<Cursor> {
 
 
     private static final String TAG = MainFragment.class.getSimpleName();
@@ -44,53 +50,31 @@ public class MainFragment extends Fragment implements
     private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
     private Parcelable recyclerViewState;
 
+    private static final int ID_LESSONS_LOADER = 1;
+
     // Callbacks to the main activity
-    OnLessonListener mCallback;
-
-
-    // Interfaces for communication with the main activity (sending data)
-    public interface OnLessonListener {
-        void onLessonSelected(long _id);
-        void onLessonClicked(long _id);
-    }
-
-    // Functions for receiving the data from main activity
-    // Receives the data from the main activity
-    public void setCursor(Cursor cursor) {
-
-        mLoadingIndicator.setVisibility(View.INVISIBLE);
-
-        // Try to handle error on loading
-        if(cursor == null){
-            showErrorMessage();
-        } else {
-            // Saves a reference to the cursor
-            // Set the data for the adapter
-            mAdapter.setLessonsCursorData(cursor);
-            showClassesDataView();
-        }
-    }
-
-    public void deselectViews() {
-        // Deselect the last view selected
-        if (null != mSelectedView) {
-            mSelectedView.setSelected(false);
-            mSelectedView = null;
-            selectedLesson_id = -1;
-        }
-    }
+    OnLessonListener mLessonCallback;
+    OnIdlingResourceListener mIdlingCallback;
 
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        super.onAttach(context);
+
         try {
-            mCallback = (OnLessonListener) context;
+            mIdlingCallback = (OnIdlingResourceListener) context;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(context.toString()
+                    + " must implement OnIdlingResourceListener");
+        }
+
+        try {
+            mLessonCallback = (OnLessonListener) context;
         } catch (ClassCastException e) {
             throw new ClassCastException(context.toString()
                     + " must implement OnLessonListener");
         }
+
     }
 
     @Nullable
@@ -139,6 +123,15 @@ public class MainFragment extends Fragment implements
         return rootView;
     }
 
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+
+        // Query the database and set the adapter with the cursor data
+        if (null != getActivity()) {
+            getActivity().getSupportLoaderManager().initLoader(ID_LESSONS_LOADER, null, this);
+        }
+    }
 
     // This method is saving the position of the recycler view
     @Override
@@ -190,7 +183,7 @@ public class MainFragment extends Fragment implements
 
         Log.v(TAG, "onListItemClick lessonName:" + lessonName);
 
-        mCallback.onLessonClicked(lesson_id);
+        mLessonCallback.onLessonClicked(lesson_id);
 
         // Deselect with one click
         // Deselect the last view selected
@@ -198,7 +191,7 @@ public class MainFragment extends Fragment implements
             mSelectedView.setSelected(false);
             mSelectedView = null;
             selectedLesson_id = -1;
-            mCallback.onLessonSelected(selectedLesson_id);
+            mLessonCallback.onLessonSelected(selectedLesson_id);
         }
 
     }
@@ -225,7 +218,7 @@ public class MainFragment extends Fragment implements
                 mSelectedView.setSelected(false);
                 mSelectedView = null;
                 selectedLesson_id = -1;
-                mCallback.onLessonSelected(selectedLesson_id);
+                mLessonCallback.onLessonSelected(selectedLesson_id);
             }
             return;
         }
@@ -235,7 +228,7 @@ public class MainFragment extends Fragment implements
             mSelectedView.setSelected(false);
             mSelectedView = null;
             selectedLesson_id = -1;
-            mCallback.onLessonSelected(selectedLesson_id);
+            mLessonCallback.onLessonSelected(selectedLesson_id);
         }
 
         // Select the view if the app is in create mode
@@ -250,7 +243,7 @@ public class MainFragment extends Fragment implements
             mSelectedView = view;
             // Save the _id of the lesson selected
             selectedLesson_id = lesson_id;
-            mCallback.onLessonSelected(selectedLesson_id);
+            mLessonCallback.onLessonSelected(selectedLesson_id);
         }
 
     }
@@ -271,6 +264,108 @@ public class MainFragment extends Fragment implements
         if (nColumns < 1) return 1;
 
         return nColumns;
+    }
+
+    /**
+     * Called by the {@link android.support.v4.app.LoaderManagerImpl} when a new Loader needs to be
+     * created. This Activity only uses one loader, so we don't necessarily NEED to check the
+     * loaderId, but this is certainly best practice.
+     *
+     * @param loaderId The loader ID for which we need to create a loader
+     * @param bundle   Any arguments supplied by the caller
+     * @return A new Loader instance that is ready to start loading.
+     */
+    @NonNull
+    @Override
+    public Loader<Cursor> onCreateLoader(int loaderId, Bundle bundle) {
+
+        Log.d(TAG, "onCreateLoader loaderId:" + loaderId);
+
+        switch (loaderId) {
+
+            case ID_LESSONS_LOADER:
+                /* URI for all rows of lessons data in our "my_lessons" table */
+                Uri lessonsQueryUri = LessonsContract.MyLessonsEntry.CONTENT_URI;
+
+                return new CursorLoader(mContext,
+                        lessonsQueryUri,
+                        null,
+                        null,
+                        null,
+                        null);
+
+            default:
+                throw new RuntimeException("Loader Not Implemented: " + loaderId);
+        }
+    }
+
+    /**
+     * Called when a Loader has finished loading its data.
+     *
+     * @param loader The Loader that has finished.
+     * @param data   The data generated by the Loader.
+     */
+    @Override
+    public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
+
+        // Send to the main activity the order to setting the idling resource state
+        mIdlingCallback.onIdlingResource(true);
+
+        // Pass the data to the fragment
+        this.setCursor(data);
+
+    }
+
+    /**
+     * Called when a previously created loader is being reset, and thus making its data unavailable.
+     * The application should at this point remove any references it has to the Loader's data.
+     *
+     * @param loader The Loader that is being reset.
+     */
+    @Override
+    public void onLoaderReset(@NonNull Loader<Cursor> loader) {
+        /*
+         * Since this Loader's data is now invalid, we need to clear the Adapter that is
+         * displaying the data.
+         */
+        this.setCursor(null);
+    }
+
+
+    // Interfaces for communication with the main activity (sending data)
+    public interface OnLessonListener {
+        void onLessonSelected(long _id);
+        void onLessonClicked(long _id);
+    }
+
+    public interface OnIdlingResourceListener {
+        void onIdlingResource(Boolean value);
+    }
+
+    // Functions for receiving the data from main activity
+    // Receives the data from the main activity
+    public void setCursor(Cursor cursor) {
+
+        mLoadingIndicator.setVisibility(View.INVISIBLE);
+
+        // Try to handle error on loading
+        if(cursor == null){
+            showErrorMessage();
+        } else {
+            // Saves a reference to the cursor
+            // Set the data for the adapter
+            mAdapter.setLessonsCursorData(cursor);
+            showClassesDataView();
+        }
+    }
+
+    public void deselectViews() {
+        // Deselect the last view selected
+        if (null != mSelectedView) {
+            mSelectedView.setSelected(false);
+            mSelectedView = null;
+            selectedLesson_id = -1;
+        }
     }
 
 }
