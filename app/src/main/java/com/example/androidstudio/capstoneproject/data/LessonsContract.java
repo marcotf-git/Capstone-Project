@@ -17,6 +17,8 @@ public class LessonsContract {
     // Define the possible paths for accessing data in this contract
     // This is the path for the "my_lessons" directory
     public static final String PATH_MY_LESSONS = "my_lessons";
+    // This is the path for the "my_lesson_parts" directory
+    public static final String PATH_MY_LESSON_PARTS = "my_lesson_parts";
 
     // Empty constructor
     private LessonsContract() {}
@@ -37,6 +39,20 @@ public class LessonsContract {
 
         public static final String COLUMN_LESSON_TITLE = "title";
 
+    }
+
+    public static class MyLessonPartsEntry implements BaseColumns {
+
+        // my_lesson_parts table entry content URI = base content URI + path
+        public static final Uri CONTENT_URI =
+                BASE_CONTENT_URI.buildUpon().appendPath(PATH_MY_LESSON_PARTS).build();
+
+        // table and column names
+        public static final String TABLE_NAME = "my_lesson_parts";
+
+        public static final String COLUMN_LESSON_ID = "lesson_id";
+
+        public static final String COLUMN_PART_TITLE = "title";
     }
 
 

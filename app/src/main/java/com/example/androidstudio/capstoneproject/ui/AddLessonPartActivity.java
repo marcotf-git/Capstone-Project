@@ -1,6 +1,7 @@
 package com.example.androidstudio.capstoneproject.ui;
 
 import android.content.ContentValues;
+import android.content.Intent;
 import android.net.Uri;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -14,15 +15,20 @@ import android.widget.Toast;
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 
+public class AddLessonPartActivity extends AppCompatActivity {
 
-public class AddLessonActivity extends AppCompatActivity {
+    private static final String TAG = AddLessonPartActivity.class.getSimpleName();
 
-    private static final String TAG = AddLessonActivity.class.getSimpleName();
+    private static final String CLICKED_LESSON_ID = "clickedLessonId";
+
+    private long clickedLesson_id;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_add_lesson);
+        setContentView(R.layout.activity_add_lesson_part);
 
         // toolbar is defined in the layout file
         Toolbar myToolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -37,39 +43,57 @@ public class AddLessonActivity extends AppCompatActivity {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
 
+        // Recover information from caller activity
+        Intent intentThatStartedThisActivity = getIntent();
+        if (intentThatStartedThisActivity.hasExtra(CLICKED_LESSON_ID)) {
+            clickedLesson_id = intentThatStartedThisActivity.getLongExtra(CLICKED_LESSON_ID, -1);
+        } else {
+            clickedLesson_id = -1;
+        }
+
+        // Copy the data from the database to the text view
+        if (!(clickedLesson_id >= 0)) {
+            Toast.makeText(getBaseContext(), "No Lesson selected!", Toast.LENGTH_LONG).show();
+            finish();
+        }
+
     }
 
     /**
-     * onClickAddLesson is called when the "ADD" button is clicked.
+     * onClickAddLessonPart is called when the "ADD" button is clicked.
      * It retrieves user input and inserts that new lesson title data into the underlying database.
      */
-    public void onClickAddLesson(View view) {
+    public void onClickAddLessonPart(View view) {
 
         // Check if EditText is empty, if not retrieve input and store it in a ContentValues object
         // If the EditText input is empty -> don't create an entry
-        EditText myEditText = findViewById(R.id.addTextLessonTitle);
+        EditText myEditText = findViewById(R.id.addTextLessonPartTitle);
         String input = myEditText.getText().toString();
         if (input.length() == 0) {
             return;
         }
 
-        // Insert new lesson data via a ContentResolver
+        // Insert new lesson part data via a ContentResolver
         // Create new empty ContentValues object
         ContentValues contentValues = new ContentValues();
-        // Put the lesson title into the ContentValues
-        contentValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, input);
-        // Insert the content values via a ContentResolver
-        Uri uri = getContentResolver().insert(LessonsContract.MyLessonsEntry.CONTENT_URI, contentValues);
+        // Put the lesson part title into the ContentValues
+        contentValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID, clickedLesson_id);
+        contentValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE, input);
 
-         //Display the URI that's returned with a Toast
+        Log.d(TAG,"onClickAddLessonPart contentValues:" + contentValues.toString());
+
+        // Insert the content values via a ContentResolver
+        Uri uri = getContentResolver().insert(LessonsContract.MyLessonPartsEntry.CONTENT_URI, contentValues);
+
+        //Display the URI that's returned with a Toast
         if(uri != null) {
             Toast.makeText(getBaseContext(), uri.toString(), Toast.LENGTH_LONG).show();
         }
 
-        Log.d(TAG, "Uri of added lesson:" + uri);
+        Log.d(TAG, "Uri of added lesson part:" + uri);
 
-        //Snackbar.make(view, "Here's a Snackbar", Snackbar.LENGTH_LONG)
-        //  .setAction("Action", null).show();
+//        Snackbar.make(view, "Here's a Snackbar", Snackbar.LENGTH_LONG)
+//                .setAction("Action", null).show();
 
         // Finish activity (this returns back to MainActivity)
         finish();
@@ -80,5 +104,4 @@ public class AddLessonActivity extends AppCompatActivity {
     public void onClickCancel(View view) {
         finish();
     }
-
 }

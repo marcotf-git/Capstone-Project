@@ -25,16 +25,21 @@
     <string name="title_activity_add_lesson">Add Lesson Activity</string>
     <string name="edit_lesson_description">Edit Lesson Description</string>
     <string name="add_button">Add</string>
-    <string name="add_lesson_title">Please, add the Lesson Title</string>
+    <string name="add_lesson_title">Please, add the Lesson Title!</string>
     <string name="dialog_delete_lesson">Delete the lesson?</string>
     <string name="delete">Delete</string>
     <string name="cancel">Cancel</string>
     <string name="title_activity_edit_lesson">Edit Lesson Activity</string>
-    <string name="edit_lesson_title">Please, edit the Lesson Title</string>
+    <string name="edit_lesson_title">Please, edit the Lesson Title!</string>
     <string name="add_lesson_title_label">Add Lesson Title</string>
     <string name="edit_lesson_title_label">Edit Lesson Title</string>
-    <string name="edit_button">Edit</string>
+    <string name="edit_button">Save</string>
     <string name="cancel_button">Cancel</string>
     <string name="menu_action_insert_fake_label">Insert Fake Data</string>
+    <string name="up">Up Button</string>
+    <string name="part_image">Lesson Part Image</string>
+    <string name="lesson_part_name">Lesson Part Name</string>
+    <string name="add_lesson_part_title_label">Add Part Title</string>
+    <string name="add_lesson_part_title">Please, add the Lesson Part Title!</string>
 
 </resources>

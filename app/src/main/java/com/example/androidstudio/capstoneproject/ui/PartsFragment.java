@@ -27,32 +27,33 @@ import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 
 
-public class MainFragment extends Fragment implements
-        LessonsListAdapter.ListItemClickListener,
+public class PartsFragment extends Fragment implements
+        PartsListAdapter.ListItemClickListener,
         LoaderManager.LoaderCallbacks<Cursor> {
 
 
-    private static final String TAG = MainFragment.class.getSimpleName();
+    private static final String TAG = PartsFragment.class.getSimpleName();
 
     private TextView mErrorMessageDisplay;
     private ProgressBar mLoadingIndicator;
-    private RecyclerView mClassesList;
+    private RecyclerView mPartsList;
     private GridLayoutManager layoutManager;
 
     private View mSelectedView;
-    private long selectedLesson_id;
+    private long referenceLesson_id;
+    private long selectedPart_id;
 
-    private LessonsListAdapter mAdapter;
+    private PartsListAdapter mAdapter;
     private Context mContext;
 
     // Fields for handling the saving and restoring of view state
     private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
     private Parcelable recyclerViewState;
 
-    private static final int ID_LESSONS_LOADER = 1;
+    private static final int ID_LESSON_PARTS_LOADER = 2;
 
     // Callbacks to the main activity
-    OnLessonListener mLessonCallback;
+    OnLessonPartListener mPartCallback;
     OnIdlingResourceListener mIdlingCallback;
 
 
@@ -68,7 +69,7 @@ public class MainFragment extends Fragment implements
         }
 
         try {
-            mLessonCallback = (OnLessonListener) context;
+            mPartCallback = (OnLessonPartListener) context;
         } catch (ClassCastException e) {
             throw new ClassCastException(context.toString()
                     + " must implement OnLessonListener");
@@ -83,37 +84,37 @@ public class MainFragment extends Fragment implements
         Log.v(TAG, "onCreateView");
 
         // Inflate the Ingredients fragment layout
-        View rootView = inflater.inflate(R.layout.fragment_main, container, false);
+        View rootView = inflater.inflate(R.layout.fragment_parts, container, false);
 
         mContext = getContext();
 
         mErrorMessageDisplay = rootView.findViewById(R.id.tv_error_message_display);
         mLoadingIndicator = rootView.findViewById(R.id.pb_loading_indicator);
-        mClassesList = rootView.findViewById(R.id.rv_lessons);
+        mPartsList = rootView.findViewById(R.id.rv_parts);
 
         // Set the layout manager
         int nColumns = numberOfColumns();
         layoutManager = new GridLayoutManager(mContext, nColumns);
-        mClassesList.setLayoutManager(layoutManager);
+        mPartsList.setLayoutManager(layoutManager);
 
         /*
          * Use this setting to improve performance if you know that changes in content do not
          * change the child layout size in the RecyclerView
          */
-        mClassesList.setHasFixedSize(true);
+        mPartsList.setHasFixedSize(true);
 
         /*
          * The Adapter is responsible for displaying each item in the list.
          */
-        mAdapter = new LessonsListAdapter(this);
-        mClassesList.setAdapter(mAdapter);
+        mAdapter = new PartsListAdapter(this);
+        mPartsList.setAdapter(mAdapter);
 
         // This is loading the saved position of the recycler view.
         // There is also a call on the post execute method in the loader, for updating the view.
         if(savedInstanceState != null) {
             Log.v(TAG, "recovering savedInstanceState");
             recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
-            mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+            mPartsList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
         }
 
         mLoadingIndicator.setVisibility(View.VISIBLE);
@@ -128,14 +129,14 @@ public class MainFragment extends Fragment implements
 
         // Query the database and set the adapter with the cursor data
         if (null != getActivity()) {
-            getActivity().getSupportLoaderManager().initLoader(ID_LESSONS_LOADER, null, this);
+            getActivity().getSupportLoaderManager().initLoader(ID_LESSON_PARTS_LOADER, null, this);
         }
     }
 
     // This method is saving the position of the recycler view
     @Override
     public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
-        Parcelable recyclerViewState = mClassesList.getLayoutManager().onSaveInstanceState();
+        Parcelable recyclerViewState = mPartsList.getLayoutManager().onSaveInstanceState();
         savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
 
         super.onSaveInstanceState(savedInstanceState);
@@ -147,11 +148,11 @@ public class MainFragment extends Fragment implements
      * Since it is okay to redundantly set the visibility of a View, we don't
      * need to check whether each view is currently visible or invisible.
      */
-    private void showLessonsDataView() {
+    private void showPartsDataView() {
         // First, make sure the error is invisible
         mErrorMessageDisplay.setVisibility(View.INVISIBLE);
         // Then, make sure the JSON data is visible
-        mClassesList.setVisibility(View.VISIBLE);
+        mPartsList.setVisibility(View.VISIBLE);
     }
 
 
@@ -163,14 +164,14 @@ public class MainFragment extends Fragment implements
      */
     private void showErrorMessage() {
         // First, hide the currently visible data
-        mClassesList.setVisibility(View.INVISIBLE);
+        mPartsList.setVisibility(View.INVISIBLE);
         // Then, show the error
         mErrorMessageDisplay.setVisibility(View.VISIBLE);
     }
 
     /**
      * This is where we receive our callback from the classes list adapter
-     * {@link com.example.androidstudio.capstoneproject.ui.LessonsListAdapter.ListItemClickListener}
+     * {@link LessonsListAdapter.ListItemClickListener}
      *
      * This callback is invoked when you click on an item in the list.
      *
@@ -181,15 +182,16 @@ public class MainFragment extends Fragment implements
 
         Log.v(TAG, "onListItemClick lessonName:" + lessonName);
 
-        mLessonCallback.onLessonClicked(lesson_id);
+        mPartCallback.onPartClicked(lesson_id);
 
         // Deselect with one click
         // Deselect the last view selected
         if (null != mSelectedView) {
             mSelectedView.setSelected(false);
             mSelectedView = null;
-            selectedLesson_id = -1;
-            mLessonCallback.onLessonSelected(selectedLesson_id);
+            selectedPart_id = -1;
+            // deselect passing -1
+            mPartCallback.onPartSelected(selectedPart_id);
         }
 
     }
@@ -197,7 +199,7 @@ public class MainFragment extends Fragment implements
 
     /**
      * This is where we receive our callback from the classes list adapter
-     * {@link com.example.androidstudio.capstoneproject.ui.LessonsListAdapter.ListItemClickListener}
+     * {@link LessonsListAdapter.ListItemClickListener}
      *
      * This callback is invoked when you long click on an item in the list.
      *
@@ -215,9 +217,9 @@ public class MainFragment extends Fragment implements
             if (null != mSelectedView) {
                 mSelectedView.setSelected(false);
                 mSelectedView = null;
-                selectedLesson_id = -1;
+                selectedPart_id = -1;
                 // deselect passing -1
-                mLessonCallback.onLessonSelected(selectedLesson_id);
+                mPartCallback.onPartSelected(selectedPart_id);
             }
             return;
         }
@@ -226,9 +228,9 @@ public class MainFragment extends Fragment implements
         if (null != mSelectedView) {
             mSelectedView.setSelected(false);
             mSelectedView = null;
-            selectedLesson_id = -1;
+            selectedPart_id = -1;
             // deselect passing -1
-            mLessonCallback.onLessonSelected(selectedLesson_id);
+            mPartCallback.onPartSelected(selectedPart_id);
         }
 
         // Select the view if the app is in create mode
@@ -242,8 +244,8 @@ public class MainFragment extends Fragment implements
             // Save a reference to the view
             mSelectedView = view;
             // Save the _id of the lesson selected
-            selectedLesson_id = lesson_id;
-            mLessonCallback.onLessonSelected(selectedLesson_id);
+            selectedPart_id = lesson_id;
+            mPartCallback.onPartSelected(selectedPart_id);
         }
 
     }
@@ -283,15 +285,18 @@ public class MainFragment extends Fragment implements
 
         switch (loaderId) {
 
-            case ID_LESSONS_LOADER:
-                /* URI for all rows of lessons data in our "my_lessons" table */
-                Uri lessonsQueryUri = LessonsContract.MyLessonsEntry.CONTENT_URI;
+            case ID_LESSON_PARTS_LOADER:
+                /* URI for all rows of lesson parts data in our "my_lesson_parts" table */
+                Uri partsQueryUri = LessonsContract.MyLessonPartsEntry.CONTENT_URI;
+
+                String lessonPartsSelection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
+                String[] lessonPartsSelectionArgs = {Long.toString(referenceLesson_id)};
 
                 return new CursorLoader(mContext,
-                        lessonsQueryUri,
+                        partsQueryUri,
                         null,
-                        null,
-                        null,
+                        lessonPartsSelection,
+                        lessonPartsSelectionArgs,
                         null);
 
             default:
@@ -333,9 +338,9 @@ public class MainFragment extends Fragment implements
 
 
     // Interfaces for communication with the main activity (sending data)
-    public interface OnLessonListener {
-        void onLessonSelected(long _id);
-        void onLessonClicked(long _id);
+    public interface OnLessonPartListener {
+        void onPartSelected(long _id);
+        void onPartClicked(long _id);
     }
 
     public interface OnIdlingResourceListener {
@@ -354,8 +359,8 @@ public class MainFragment extends Fragment implements
         } else {
             // Saves a reference to the cursor
             // Set the data for the adapter
-            mAdapter.setLessonsCursorData(cursor);
-            showLessonsDataView();
+            mAdapter.setLessonPartsCursorData(cursor);
+            showPartsDataView();
         }
     }
 
@@ -364,8 +369,21 @@ public class MainFragment extends Fragment implements
         if (null != mSelectedView) {
             mSelectedView.setSelected(false);
             mSelectedView = null;
-            selectedLesson_id = -1;
+            selectedPart_id = -1;
         }
+    }
+
+    // Set the reference to the selected lesson
+    public void serReferenceLesson(long _id) {
+
+        // Write the data that will be used by the loader
+        referenceLesson_id = _id;
+
+        // Query the database and set the adapter with the cursor data
+        if (null != getActivity()) {
+            getActivity().getSupportLoaderManager().restartLoader(ID_LESSON_PARTS_LOADER, null, this);
+        }
+
     }
 
 }

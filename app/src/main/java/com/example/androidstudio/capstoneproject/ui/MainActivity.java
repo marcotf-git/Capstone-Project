@@ -13,6 +13,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.test.espresso.IdlingResource;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -29,6 +30,8 @@ import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.example.androidstudio.capstoneproject.data.TestUtil;
 
+import static android.view.View.GONE;
+import static android.view.View.VISIBLE;
 
 
 /**
@@ -61,6 +64,8 @@ public class MainActivity extends AppCompatActivity implements
         SharedPreferences.OnSharedPreferenceChangeListener,
         MainFragment.OnLessonListener,
         MainFragment.OnIdlingResourceListener,
+        PartsFragment.OnLessonPartListener,
+        PartsFragment.OnIdlingResourceListener,
         DeleteLessonDialogFragment.DeleteLessonDialogListener {
 
 
@@ -69,13 +74,18 @@ public class MainActivity extends AppCompatActivity implements
     // Final string to store state information
     private static final String CLICKED_LESSON_ID = "clickedLessonId";
     private static final String SELECTED_LESSON_ID = "selectedLessonId";
+    private static final String CLICKED_LESSON_PART_ID = "clickedLessonPartId";
+    private static final String SELECTED_LESSON_PART_ID = "selectedLessonPartId";
 
     private long clickedLesson_id;
     private long selectedLesson_id;
+    private long clickedLessonPart_id;
+    private long selectedLessonPart_id;
 
     // Menus and buttons
     private Menu mMenu;
     private Toolbar mToolbar;
+    private ActionBar actionBar;
     private FloatingActionButton mButton;
 
     // flag for preference updates
@@ -84,7 +94,10 @@ public class MainActivity extends AppCompatActivity implements
     private Context mContext;
 
     private FrameLayout lessonsContainer;
+    private FrameLayout partsContainer;
+
     private MainFragment mainFragment;
+    private PartsFragment partsFragment;
 
     // The Idling Resource which will be null in production.
     @Nullable
@@ -109,9 +122,15 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Add the toolbar as the defaulr app bar
+        // Add the toolbar as the default app bar
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
+        // Get a support ActionBar corresponding to this toolbar
+        actionBar = getSupportActionBar();
+        if (null != actionBar) {
+            // Disable the Up button
+            actionBar.setDisplayHomeAsUpEnabled(false);
+        }
 
         mContext = this;
 
@@ -121,35 +140,61 @@ public class MainActivity extends AppCompatActivity implements
          to launch the AddLessonActivity.
          */
         mButton = findViewById(R.id.fab_add);
-
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                // Create a new intent to start an AddTaskActivity
-                Intent addTaskIntent = new Intent(MainActivity.this, AddLessonActivity.class);
-                startActivity(addTaskIntent);
+                // Try to action first on the more specific item
+                if (partsContainer.getVisibility() == GONE) {
+                    // Create a new intent to start an AddLessonActivity
+                    Intent addLessonIntent = new Intent(MainActivity.this, AddLessonActivity.class);
+                    startActivity(addLessonIntent);
+                } else if (clickedLesson_id >= 0) {
+                    Log.d(TAG, "onClick clickedLesson_id:" + clickedLesson_id);
+                    // Create a new intent to start an AddLessonPartActivity
+                    Intent addLessonPartIntent = new Intent(MainActivity.this, AddLessonPartActivity.class);
+                    addLessonPartIntent.putExtra(CLICKED_LESSON_ID, clickedLesson_id);
+                    startActivity(addLessonPartIntent);
+                } else {
+                    // Create a new intent to start an AddLessonActivity
+                    Intent addLessonIntent = new Intent(MainActivity.this, AddLessonActivity.class);
+                    startActivity(addLessonIntent);
+                }
             }
         });
 
         lessonsContainer = findViewById(R.id.lessons_container);
+        partsContainer = findViewById(R.id.parts_container);
 
         // Initialize the data vars for this class
         if (null != savedInstanceState) {
             clickedLesson_id = savedInstanceState.getLong(CLICKED_LESSON_ID);
             selectedLesson_id = savedInstanceState.getLong(SELECTED_LESSON_ID);
+            clickedLessonPart_id = savedInstanceState.getLong(CLICKED_LESSON_PART_ID);
+            selectedLessonPart_id = savedInstanceState.getLong(SELECTED_LESSON_PART_ID);
+        } else {
+            clickedLesson_id = -1;
+            selectedLesson_id = -1;
+            clickedLessonPart_id = -1;
+            selectedLessonPart_id = -1;
         }
 
         // Creates the fragment for showing the lessons
         FragmentManager fragmentManager = getSupportFragmentManager();
         // Only create fragment when needed
         if (savedInstanceState == null) {
-            Log.v(TAG, "creating fragment");
+            Log.v(TAG, "creating MainFragment");
             mainFragment = new MainFragment();
             fragmentManager.beginTransaction()
                     .replace(R.id.lessons_container, mainFragment, "MainFragment")
                     .commit();
+            Log.v(TAG, "creating PartsFragment");
+            partsFragment = new PartsFragment();
+            fragmentManager.beginTransaction()
+                    .replace(R.id.parts_container, partsFragment, "PartsFragment")
+                    .commit();
         } else {
             mainFragment = (MainFragment) fragmentManager.findFragmentByTag("MainFragment");
+            partsFragment = (PartsFragment) fragmentManager.findFragmentByTag("PartsFragment");
         }
 
         // Get the IdlingResource instance
@@ -180,6 +225,8 @@ public class MainActivity extends AppCompatActivity implements
 
         savedInstanceState.putLong(CLICKED_LESSON_ID, clickedLesson_id);
         savedInstanceState.putLong(SELECTED_LESSON_ID, selectedLesson_id);
+        savedInstanceState.putLong(CLICKED_LESSON_PART_ID, clickedLessonPart_id);
+        savedInstanceState.putLong(SELECTED_LESSON_PART_ID, selectedLessonPart_id);
 
         super.onSaveInstanceState(savedInstanceState);
     }
@@ -236,7 +283,7 @@ public class MainActivity extends AppCompatActivity implements
             mMenu.findItem(R.id.action_edit).setVisible(false);
             mMenu.findItem(R.id.action_upload).setVisible(false);
             mMenu.findItem(R.id.action_refresh).setVisible(true);
-            mButton.setVisibility(View.GONE);
+            mButton.setVisibility(GONE);
         }
 
         if (queryOption.equals(this.getString(R.string.pref_mode_create))) {
@@ -246,7 +293,7 @@ public class MainActivity extends AppCompatActivity implements
             mMenu.findItem(R.id.action_edit).setVisible(true);
             mMenu.findItem(R.id.action_upload).setVisible(true);
             mMenu.findItem(R.id.action_refresh).setVisible(false);
-            mButton.setVisibility(View.VISIBLE);
+            mButton.setVisibility(VISIBLE);
         }
 
         return true;
@@ -270,10 +317,12 @@ public class MainActivity extends AppCompatActivity implements
                 mMenu.findItem(R.id.action_edit).setVisible(false);
                 mMenu.findItem(R.id.action_upload).setVisible(false);
                 mMenu.findItem(R.id.action_refresh).setVisible(true);
-                mButton.setVisibility(View.GONE);
+                mButton.setVisibility(GONE);
                 // Deselect the last view selected
                 mainFragment.deselectViews();
+                partsFragment.deselectViews();
                 selectedLesson_id = -1;
+                selectedLessonPart_id = -1;
                 Log.d(TAG, "View mode selected");
                 break;
 
@@ -286,7 +335,7 @@ public class MainActivity extends AppCompatActivity implements
                 mMenu.findItem(R.id.action_edit).setVisible(true);
                 mMenu.findItem(R.id.action_upload).setVisible(true);
                 mMenu.findItem(R.id.action_refresh).setVisible(false);
-                mButton.setVisibility(View.VISIBLE);
+                mButton.setVisibility(VISIBLE);
                 Log.v(TAG, "Create mode selected");
                 break;
 
@@ -305,7 +354,10 @@ public class MainActivity extends AppCompatActivity implements
 
             case R.id.action_delete:
                 Log.d(TAG, "Deletion action selected");
-                if (selectedLesson_id != -1) {
+                // Try to action first on the more specific item
+                if (selectedLessonPart_id != -1) {
+                    deleteLessonPart(selectedLessonPart_id);
+                } else if (selectedLesson_id != -1) {
                     deleteLesson(selectedLesson_id);
                 } else {
                     Toast.makeText(this,
@@ -315,12 +367,19 @@ public class MainActivity extends AppCompatActivity implements
 
             case R.id.action_edit:
                 Log.d(TAG, "Deletion action selected");
-                if (selectedLesson_id != -1) {
+                // Try to action first on the more specific item
+                if (selectedLessonPart_id != -1) {
+                    editLessonPart(selectedLessonPart_id);
+                } else if (selectedLesson_id != -1) {
                     editLesson(selectedLesson_id);
                 } else {
                     Toast.makeText(this,
-                            "Please, select an item to edit!", Toast.LENGTH_LONG).show();
+                            "Please, select an item to delete!", Toast.LENGTH_LONG).show();
                 }
+                break;
+
+            case android.R.id.home:
+                closePartsFragment();
                 break;
 
             default:
@@ -398,18 +457,64 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
-    // Methods for receiving communication from the MainFragment
+    private void deleteLessonPart(long _id) {
+
+        Toast.makeText(this,
+                "deleteLessonPart", Toast.LENGTH_LONG).show();
+
+    }
+
+
+    private void editLessonPart(long _id) {
+
+        Toast.makeText(this,
+                "editLessonPart", Toast.LENGTH_LONG).show();
+
+    }
+
+    // Helper method for hiding the PartsFragment
+    public void closePartsFragment() {
+        // deselect the views on the fragment that will be closed
+        partsFragment.deselectViews();
+        // clear the reference var
+        selectedLessonPart_id = -1;
+        // Change the views
+        partsContainer.setVisibility(GONE);
+        lessonsContainer.setVisibility(VISIBLE);
+        // Disable the Up button
+        if (null != actionBar) {
+            actionBar.setDisplayHomeAsUpEnabled(false);
+        }
+    }
+
+
+    // Method for receiving communication from the MainFragment
     @Override
     public void onLessonSelected(long _id) {
         selectedLesson_id = _id;
     }
 
+    // Method for receiving communication from the MainFragment
     @Override
     public void onLessonClicked(long _id) {
+
+        Log.d(TAG, "onLessonClicked _id:" + _id);
+
         clickedLesson_id = _id;
+
+        // Show the lesson parts fragment
+        lessonsContainer.setVisibility(GONE);
+        partsContainer.setVisibility(VISIBLE);
+        // Enable the Up button
+        if (null != actionBar) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
+        // Send the data to the fragment
+        partsFragment.serReferenceLesson(_id);
+
     }
 
-    // Methods for receiving communication from the DeleteLessonFragment
+    // Method for receiving communication from the DeleteLessonFragment
     @Override
     public void onDialogPositiveClick(DialogFragment dialog, long _id) {
 
@@ -437,22 +542,31 @@ public class MainActivity extends AppCompatActivity implements
 
     }
 
+    // Method for receiving communication from the DeleteLessonFragment
     @Override
     public void onDialogNegativeClick(DialogFragment dialog) {
-
         Toast.makeText(mContext,
                 "Canceled!", Toast.LENGTH_LONG).show();
-
     }
 
-
-    // Receives from the main fragment the order to setting the idling resource
+    // Receive from the MainFragment and PartsFragment the order to setting the idling resource
     @Override
     public void onIdlingResource(Boolean value) {
-
         if (mIdlingResource != null) {
             mIdlingResource.setIdleState(value);
         }
+    }
+
+    // Receive communication from the PartsFragment
+    @Override
+    public void onPartSelected(long _id) {
+        selectedLessonPart_id = _id;
+    }
+
+    // Receive communication from the PartsFragment
+    @Override
+    public void onPartClicked(long _id) {
+        clickedLessonPart_id = _id;
     }
 
 }

@@ -41,6 +41,14 @@
             android:padding="0dp">
         </FrameLayout>
 
+        <FrameLayout
+            android:id="@+id/parts_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_margin="0dp"
+            android:padding="0dp">
+        </FrameLayout>
+
     </LinearLayout>
 
     <!-- Floating action button that launches AddTaskActivity when clicked -->

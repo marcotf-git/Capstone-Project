@@ -14,11 +14,11 @@
         android:layout_width="match_parent"
         android:layout_marginStart="@dimen/lesson_card_margin_horizontal"
         android:layout_marginEnd="@dimen/lesson_card_margin_horizontal"
-        android:layout_height="@dimen/part_card_height"
+        android:layout_height="@dimen/lesson_card_height"
         card_view:cardCornerRadius="4dp">
 
         <TextView
-            android:id="@+id/tv_lesson_image_error_message_label"
+            android:id="@+id/tv_lesson_part_image_error_message_label"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
@@ -26,21 +26,21 @@
             android:text="@string/illustration_not_available" />
 
         <ImageView
-            android:id="@+id/iv_main_lesson_image"
+            android:id="@+id/iv_main_part_image"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scaleType="centerCrop"
             android:adjustViewBounds="true"
             android:layout_gravity="center_horizontal"
-            android:contentDescription="@string/lesson_image"/>
+            android:contentDescription="@string/part_image"/>
 
         <TextView
-            android:id="@+id/tv_main_lesson_name"
+            android:id="@+id/tv_main_lesson_part_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="start|center_vertical"
             android:padding="16dp"
-            android:text="@string/lesson_name"
+            android:text="@string/lesson_part_name"
             android:textSize="20sp"
             android:visibility="invisible" />
 

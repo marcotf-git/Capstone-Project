@@ -15,16 +15,16 @@ import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 
 
-public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.LessonViewHolder>{
+public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.LessonViewHolder>{
 
 
-    private static final String TAG = LessonsListAdapter.class.getSimpleName();
+    private static final String TAG = PartsListAdapter.class.getSimpleName();
 
     // Store the count of items to be displayed in the recycler view
     private static int viewHolderCount;
 
     // Store the data to be displayed
-    private Cursor lessonsCursor;
+    private Cursor partsCursor;
 
     /**
      * An on-click handler that we've defined to make it easy for an Activity to interface with
@@ -54,18 +54,17 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
      *
      * @param listener Listener for list item clicks
      */
-    LessonsListAdapter(ListItemClickListener listener) {
+    PartsListAdapter(ListItemClickListener listener) {
         mOnClickListener = listener;
         viewHolderCount = 0;
     }
 
 
-    void setLessonsCursorData(Cursor cursor){
+    void setLessonPartsCursorData(Cursor cursor){
         Log.v(TAG, "setLessonsCursorData cursor:" + cursor.toString());
-        this.lessonsCursor = cursor;
+        this.partsCursor = cursor;
         notifyDataSetChanged();
     }
-
 
 
     /**
@@ -76,7 +75,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
      * @param viewGroup The ViewGroup that these ViewHolders are contained within.
      * @param viewType  If your RecyclerView has more than one type of item (which ours doesn't) you
      *                  can use this viewType integer to provide a different layout. See
-     *                  {@link android.support.v7.widget.RecyclerView.Adapter#getItemViewType(int)}
+     *                  {@link RecyclerView.Adapter#getItemViewType(int)}
      *                  for more details.
      * @return A new NumberViewHolder that holds the View for each list item
      */
@@ -86,7 +85,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
 
         Context context = viewGroup.getContext();
 
-        int layoutIdForListItem = R.layout.lessons_list_item;
+        int layoutIdForListItem = R.layout.parts_list_item;
         LayoutInflater inflater = LayoutInflater.from(context);
         boolean shouldAttachToParentImmediately = false;
 
@@ -115,15 +114,15 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
 
         Log.d(TAG, "#" + position);
 
-        if(!lessonsCursor.moveToPosition(position))
+        if(!partsCursor.moveToPosition(position))
             return;
 
-        String lessonName = lessonsCursor.getString(lessonsCursor.
+        String lessonName = partsCursor.getString(partsCursor.
                 getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
 
         if (lessonName != null && !lessonName.equals("")) {
-            holder.lessonTextView.setText(lessonName);
-            holder.lessonTextView.setVisibility(View.VISIBLE);
+            holder.partTextView.setText(lessonName);
+            holder.partTextView.setVisibility(View.VISIBLE);
         }
 
         Log.v(TAG, "onBindViewHolder lessonName:" + lessonName);
@@ -173,8 +172,8 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
     @Override
     public int getItemCount() {
 
-        if (null != lessonsCursor) {
-            return lessonsCursor.getCount();
+        if (null != partsCursor) {
+            return partsCursor.getCount();
         } else {
             return 0;
         }
@@ -187,8 +186,8 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
     class LessonViewHolder extends RecyclerView.ViewHolder
             implements View.OnClickListener, View.OnLongClickListener {
 
-        private ImageView lessonImageView;
-        private TextView lessonTextView;
+        private ImageView partImageView;
+        private TextView partTextView;
         private TextView errorTextView;
 
         final Context context;
@@ -198,7 +197,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
          * TextViews and set an onClickListener to listen for clicks. Those will be handled in the
          * onClick method below.
          * @param itemView The View that you inflated in
-         *                 {@link LessonsListAdapter#onCreateViewHolder(ViewGroup, int)}
+         *                 {@link PartsListAdapter#onCreateViewHolder(ViewGroup, int)}
          */
         private LessonViewHolder(View itemView) {
 
@@ -206,9 +205,9 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
 
             context = itemView.getContext();
 
-            lessonImageView =  itemView.findViewById(R.id.iv_main_lesson_image);
-            lessonTextView = itemView.findViewById(R.id.tv_main_lesson_name);
-            errorTextView = itemView.findViewById(R.id.tv_lesson_image_error_message_label);
+            partImageView =  itemView.findViewById(R.id.iv_main_part_image);
+            partTextView = itemView.findViewById(R.id.tv_main_lesson_part_name);
+            errorTextView = itemView.findViewById(R.id.tv_lesson_part_image_error_message_label);
 
             // Call setOnClickListener on the View passed into the constructor
             // (use 'this' as the OnClickListener)
@@ -228,22 +227,22 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
 
             int clickedItemIndex = getAdapterPosition();
 
-            if(!lessonsCursor.moveToPosition(clickedItemIndex))
+            if(!partsCursor.moveToPosition(clickedItemIndex))
                 return;
 
-            long lesson_id = lessonsCursor.getLong(lessonsCursor.
-                    getColumnIndex(LessonsContract.MyLessonsEntry._ID));
-            String lessonName = lessonsCursor.getString(lessonsCursor.
-                    getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
+            long lesson_part_id = partsCursor.getLong(partsCursor.
+                    getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
+            String lessonPartTitle = partsCursor.getString(partsCursor.
+                    getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
 
-            //Log.v(TAG, "onClick lessonName:" + lessonName);
+            //Log.v(TAG, "onClick lessonPartTitle:" + lessonPartTitle);
 
             // Calls the method implemented in the main activity
             mOnClickListener.onListItemClick(
                     view,
                     clickedItemIndex,
-                    lesson_id,
-                    lessonName);
+                    lesson_part_id,
+                    lessonPartTitle);
 
         }
 
@@ -255,22 +254,22 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
         public boolean onLongClick(View view) {
             int clickedItemIndex = getAdapterPosition();
 
-            if(!lessonsCursor.moveToPosition(clickedItemIndex))
+            if(!partsCursor.moveToPosition(clickedItemIndex))
                 return true;
 
-            long lesson_id = lessonsCursor.getLong(lessonsCursor.
-                    getColumnIndex(LessonsContract.MyLessonsEntry._ID));
-            String lessonName = lessonsCursor.getString(lessonsCursor.
-                    getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
+            long lessonPart_id = partsCursor.getLong(partsCursor.
+                    getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
+            String lessonPartTitle = partsCursor.getString(partsCursor.
+                    getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
 
-            //Log.v(TAG, "onLongClick lessonName:" + lessonName);
+            //Log.v(TAG, "onClick lessonPartTitle:" + lessonPartTitle);
 
             // Calls the method implemented in the main activity
             mOnClickListener.onListItemLongClick(
                     view,
                     clickedItemIndex,
-                    lesson_id,
-                    lessonName);
+                    lessonPart_id,
+                    lessonPartTitle);
 
             return true;
         }

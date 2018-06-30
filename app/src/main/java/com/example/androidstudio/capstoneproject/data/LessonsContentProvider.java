@@ -19,6 +19,8 @@ public class LessonsContentProvider extends ContentProvider {
     // and related ints (101, 102, ..) for items in that directory.
     public static final int MY_LESSONS = 100;
     public static final int MY_LESSON_WITH_ID = 101;
+    public static final int MY_LESSON_PARTS = 200;
+    public static final int MY_LESSON_PART_WITH_ID = 201;
 
     // Declare a static variable for the Uri matcher
     private static final UriMatcher sUriMatcher = buildUriMatcher();
@@ -39,6 +41,8 @@ public class LessonsContentProvider extends ContentProvider {
          */
         uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSONS, MY_LESSONS);
         uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSONS + "/#", MY_LESSON_WITH_ID);
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSON_PARTS, MY_LESSON_PARTS);
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSON_PARTS + "/#", MY_LESSON_PART_WITH_ID);
 
         return uriMatcher;
 
@@ -71,9 +75,19 @@ public class LessonsContentProvider extends ContentProvider {
             case MY_LESSONS:
                 // Insert new values into the database
                 // Inserting values into my_lessons table
-                long _id = db.insert(LessonsContract.MyLessonsEntry.TABLE_NAME, null, values);
-                if ( _id > 0 ) {
-                    returnUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, _id);
+                long lesson_id = db.insert(LessonsContract.MyLessonsEntry.TABLE_NAME, null, values);
+                if ( lesson_id > 0 ) {
+                    returnUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, lesson_id);
+                } else {
+                    throw new SQLException("Failed to insert row into " + uri);
+                }
+                break;
+            case MY_LESSON_PARTS:
+                // Insert new values into the database
+                // Inserting values into my_lesson_parts table
+                long part_id = db.insert(LessonsContract.MyLessonPartsEntry.TABLE_NAME, null, values);
+                if ( part_id > 0 ) {
+                    returnUri = ContentUris.withAppendedId(LessonsContract.MyLessonPartsEntry.CONTENT_URI, part_id);
                 } else {
                     throw new SQLException("Failed to insert row into " + uri);
                 }
@@ -111,37 +125,59 @@ public class LessonsContentProvider extends ContentProvider {
         switch (match) {
             // Query for the my_lessons directory
             case MY_LESSONS:
-//                retCursor =  db.query(LessonsContract.MyLessonsEntry.TABLE_NAME,
-//                        projection,
-//                        selection,
-//                        selectionArgs,
-//                        null,
-//                        null,
-//                        sortOrder);
+                retCursor =  db.query(LessonsContract.MyLessonsEntry.TABLE_NAME,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null,
+                        null,
+                        sortOrder);
 
                 // SQL reference:
                 // public Cursor rawQuery (String sql,
                 //    String[] selectionArgs)
-                String SQL_QUERY_ENTRIES = "SELECT * FROM " + LessonsContract.MyLessonsEntry.TABLE_NAME;
-                retCursor = db.rawQuery(SQL_QUERY_ENTRIES, null);
+                //String SQL_QUERY_ENTRIES = "SELECT * FROM " + LessonsContract.MyLessonsEntry.TABLE_NAME;
                 break;
 
             case MY_LESSON_WITH_ID:
                 // Get the lesson "_id" from the URI path
-                String _id = uri.getPathSegments().get(1);
+                String lesson_id = uri.getPathSegments().get(1);
                 // Use selections/selectionArgs to filter for this "_id"
-//                retCursor =  db.query(LessonsContract.MyLessonsEntry.TABLE_NAME,
-//                        projection,
-//                        "_id=?",
-//                        new String[]{_id},
-//                        null,
-//                        null,
-//                        null);
+                retCursor =  db.query(LessonsContract.MyLessonsEntry.TABLE_NAME,
+                        projection,
+                        "_id=?",
+                        new String[]{lesson_id},
+                        null,
+                        null,
+                        null);
 
-                String SQL_QUERY_WITH_ID_ENTRIES = "SELECT * FROM " + LessonsContract.MyLessonsEntry.TABLE_NAME +
-                        " WHERE " + LessonsContract.MyLessonsEntry._ID + "=?";
-                String[] argsQueryWithId = {_id};
-                retCursor = db.rawQuery(SQL_QUERY_WITH_ID_ENTRIES, argsQueryWithId);
+                //String SQL_QUERY_WITH_ID_ENTRIES = "SELECT * FROM " + LessonsContract.MyLessonsEntry.TABLE_NAME +
+                //        " WHERE " + LessonsContract.MyLessonsEntry._ID + "=?";
+                //String[] argsQueryWithId = {lesson_id};
+                //retCursor = db.rawQuery(SQL_QUERY_WITH_ID_ENTRIES, argsQueryWithId);
+                break;
+
+            case MY_LESSON_PARTS:
+                retCursor =  db.query(LessonsContract.MyLessonPartsEntry.TABLE_NAME,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null,
+                        null,
+                        sortOrder);
+                break;
+
+            case MY_LESSON_PART_WITH_ID:
+                // Get the part "_id" from the URI path
+                String part_id = uri.getPathSegments().get(1);
+                // Use selections/selectionArgs to filter for this "_id"
+                retCursor =  db.query(LessonsContract.MyLessonPartsEntry.TABLE_NAME,
+                        projection,
+                        "_id=?",
+                        new String[]{part_id},
+                        null,
+                        null,
+                        null);
                 break;
 
             // Default exception
@@ -166,8 +202,8 @@ public class LessonsContentProvider extends ContentProvider {
 
         int match = sUriMatcher.match(uri);
 
-        // Keep track of the number of deleted lessons
-        int lessonsDeleted; // starts as 0
+        // Keep track of the number of deleted rows
+        int rowsDeleted; // starts as 0
 
         // Write the code to delete a single row of data
         // [Hint] Use selections to delete an item by its row ID
@@ -175,17 +211,26 @@ public class LessonsContentProvider extends ContentProvider {
             // Handle the single item case, recognized by the _id included in the URI path
             case MY_LESSON_WITH_ID:
                 // Get the lesson "_id" from the URI path
-                String _id = uri.getPathSegments().get(1);
+                String lesson_id = uri.getPathSegments().get(1);
                 // Use selections/selectionArgs to filter for this "_id"
-                lessonsDeleted = db.delete(LessonsContract.MyLessonsEntry.TABLE_NAME,
-                        "_id=?", new String[]{_id});
+                rowsDeleted = db.delete(LessonsContract.MyLessonsEntry.TABLE_NAME,
+                        "_id=?", new String[]{lesson_id});
                 break;
+
+            case MY_LESSON_PART_WITH_ID:
+                // Get the lesson "_id" from the URI path
+                String part_id = uri.getPathSegments().get(1);
+                // Use selections/selectionArgs to filter for this "_id"
+                rowsDeleted = db.delete(LessonsContract.MyLessonPartsEntry.TABLE_NAME,
+                        "_id=?", new String[]{part_id});
+                break;
+
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
 
         // Notify the resolver of a change and return the number of items deleted
-        if (lessonsDeleted != 0 && (null !=  getContext())) {
+        if (rowsDeleted != 0 && (null !=  getContext())) {
             // A lesson was deleted, set notification
             getContext().getContentResolver().notifyChange(uri, null);
         }
@@ -194,7 +239,7 @@ public class LessonsContentProvider extends ContentProvider {
         db.close();
 
         // Return the number of lessons deleted
-        return lessonsDeleted;
+        return rowsDeleted;
     }
 
 
@@ -207,22 +252,31 @@ public class LessonsContentProvider extends ContentProvider {
         int match = sUriMatcher.match(uri);
 
         // Keep track of if an update occurs
-        int lessonsUpdated;
+        int rowsUpdated;
 
         switch (match) {
             case MY_LESSON_WITH_ID:
                 // update a single lesson by getting the "_id"
-                String _id = uri.getPathSegments().get(1);
+                String lesson_id = uri.getPathSegments().get(1);
                 // Use selections/selectionArgs to filter for this ID
-                lessonsUpdated = db.update(LessonsContract.MyLessonsEntry.TABLE_NAME, values,
-                        "_id=?", new String[]{_id});
+                rowsUpdated = db.update(LessonsContract.MyLessonsEntry.TABLE_NAME, values,
+                        "_id=?", new String[]{lesson_id});
                 break;
+
+            case MY_LESSON_PART_WITH_ID:
+                // update a single lesson part by getting the "_id"
+                String part_id = uri.getPathSegments().get(1);
+                // Use selections/selectionArgs to filter for this ID
+                rowsUpdated = db.update(LessonsContract.MyLessonPartsEntry.TABLE_NAME, values,
+                        "_id=?", new String[]{part_id});
+                break;
+
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
 
         // Notify the resolver of a lesson was updated
-        if (lessonsUpdated != 0) {
+        if (rowsUpdated != 0) {
             getContext().getContentResolver().notifyChange(uri, null);
         }
 
@@ -230,7 +284,7 @@ public class LessonsContentProvider extends ContentProvider {
         db.close();
 
         // Return the number of lessons updated
-        return lessonsUpdated;
+        return rowsUpdated;
     }
 
 
