@@ -2,6 +2,7 @@ package com.example.androidstudio.capstoneproject.ui;
 
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
@@ -12,6 +13,7 @@ import android.support.annotation.VisibleForTesting;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.test.espresso.IdlingResource;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
@@ -64,7 +66,8 @@ import java.util.Objects;
 public class MainActivity extends AppCompatActivity implements
         SharedPreferences.OnSharedPreferenceChangeListener,
         LoaderManager.LoaderCallbacks<Cursor>,
-        MainFragment.OnLessonListener {
+        MainFragment.OnLessonListener,
+        DeleteLessonDialogFragment.DeleteLessonDialogListener {
 
 
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -130,10 +133,23 @@ public class MainActivity extends AppCompatActivity implements
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
 
-        // Floating action button
+        mContext = this;
+
+        /*
+         Set the Floating Action Button (FAB) to its corresponding View.
+         Attach an OnClickListener to it, so that when it's clicked, a new intent will be created
+         to launch the AddLessonActivity.
+         */
         mButton = findViewById(R.id.fab_add);
 
-        mContext = this;
+        mButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // Create a new intent to start an AddTaskActivity
+                Intent addTaskIntent = new Intent(MainActivity.this, AddLessonActivity.class);
+                startActivity(addTaskIntent);
+            }
+        });
 
         lessonsContainer = findViewById(R.id.lessons_container);
 
@@ -143,8 +159,8 @@ public class MainActivity extends AppCompatActivity implements
             selectedLesson_id = savedInstanceState.getLong(SELECTED_LESSON_ID);
         }
 
+        // Creates the fragment for showing the lessons
         FragmentManager fragmentManager = getSupportFragmentManager();
-
         // Only create fragment when needed
         if (savedInstanceState == null) {
             Log.v(TAG, "creating fragment");
@@ -203,7 +219,7 @@ public class MainActivity extends AppCompatActivity implements
         Log.v("onStart", "on start");
 
         if (flag_preferences_updates) {
-            Log.v("onStart", "preferences changed");
+            Log.d("onStart", "preferences changed");
             updateView();
         }
 
@@ -259,14 +275,6 @@ public class MainActivity extends AppCompatActivity implements
             mButton.setVisibility(View.VISIBLE);
         }
 
-        mButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Here's a Snackbar", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-
         return true;
     }
 
@@ -291,7 +299,7 @@ public class MainActivity extends AppCompatActivity implements
                 // Deselect the last view selected
                 mainFragment.deselectViews();
                 selectedLesson_id = -1;
-                Log.v(TAG, "View mode selected");
+                Log.d(TAG, "View mode selected");
                 break;
 
             case R.id.select_create:
@@ -314,7 +322,7 @@ public class MainActivity extends AppCompatActivity implements
                 break;
 
             case R.id.action_delete:
-                Log.v(TAG, "Deletion action selected");
+                Log.d(TAG, "Deletion action selected");
                 if (selectedLesson_id != -1) {
                     deleteLesson(selectedLesson_id);
                 } else {
@@ -339,7 +347,7 @@ public class MainActivity extends AppCompatActivity implements
         String lessonsQueryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
                 this.getString(R.string.pref_mode_view));
 
-        Log.v(TAG, "onSharedPreferenceChanged lessonsQueryOption:" + lessonsQueryOption);
+        Log.d(TAG, "onSharedPreferenceChanged lessonsQueryOption:" + lessonsQueryOption);
 
         updateView();
 
@@ -359,7 +367,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public Loader<Cursor> onCreateLoader(int loaderId, Bundle bundle) {
 
-        Log.v(TAG, "onCreateLoader loaderId:" + loaderId);
+        Log.d(TAG, "onCreateLoader loaderId:" + loaderId);
 
         switch (loaderId) {
 
@@ -443,29 +451,54 @@ public class MainActivity extends AppCompatActivity implements
 
         Log.v(TAG, "deleteLesson _id:" + _id);
 
-        ContentResolver contentResolver = mContext.getContentResolver();
-
-        /* The delete method deletes the row by its _id */
-        Uri uriToDelete = LessonsContract.MyLessonsEntry.CONTENT_URI.buildUpon()
-                .appendPath("" + _id + "").build();
-
-        Log.v("Testing", "Uri to delete:" + uriToDelete.toString());
-
-        int numberOfLessonsDeleted = contentResolver.delete(uriToDelete, null, null);
-
-        if (numberOfLessonsDeleted > 0) {
-            Snackbar mySnackbar = Snackbar.make(lessonsContainer,
-                    numberOfLessonsDeleted + " item removed", Snackbar.LENGTH_LONG);
-            mySnackbar.show();
-        }
-
-        // Deselect the last view selected
-        mainFragment.deselectViews();
-        selectedLesson_id = -1;
+        // Call the fragment for showing the delete dialog
+        DialogFragment deleteLessonFragment = new DeleteLessonDialogFragment();
+        // Pass the _id of the lesson
+        Bundle bundle = new Bundle();
+        bundle.putLong("_id", _id);
+        deleteLessonFragment.setArguments(bundle);
+        // Show the dialog box
+        deleteLessonFragment.show(getSupportFragmentManager(), "DeleteLessonDialogFragment");
 
     }
 
 
+    @Override
+    public void onDialogPositiveClick(DialogFragment dialog, long _id) {
 
+        Toast.makeText(mContext,
+                "Deleting!", Toast.LENGTH_LONG).show();
+
+        ContentResolver contentResolver = mContext.getContentResolver();
+        /* The delete method deletes the row by its _id */
+        Uri uriToDelete = LessonsContract.MyLessonsEntry.CONTENT_URI.buildUpon()
+                .appendPath("" + _id + "").build();
+
+        Log.d(TAG, "onDialogPositiveClick: Uri to delete:" + uriToDelete.toString());
+
+        int numberOfLessonsDeleted = contentResolver.delete(uriToDelete, null, null);
+
+        if (numberOfLessonsDeleted > 0) {
+            Toast.makeText(this,
+                    numberOfLessonsDeleted + " item(s) removed!", Toast.LENGTH_LONG).show();
+
+//            Snackbar mySnackbar = Snackbar.make(lessonsContainer,
+//                    numberOfLessonsDeleted + " item removed", Snackbar.LENGTH_LONG);
+//            mySnackbar.show();
+
+            // Deselect the last view selected
+            mainFragment.deselectViews();
+            selectedLesson_id = -1;
+        }
+
+    }
+
+    @Override
+    public void onDialogNegativeClick(DialogFragment dialog) {
+
+        Toast.makeText(mContext,
+                "Canceled!", Toast.LENGTH_LONG).show();
+
+    }
 
 }
