@@ -43,4 +43,17 @@
 
     </LinearLayout>
 
+    <!-- Floating action button that launches AddTaskActivity when clicked -->
+    <android.support.design.widget.FloatingActionButton
+        android:id="@+id/fab_add"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/fab_margin"
+        app:elevation="@dimen/fab_elevation"
+        app:pressedTranslationZ="@dimen/fab_press_translation_z"
+        android:contentDescription="@string/action_add"
+        android:src="@drawable/ic_action_add"
+        app:fabSize="normal"
+        android:layout_gravity="bottom|end" />
+
 </android.support.design.widget.CoordinatorLayout>

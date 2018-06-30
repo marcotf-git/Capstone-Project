@@ -20,6 +20,6 @@
     <string name="menu_action_delete_label">Delete</string>
     <string name="menu_action_upload_label">Upload</string>
     <string name="menu_action_edit_label">Edit</string>
-    <string name="menu_action_add_label">Add</string>
+    <string name="action_add">Button for Adding Item</string>
 
 </resources>

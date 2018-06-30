@@ -9,6 +9,7 @@ import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.test.espresso.IdlingResource;
 import android.support.v4.app.FragmentManager;
@@ -22,6 +23,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
@@ -74,8 +76,10 @@ public class MainActivity extends AppCompatActivity implements
     private long clickedLesson_id;
     private long selectedLesson_id;
 
+    // Menus and buttons
     private Menu mMenu;
     private Toolbar mToolbar;
+    private FloatingActionButton mButton;
 
     // flag for preference updates
     private static boolean flag_preferences_updates = false;
@@ -125,6 +129,9 @@ public class MainActivity extends AppCompatActivity implements
         // Add the toolbar as the defaulr app bar
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
+
+        // Floating action button
+        mButton = findViewById(R.id.fab_add);
 
         mContext = this;
 
@@ -236,15 +243,29 @@ public class MainActivity extends AppCompatActivity implements
             menu.findItem(R.id.select_view).setChecked(true);
             // Prepare the visibility of the creation action items
             mMenu.findItem(R.id.action_delete).setVisible(false);
+            mMenu.findItem(R.id.action_edit).setVisible(false);
+            mMenu.findItem(R.id.action_upload).setVisible(false);
             mMenu.findItem(R.id.action_refresh).setVisible(true);
+            mButton.setVisibility(View.GONE);
         }
 
         if (queryOption.equals(this.getString(R.string.pref_mode_create))) {
             menu.findItem(R.id.select_create).setChecked(true);
             // Prepare the visibility of the creation action items
             mMenu.findItem(R.id.action_delete).setVisible(true);
+            mMenu.findItem(R.id.action_edit).setVisible(true);
+            mMenu.findItem(R.id.action_upload).setVisible(true);
             mMenu.findItem(R.id.action_refresh).setVisible(false);
+            mButton.setVisibility(View.VISIBLE);
         }
+
+        mButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, "Here's a Snackbar", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        });
 
         return true;
     }
@@ -263,7 +284,10 @@ public class MainActivity extends AppCompatActivity implements
                                 this.getString(R.string.pref_mode_view)).apply();
                 // Set visibility of action icons
                 mMenu.findItem(R.id.action_delete).setVisible(false);
+                mMenu.findItem(R.id.action_edit).setVisible(false);
+                mMenu.findItem(R.id.action_upload).setVisible(false);
                 mMenu.findItem(R.id.action_refresh).setVisible(true);
+                mButton.setVisibility(View.GONE);
                 // Deselect the last view selected
                 mainFragment.deselectViews();
                 selectedLesson_id = -1;
@@ -276,7 +300,10 @@ public class MainActivity extends AppCompatActivity implements
                                 this.getString(R.string.pref_mode_create)).apply();
                 // Set visibility of action icons
                 mMenu.findItem(R.id.action_delete).setVisible(true);
+                mMenu.findItem(R.id.action_edit).setVisible(true);
+                mMenu.findItem(R.id.action_upload).setVisible(true);
                 mMenu.findItem(R.id.action_refresh).setVisible(false);
+                mButton.setVisibility(View.VISIBLE);
                 Log.v(TAG, "Create mode selected");
                 break;
 
