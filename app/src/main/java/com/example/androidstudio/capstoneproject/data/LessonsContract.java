@@ -35,7 +35,7 @@ public class LessonsContract {
          */
         //public static final String COLUMN_LESSON_ID = "id";
 
-        public static final String COLUMN_LESSON_NAME = "name";
+        public static final String COLUMN_LESSON_TITLE = "title";
 
     }
 

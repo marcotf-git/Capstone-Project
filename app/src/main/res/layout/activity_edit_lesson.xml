@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.AddLessonActivity"
+    tools:context=".ui.EditLessonActivity"
     android:orientation="vertical">
 
     <android.support.v7.widget.Toolbar
@@ -19,21 +19,21 @@
         app:contentInsetStart="72dp"
         app:layout_scrollFlags="snap" />
 
-    <!-- EditText for getting lesson title input -->
+    <!-- EditText for editing lesson title -->
     <TextView
         android:id="@+id/textView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
         android:padding="16dp"
-        android:text="@string/add_lesson_title_label" />
+        android:text="@string/edit_lesson_title_label" />
 
     <EditText
-        android:id="@+id/addTextLessonTitle"
+        android:id="@+id/editTextLessonTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="start"
-        android:hint="@string/add_lesson_title"
+        android:hint="@string/edit_lesson_title"
         android:inputType="textMultiLine"
         android:padding="16dp"
         android:layout_marginBottom= "@dimen/activity_horizontal_margin"/>
@@ -45,14 +45,14 @@
         android:orientation="horizontal">
 
         <Button
-            android:id="@+id/addButton"
+            android:id="@+id/editButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_weight="1"
             android:background="@color/colorPrimary"
-            android:onClick="onClickAddLesson"
-            android:text="@string/add_button"
+            android:onClick="onClickEditLesson"
+            android:text="@string/edit_button"
             android:textColor="@android:color/primary_text_dark" />
 
         <Button
@@ -65,7 +65,6 @@
             android:onClick="onClickCancel"
             android:text="@string/cancel_button"
             android:textColor="@android:color/primary_text_dark" />
-
     </LinearLayout>
 
 </LinearLayout>

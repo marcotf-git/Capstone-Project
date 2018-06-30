@@ -29,5 +29,11 @@
     <string name="dialog_delete_lesson">Delete the lesson?</string>
     <string name="delete">Delete</string>
     <string name="cancel">Cancel</string>
+    <string name="title_activity_edit_lesson">Edit Lesson Activity</string>
+    <string name="edit_lesson_title">Please, edit the Lesson Title</string>
+    <string name="add_lesson_title_label">Add Lesson Title</string>
+    <string name="edit_lesson_title_label">Edit Lesson Title</string>
+    <string name="edit_button">Edit</string>
+    <string name="cancel_button">Cancel</string>
 
 </resources>

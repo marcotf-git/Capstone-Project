@@ -11,7 +11,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.test.espresso.IdlingResource;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentManager;
@@ -34,7 +33,6 @@ import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.example.androidstudio.capstoneproject.data.TestUtil;
 
-import java.util.Objects;
 
 
 /**
@@ -56,8 +54,8 @@ import java.util.Objects;
  * In the 'view' mode, if the user shows the option to sync the database, it will call a task ....
  * In the 'create' mode, if the user selects the option to add a lesson title, it will open another
  * activity AddLessonActivity to add the title. If the user select to delete and then click on an item,
- * the item will be deleted after a confirmation. If the user select to edit and then click, it will
- * open an activity EditLessonActivity to edit that item.
+ * the item will be deleted after a confirmation. The confirmation is handled by a fragment.
+ * If the user select to edit and then click, it will open an activity EditLessonActivity to edit that item.
  *
  *
  *
@@ -94,21 +92,10 @@ public class MainActivity extends AppCompatActivity implements
     private FrameLayout lessonsContainer;
     private MainFragment mainFragment;
 
-    // Methods for receiving communication from the MainFragment
-    @Override
-    public void onLessonSelected(long _id) {
-        selectedLesson_id = _id;
-    }
-
-    @Override
-    public void onLessonClicked(long _id) {
-        clickedLesson_id = _id;
-    }
 
     // The Idling Resource which will be null in production.
     @Nullable
     private SimpleIdlingResource mIdlingResource;
-
 
     /**
      * Only called from test, creates and returns a new {@link SimpleIdlingResource}.
@@ -121,7 +108,6 @@ public class MainActivity extends AppCompatActivity implements
         }
         return mIdlingResource;
     }
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -157,6 +143,10 @@ public class MainActivity extends AppCompatActivity implements
         if (null != savedInstanceState) {
             clickedLesson_id = savedInstanceState.getLong(CLICKED_LESSON_ID);
             selectedLesson_id = savedInstanceState.getLong(SELECTED_LESSON_ID);
+
+        } else {
+            // Insert data for testing
+            TestUtil.insertFakeData(this);
         }
 
         // Creates the fragment for showing the lessons
@@ -191,8 +181,6 @@ public class MainActivity extends AppCompatActivity implements
         //Controller controller = new Controller();
         //controller.start(this);
 
-        // Insert data for testing
-        //TestUtil.insertFakeData(this);
 
         // Query the database and set the adapter with the cursor data
         getSupportLoaderManager().initLoader(ID_LESSONS_LOADER, null, this);
@@ -278,6 +266,7 @@ public class MainActivity extends AppCompatActivity implements
         return true;
     }
 
+
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
@@ -328,6 +317,16 @@ public class MainActivity extends AppCompatActivity implements
                 } else {
                     Toast.makeText(this,
                             "Please, select an item to delete!", Toast.LENGTH_LONG).show();
+                }
+                break;
+
+            case R.id.action_edit:
+                Log.d(TAG, "Deletion action selected");
+                if (selectedLesson_id != -1) {
+                    editLesson(selectedLesson_id);
+                } else {
+                    Toast.makeText(this,
+                            "Please, select an item to edit!", Toast.LENGTH_LONG).show();
                 }
                 break;
 
@@ -417,9 +416,7 @@ public class MainActivity extends AppCompatActivity implements
          * Since this Loader's data is now invalid, we need to clear the Adapter that is
          * displaying the data.
          */
-
         mainFragment.setCursor(null);
-
     }
 
 
@@ -428,7 +425,6 @@ public class MainActivity extends AppCompatActivity implements
         //Controller.clearRecipesList();
         finish();
         startActivity(getIntent());
-
     }
 
 
@@ -436,11 +432,8 @@ public class MainActivity extends AppCompatActivity implements
      * Helper function to reload data and update the view, called by the shared preference listener
      */
     public void updateView() {
-
         Log.v(TAG, "updateView");
-
         flag_preferences_updates = false;
-
     }
 
 
@@ -463,6 +456,34 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
+    private void editLesson(long _id) {
+
+        Log.d(TAG, "editLesson _id:" + _id);
+
+        // Create a new intent to start an EditTaskActivity
+        Class destinationActivity = EditLessonActivity.class;
+        Intent editLessonIntent = new Intent(mContext, destinationActivity);
+        editLessonIntent.putExtra(SELECTED_LESSON_ID, _id);
+        startActivity(editLessonIntent);
+
+        // Deselect the last view selected
+        mainFragment.deselectViews();
+        selectedLesson_id = -1;
+    }
+
+
+    // Methods for receiving communication from the MainFragment
+    @Override
+    public void onLessonSelected(long _id) {
+        selectedLesson_id = _id;
+    }
+
+    @Override
+    public void onLessonClicked(long _id) {
+        clickedLesson_id = _id;
+    }
+
+    // Methods for receiving communication from the DeleteLessonFragment
     @Override
     public void onDialogPositiveClick(DialogFragment dialog, long _id) {
 
@@ -500,5 +521,6 @@ public class MainActivity extends AppCompatActivity implements
                 "Canceled!", Toast.LENGTH_LONG).show();
 
     }
+
 
 }

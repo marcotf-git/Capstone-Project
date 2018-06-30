@@ -119,7 +119,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
             return;
 
         String lessonName = lessonsCursor.getString(lessonsCursor.
-                getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME));
+                getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
 
         if (lessonName != null && !lessonName.equals("")) {
             holder.lessonTextView.setText(lessonName);
@@ -234,7 +234,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
             long lesson_id = lessonsCursor.getLong(lessonsCursor.
                     getColumnIndex(LessonsContract.MyLessonsEntry._ID));
             String lessonName = lessonsCursor.getString(lessonsCursor.
-                    getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME));
+                    getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
 
             //Log.v(TAG, "onClick recipeName:" + lessonName);
 
@@ -261,7 +261,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
             long lesson_id = lessonsCursor.getLong(lessonsCursor.
                     getColumnIndex(LessonsContract.MyLessonsEntry._ID));
             String lessonName = lessonsCursor.getString(lessonsCursor.
-                    getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME));
+                    getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
 
             //Log.v(TAG, "onLongClick recipeName:" + lessonName);
 

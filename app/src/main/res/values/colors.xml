@@ -7,5 +7,6 @@
 
     <!-- Create a new color, colorPrimaryLight -->
     <color name="colorPrimaryLight">#7986cb</color>
+    <color name="colorAccentLight">#f48fb1</color>
 
 </resources>

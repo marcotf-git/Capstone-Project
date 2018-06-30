@@ -175,7 +175,7 @@ public class TestLessonsContentProvider {
 
         /* Create values to insert */
         ContentValues testLessonValues = new ContentValues();
-        testLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME, "Lesson name");
+        testLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, "Lesson name");
 
         /* TestContentObserver allows us to test if notifyChange was called appropriately */
         TestUtilities.TestContentObserver lessonObserver = TestUtilities.getTestContentObserver();
@@ -235,7 +235,7 @@ public class TestLessonsContentProvider {
 
         /* Create values to insert */
         ContentValues testLessonValues = new ContentValues();
-        testLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME, "Lesson name");
+        testLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, "Lesson name");
 
         /* Insert ContentValues into database and get a row ID back */
         long lessonRowId = database.insert(
@@ -285,7 +285,7 @@ public class TestLessonsContentProvider {
 
         /* Create values to insert */
         ContentValues testLessonValues = new ContentValues();
-        testLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME, "Lesson name 1");
+        testLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, "Lesson name 1");
 
         /* TestContentObserver allows us to test if notifyChange was called appropriately */
         TestUtilities.TestContentObserver lessonObserver = TestUtilities.getTestContentObserver();
@@ -309,7 +309,7 @@ public class TestLessonsContentProvider {
         /* Create values to update */
         ContentValues testEditLessonValues = new ContentValues();
         final String TEST_UPDATE_STRING = "Lesson name 2";
-        testEditLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME, TEST_UPDATE_STRING);
+        testEditLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, TEST_UPDATE_STRING);
 
         Uri updateUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, testId);
 
@@ -334,7 +334,7 @@ public class TestLessonsContentProvider {
         lessonCursor.moveToLast();
 
         String testString = lessonCursor.getString(lessonCursor.
-                getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME));
+                getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
 
         updateProviderFailed = "Update item is different";
         assertEquals(updateProviderFailed, TEST_UPDATE_STRING, testString);
@@ -369,7 +369,7 @@ public class TestLessonsContentProvider {
 
         /* Create a new row of task data */
         ContentValues testLessonValues = new ContentValues();
-        testLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME, "Lesson name");
+        testLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, "Lesson name");
 
         /* Insert ContentValues into database and get a row ID back */
         long lessonRow_id = database.insert(

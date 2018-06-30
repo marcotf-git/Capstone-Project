@@ -116,6 +116,18 @@ public class LessonsContentProvider extends ContentProvider {
                         null,
                         sortOrder);
                 break;
+            case MY_LESSON_WITH_ID:
+                // Get the lesson "_id" from the URI path
+                String _id = uri.getPathSegments().get(1);
+                // Use selections/selectionArgs to filter for this "_id"
+                retCursor =  db.query(LessonsContract.MyLessonsEntry.TABLE_NAME,
+                        projection,
+                        "_id=?",
+                        new String[]{_id},
+                        null,
+                        null,
+                        null);
+                break;
             // Default exception
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
@@ -157,7 +169,7 @@ public class LessonsContentProvider extends ContentProvider {
         }
 
         // Notify the resolver of a change and return the number of items deleted
-        if (lessonsDeleted != 0) {
+        if (lessonsDeleted != 0 && (null !=  getContext())) {
             // A lesson was deleted, set notification
             getContext().getContentResolver().notifyChange(uri, null);
         }

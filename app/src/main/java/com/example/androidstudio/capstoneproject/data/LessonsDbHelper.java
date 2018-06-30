@@ -10,7 +10,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "lessons.db";
 
     // If you change the database schema, you must increment the database version
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     // Constructor
     public LessonsDbHelper(Context context) {
@@ -34,7 +34,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
 
                 //LessonsContract.MyLessonsEntry.COLUMN_LESSON_ID + " TEXT NOT NULL," +
 
-                LessonsContract.MyLessonsEntry.COLUMN_LESSON_NAME + " TEXT NOT NULL," +
+                LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE + " TEXT NOT NULL," +
 
                 /*
                  * To ensure this table can only contain one entry per local lesson, we declare the "_id"
