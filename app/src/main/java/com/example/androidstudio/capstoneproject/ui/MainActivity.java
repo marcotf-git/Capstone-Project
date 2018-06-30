@@ -143,10 +143,6 @@ public class MainActivity extends AppCompatActivity implements
         if (null != savedInstanceState) {
             clickedLesson_id = savedInstanceState.getLong(CLICKED_LESSON_ID);
             selectedLesson_id = savedInstanceState.getLong(SELECTED_LESSON_ID);
-
-        } else {
-            // Insert data for testing
-            TestUtil.insertFakeData(this);
         }
 
         // Creates the fragment for showing the lessons
@@ -180,7 +176,6 @@ public class MainActivity extends AppCompatActivity implements
         // Load data from http with the Retrofit library
         //Controller controller = new Controller();
         //controller.start(this);
-
 
         // Query the database and set the adapter with the cursor data
         getSupportLoaderManager().initLoader(ID_LESSONS_LOADER, null, this);
@@ -308,6 +303,13 @@ public class MainActivity extends AppCompatActivity implements
                 Toast.makeText(this, "Reloading the data", Toast.LENGTH_LONG)
                         .show();
                 refreshActivity();
+                break;
+
+            case R.id.action_insert_fake_data:
+                Log.d(TAG, "Insert fake data action selected");
+                TestUtil.insertFakeData(this);
+                    Toast.makeText(this,
+                            "Fake data inserted!", Toast.LENGTH_LONG).show();
                 break;
 
             case R.id.action_delete:

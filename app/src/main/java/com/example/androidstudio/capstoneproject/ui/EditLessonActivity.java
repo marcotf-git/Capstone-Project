@@ -76,24 +76,33 @@ public class EditLessonActivity extends AppCompatActivity {
                     null);
 
             if (cursor != null) {
+
                 cursor.moveToLast();
                 Log.d(TAG, "cursor:" + cursor.toString());
-                String lessonTitle = cursor.getString(cursor.
-                        getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
 
-                myEditText.setText(lessonTitle);
+                if (cursor.getPosition() == -1) {
+                    Log.e(TAG, "Have no cursor");
+                    Toast.makeText(getBaseContext(),
+                            "Internal error about the database!", Toast.LENGTH_LONG).show();
+                    finish();
+                } else {
+                    String lessonTitle = cursor.getString(cursor.
+                            getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
+
+                    myEditText.setText(lessonTitle);
+                }
 
             } else {
                 Log.e(TAG, "Have no cursor");
                 Toast.makeText(getBaseContext(),
-                        "Internal error about the database", Toast.LENGTH_LONG).show();
+                        "Internal error about the database!", Toast.LENGTH_LONG).show();
                 finish();
             }
 
         } else {
             Log.e(TAG, "Did not find content resolver");
             Toast.makeText(getBaseContext(),
-                    "Internal error about the database", Toast.LENGTH_LONG).show();
+                    "Internal error about the database!", Toast.LENGTH_LONG).show();
             finish();
         }
 

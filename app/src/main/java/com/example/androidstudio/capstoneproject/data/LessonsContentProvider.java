@@ -87,6 +87,9 @@ public class LessonsContentProvider extends ContentProvider {
         // Notify the resolver if the uri has been changed, and return the newly inserted URI
         getContext().getContentResolver().notifyChange(uri, null);
 
+        // Close database
+        db.close();
+
         // Return constructed uri (this points to the newly inserted row of data)
         return returnUri;
     }
@@ -108,26 +111,39 @@ public class LessonsContentProvider extends ContentProvider {
         switch (match) {
             // Query for the my_lessons directory
             case MY_LESSONS:
-                retCursor =  db.query(LessonsContract.MyLessonsEntry.TABLE_NAME,
-                        projection,
-                        selection,
-                        selectionArgs,
-                        null,
-                        null,
-                        sortOrder);
+//                retCursor =  db.query(LessonsContract.MyLessonsEntry.TABLE_NAME,
+//                        projection,
+//                        selection,
+//                        selectionArgs,
+//                        null,
+//                        null,
+//                        sortOrder);
+
+                // SQL reference:
+                // public Cursor rawQuery (String sql,
+                //    String[] selectionArgs)
+                String SQL_QUERY_ENTRIES = "SELECT * FROM " + LessonsContract.MyLessonsEntry.TABLE_NAME;
+                retCursor = db.rawQuery(SQL_QUERY_ENTRIES, null);
                 break;
+
             case MY_LESSON_WITH_ID:
                 // Get the lesson "_id" from the URI path
                 String _id = uri.getPathSegments().get(1);
                 // Use selections/selectionArgs to filter for this "_id"
-                retCursor =  db.query(LessonsContract.MyLessonsEntry.TABLE_NAME,
-                        projection,
-                        "_id=?",
-                        new String[]{_id},
-                        null,
-                        null,
-                        null);
+//                retCursor =  db.query(LessonsContract.MyLessonsEntry.TABLE_NAME,
+//                        projection,
+//                        "_id=?",
+//                        new String[]{_id},
+//                        null,
+//                        null,
+//                        null);
+
+                String SQL_QUERY_WITH_ID_ENTRIES = "SELECT * FROM " + LessonsContract.MyLessonsEntry.TABLE_NAME +
+                        " WHERE " + LessonsContract.MyLessonsEntry._ID + "=?";
+                String[] argsQueryWithId = {_id};
+                retCursor = db.rawQuery(SQL_QUERY_WITH_ID_ENTRIES, argsQueryWithId);
                 break;
+
             // Default exception
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
@@ -136,7 +152,7 @@ public class LessonsContentProvider extends ContentProvider {
         // Set a notification URI on the Cursor and return that Cursor
         retCursor.setNotificationUri(getContext().getContentResolver(), uri);
 
-        // Return the desired Cursor
+        // Return the desired Cursor (must not close the database now)
         return retCursor;
     }
 
@@ -174,6 +190,9 @@ public class LessonsContentProvider extends ContentProvider {
             getContext().getContentResolver().notifyChange(uri, null);
         }
 
+        // Close database
+        db.close();
+
         // Return the number of lessons deleted
         return lessonsDeleted;
     }
@@ -206,6 +225,9 @@ public class LessonsContentProvider extends ContentProvider {
         if (lessonsUpdated != 0) {
             getContext().getContentResolver().notifyChange(uri, null);
         }
+
+        // Close database
+        db.close();
 
         // Return the number of lessons updated
         return lessonsUpdated;

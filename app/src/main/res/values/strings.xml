@@ -35,5 +35,6 @@
     <string name="edit_lesson_title_label">Edit Lesson Title</string>
     <string name="edit_button">Edit</string>
     <string name="cancel_button">Cancel</string>
+    <string name="menu_action_insert_fake_label">Insert Fake Data</string>
 
 </resources>
