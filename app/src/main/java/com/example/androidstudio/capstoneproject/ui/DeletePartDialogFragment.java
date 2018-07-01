@@ -11,22 +11,21 @@ import android.support.v7.app.AlertDialog;
 
 import com.example.androidstudio.capstoneproject.R;
 
+public class DeletePartDialogFragment extends DialogFragment {
 
-public class DeleteLessonDialogFragment extends DialogFragment {
-
-    private long lesson_id;
+    private long lesson_part_id;
     private Context mContext;
 
     /* The activity that creates an instance of this dialog fragment must
      * implement this interface in order to receive event callbacks.
      * Each method passes the DialogFragment in case the host needs to query it. */
-    public interface DeleteLessonDialogListener {
-        void onDialogPositiveClick(DialogFragment dialog, long lesson_id);
-        void onDialogNegativeClick(DialogFragment dialog);
+    public interface DeletePartDialogListener {
+        void onDialogPartPositiveClick(DialogFragment dialog, long lesson_part_id);
+        void onDialogPartNegativeClick(DialogFragment dialog);
     }
 
     // Use this instance of the interface to deliver action events
-    DeleteLessonDialogListener mListener;
+    DeletePartDialogListener mListener;
 
     @Override
     public void onAttach(Context context) {
@@ -35,18 +34,18 @@ public class DeleteLessonDialogFragment extends DialogFragment {
         // Verify that the host activity implements the callback interface
         try {
             // Instantiate the listener so we can send events to the host
-            mListener = (DeleteLessonDialogListener) context;
+            mListener = (DeletePartDialogListener) context;
         } catch (ClassCastException e) {
             // The activity doesn't implement the interface, throw exception
             throw new ClassCastException(context.toString()
-                    + " must implement DeleteLessonDialogListener");
+                    + " must implement DeletePartDialogListener");
         }
     }
 
     @Override
     public void setArguments(@Nullable Bundle args) {
         if (null != args) {
-            this.lesson_id = args.getLong("_id");
+            this.lesson_part_id = args.getLong("_id");
         }
     }
 
@@ -61,16 +60,17 @@ public class DeleteLessonDialogFragment extends DialogFragment {
                 .setPositiveButton(R.string.delete, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         // User confirm the dialog
-                        mListener.onDialogPositiveClick(DeleteLessonDialogFragment.this, lesson_id);
-                     }
+                        mListener.onDialogPartPositiveClick(DeletePartDialogFragment.this, lesson_part_id);
+                    }
                 })
                 .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         // User cancelled the dialog
-                        mListener.onDialogNegativeClick(DeleteLessonDialogFragment.this);
+                        mListener.onDialogPartNegativeClick(DeletePartDialogFragment.this);
                     }
                 });
         // Create the AlertDialog object and return it
         return builder.create();
     }
+
 }

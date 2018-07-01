@@ -66,7 +66,8 @@ public class MainActivity extends AppCompatActivity implements
         MainFragment.OnIdlingResourceListener,
         PartsFragment.OnLessonPartListener,
         PartsFragment.OnIdlingResourceListener,
-        DeleteLessonDialogFragment.DeleteLessonDialogListener {
+        DeleteLessonDialogFragment.DeleteLessonDialogListener,
+        DeletePartDialogFragment.DeletePartDialogListener{
 
 
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -493,8 +494,18 @@ public class MainActivity extends AppCompatActivity implements
 
     private void deleteLessonPart(long _id) {
 
-        Toast.makeText(this,
-                "deleteLessonPart", Toast.LENGTH_LONG).show();
+        Log.v(TAG, "deleteLessonPart _id:" + _id);
+
+        // Call the fragment for showing the delete dialog
+        DialogFragment deleteLessonPartFragment = new DeletePartDialogFragment();
+
+        // Pass the _id of the lesson
+        Bundle bundle = new Bundle();
+        bundle.putLong("_id", _id);
+        deleteLessonPartFragment.setArguments(bundle);
+
+        // Show the dialog box
+        deleteLessonPartFragment.show(getSupportFragmentManager(), "DeletePartDialogFragment");
 
     }
 
@@ -608,6 +619,36 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onPartClicked(long _id) {
         clickedLessonPart_id = _id;
+    }
+
+    // Receive communication form DeleteDialogPartFragment
+    @Override
+    public void onDialogPartPositiveClick(DialogFragment dialog, long _id) {
+
+        ContentResolver contentResolver = mContext.getContentResolver();
+        /* The delete method deletes the row by its _id */
+        Uri uriToDelete = LessonsContract.MyLessonPartsEntry.CONTENT_URI.buildUpon()
+                .appendPath("" + _id + "").build();
+
+        Log.d(TAG, "onDialogPartPositiveClick: Uri to delete:" + uriToDelete.toString());
+
+        int numberOfPartsDeleted = contentResolver.delete(uriToDelete, null, null);
+
+        if (numberOfPartsDeleted > 0) {
+            Toast.makeText(this,
+                    numberOfPartsDeleted + " item(s) removed!", Toast.LENGTH_LONG).show();
+
+            // Deselect the last view selected
+            partsFragment.deselectViews();
+            selectedLessonPart_id = -1;
+        }
+    }
+
+    // Receive communication form DeleteDialogPartFragment
+    @Override
+    public void onDialogPartNegativeClick(DialogFragment dialog) {
+        Toast.makeText(mContext,
+                "Canceled!", Toast.LENGTH_LONG).show();
     }
 
 }
