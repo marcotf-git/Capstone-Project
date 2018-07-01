@@ -43,7 +43,15 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".ui.MainActivity" />
         </activity>
-        <activity android:name=".ui.AddLessonPartActivity"></activity>
+        <activity android:name=".ui.AddLessonPartActivity"
+            android:label="@string/title_activity_add_lesson_part"
+            android:parentActivityName=".ui.MainActivity">
+
+            <!-- Parent activity meta-data to support 4.0 and lower -->
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".ui.MainActivity" />
+        </activity>
     </application>
 
 </manifest>

@@ -30,12 +30,12 @@ public class AddLessonActivity extends AppCompatActivity {
         if(getSupportActionBar()!=null) {
             getSupportActionBar().setDisplayShowTitleEnabled(false);
         }
-        // Get a support ActionBar corresponding to this toolbar
-        ActionBar actionBar = getSupportActionBar();
-        // Enable the Up button
-        if (null != actionBar) {
-            actionBar.setDisplayHomeAsUpEnabled(true);
-        }
+//        // Get a support ActionBar corresponding to this toolbar
+//        ActionBar actionBar = getSupportActionBar();
+//        // Enable the Up button
+//        if (null != actionBar) {
+//            actionBar.setDisplayHomeAsUpEnabled(true);
+//        }
 
     }
 

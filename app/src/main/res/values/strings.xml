@@ -41,5 +41,7 @@
     <string name="lesson_part_name">Lesson Part Name</string>
     <string name="add_lesson_part_title_label">Add Part Title</string>
     <string name="add_lesson_part_title">Please, add the Lesson Part Title!</string>
+    <string name="lesson_title">Lesson Title</string>
+    <string name="title_activity_add_lesson_part">Add Lesson Part Activity</string>
 
 </resources>

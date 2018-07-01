@@ -81,15 +81,17 @@ public class EditLessonActivity extends AppCompatActivity {
                 Log.d(TAG, "cursor:" + cursor.toString());
 
                 if (cursor.getPosition() == -1) {
-                    Log.e(TAG, "Have no cursor");
+                    Log.e(TAG, "Have cursor position -1");
                     Toast.makeText(getBaseContext(),
-                            "Internal error about the database!", Toast.LENGTH_LONG).show();
+                            "No data in the database!", Toast.LENGTH_LONG).show();
+                    cursor.close();
                     finish();
                 } else {
                     String lessonTitle = cursor.getString(cursor.
                             getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
 
                     myEditText.setText(lessonTitle);
+                    cursor.close();
                 }
 
             } else {

@@ -148,13 +148,13 @@ public class MainActivity extends AppCompatActivity implements
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Log.d(TAG, "onClick clickedLesson_id:" + clickedLesson_id);
                 // Try to action first on the more specific item
                 if (partsContainer.getVisibility() == GONE) {
                     // Create a new intent to start an AddLessonActivity
                     Intent addLessonIntent = new Intent(MainActivity.this, AddLessonActivity.class);
                     startActivity(addLessonIntent);
                 } else if (clickedLesson_id >= 0) {
-                    Log.d(TAG, "onClick clickedLesson_id:" + clickedLesson_id);
                     // Create a new intent to start an AddLessonPartActivity
                     Intent addLessonPartIntent = new Intent(MainActivity.this, AddLessonPartActivity.class);
                     addLessonPartIntent.putExtra(CLICKED_LESSON_ID, clickedLesson_id);
@@ -164,9 +164,13 @@ public class MainActivity extends AppCompatActivity implements
                     Intent addLessonIntent = new Intent(MainActivity.this, AddLessonActivity.class);
                     startActivity(addLessonIntent);
                 }
+                // Clear selections on fragments
+                mainFragment.deselectViews();
+                partsFragment.deselectViews();
             }
         });
 
+        // Initialize the activity views
         lessonsContainer = findViewById(R.id.lessons_container);
         partsContainer = findViewById(R.id.parts_container);
 
@@ -192,31 +196,40 @@ public class MainActivity extends AppCompatActivity implements
 
         }
 
-        // Creates the fragment for showing the lessons
+        // Initialize the fragments and its views
         FragmentManager fragmentManager = getSupportFragmentManager();
         // Only create fragment when needed
         if (savedInstanceState == null) {
+
             Log.v(TAG, "creating MainFragment");
             mainFragment = new MainFragment();
             fragmentManager.beginTransaction()
                     .replace(R.id.lessons_container, mainFragment, "MainFragment")
                     .commit();
+
             Log.v(TAG, "creating PartsFragment");
             partsFragment = new PartsFragment();
             fragmentManager.beginTransaction()
                     .replace(R.id.parts_container, partsFragment, "PartsFragment")
                     .commit();
+
         } else {
+
             mainFragment = (MainFragment) fragmentManager.findFragmentByTag("MainFragment");
             partsFragment = (PartsFragment) fragmentManager.findFragmentByTag("PartsFragment");
+
             lessonsContainer.setVisibility(mainVisibility);
             partsContainer.setVisibility(partsVisibility);
+
+            if (partsVisibility == VISIBLE) {
+                actionBar.setDisplayHomeAsUpEnabled(true);
+            }
         }
 
         Log.d(TAG, "lessonsContainer visibility:" + lessonsContainer.getVisibility());
         Log.d(TAG, "partsContainer visibility:" + partsContainer.getVisibility());
 
-        // Get the IdlingResource instance
+        // Get the IdlingResource instance for testing
         getIdlingResource();
 
         /*

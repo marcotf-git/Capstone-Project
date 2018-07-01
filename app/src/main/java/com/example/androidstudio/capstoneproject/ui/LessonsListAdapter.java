@@ -28,6 +28,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
 
     // For selecting a view
     private long selectedItemId;
+    private long deselectedItemId;
 
     /**
      * An on-click handler that we've defined to make it easy for an Activity (or Fragment) to interface with
@@ -227,7 +228,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
             lessonImageView =  itemView.findViewById(R.id.iv_main_lesson_image);
             lessonTextView = itemView.findViewById(R.id.tv_main_lesson_name);
             errorTextView = itemView.findViewById(R.id.tv_lesson_image_error_message_label);
-            parentView = itemView.findViewById(R.id.ll_lesson_title);
+            parentView = itemView;
 
             // Call setOnClickListener on the View passed into the constructor
             // (use 'this' as the OnClickListener)

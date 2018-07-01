@@ -223,7 +223,6 @@ public class PartsFragment extends Fragment implements
         // Deselect the last view selected
         deselectViews();
 
-
         // Select the view if the app is in create mode
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
         String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
@@ -363,6 +362,12 @@ public class PartsFragment extends Fragment implements
             mSelectedView = null;
         }
         selectedLessonPart_id = -1;
+        // Force deselecting all views
+        int i = 0;
+        while (mPartsList.getChildAt(i) != null) {
+            mPartsList.getChildAt(i).setSelected(false);
+            i++;
+        }
     }
 
     // Set the reference to the selected lesson

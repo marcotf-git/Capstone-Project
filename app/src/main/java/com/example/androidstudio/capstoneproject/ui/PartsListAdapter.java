@@ -226,7 +226,7 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
             partImageView =  itemView.findViewById(R.id.iv_main_part_image);
             partTextView = itemView.findViewById(R.id.tv_main_lesson_part_name);
             errorTextView = itemView.findViewById(R.id.tv_lesson_part_image_error_message_label);
-            parentView = itemView.findViewById(R.id.ll_lesson_part_title);
+            parentView = itemView;
 
             // Call setOnClickListener on the View passed into the constructor
             // (use 'this' as the OnClickListener)

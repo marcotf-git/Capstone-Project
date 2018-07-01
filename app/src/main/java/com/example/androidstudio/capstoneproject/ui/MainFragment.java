@@ -230,10 +230,12 @@ public class MainFragment extends Fragment implements
         if (queryOption.equals(this.getString(R.string.pref_mode_create))) {
             // Select the actual view
             view.setSelected(true);
+            mAdapter.setSelectedItemId(selectedLesson_id);
             // Save a reference to the view
             mSelectedView = view;
             // Save the _id of the lesson selected
             selectedLesson_id = lesson_id;
+            // Save in Main Activity
             mLessonCallback.onLessonSelected(selectedLesson_id);
         }
 
@@ -348,7 +350,6 @@ public class MainFragment extends Fragment implements
             // Set the data for the adapter
             mAdapter.setLessonsCursorData(cursor);
             showLessonsDataView();
-
         }
     }
 
@@ -359,6 +360,12 @@ public class MainFragment extends Fragment implements
             mSelectedView = null;
         }
         selectedLesson_id = -1;
+        // Force deselecting all views
+        int i = 0;
+        while (mClassesList.getChildAt(i) != null) {
+            mClassesList.getChildAt(i).setSelected(false);
+            i++;
+        }
     }
 
 }

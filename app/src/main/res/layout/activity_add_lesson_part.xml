@@ -21,6 +21,13 @@
 
     <!-- EditText for getting lesson title input -->
     <TextView
+        android:id="@+id/textLessonTitleView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp"
+        android:text="@string/lesson_title" />
+
+    <TextView
         android:id="@+id/textView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
