@@ -17,13 +17,13 @@ import android.widget.Toast;
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 
-public class EditLessonActivity extends AppCompatActivity {
+public class EditPartActivity extends AppCompatActivity {
 
-    private static final String TAG = EditLessonActivity.class.getSimpleName();
+    private static final String TAG = EditPartActivity.class.getSimpleName();
 
-    private static final String SELECTED_LESSON_ID = "selectedLessonId";
+    private static final String SELECTED_LESSON_PART_ID = "selectedLessonPartId";
 
-    private long selectedLesson_id;
+    private long selectedLessonPartId;
 
     private Uri updateUri;
     private EditText myEditText;
@@ -31,7 +31,7 @@ public class EditLessonActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_edit_lesson);
+        setContentView(R.layout.activity_edit_part);
 
         // toolbar is defined in the layout file
         Toolbar myToolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -47,23 +47,23 @@ public class EditLessonActivity extends AppCompatActivity {
             actionBar.setDisplayHomeAsUpEnabled(false);
         }
 
-        myEditText = findViewById(R.id.editTextLessonTitle);
+        myEditText = findViewById(R.id.editTextLessonPartTitle);
 
         // Recover information from caller activity
         Intent intentThatStartedThisActivity = getIntent();
-        if (intentThatStartedThisActivity.hasExtra(SELECTED_LESSON_ID)) {
-            selectedLesson_id = intentThatStartedThisActivity.getLongExtra(SELECTED_LESSON_ID, -1);
+        if (intentThatStartedThisActivity.hasExtra(SELECTED_LESSON_PART_ID)) {
+            selectedLessonPartId = intentThatStartedThisActivity.getLongExtra(SELECTED_LESSON_PART_ID, -1);
         }
 
         // Copy the data from the database to the text view
-        if (!(selectedLesson_id >= 0)) {
-            Toast.makeText(getBaseContext(), "No Lesson selected!", Toast.LENGTH_LONG).show();
+        if (!(selectedLessonPartId >= 0)) {
+            Toast.makeText(getBaseContext(), "No Lesson Part selected!", Toast.LENGTH_LONG).show();
             finish();
         }
 
-        Log.d(TAG, "onCreate selectedLesson_id:" + selectedLesson_id);
+        Log.d(TAG, "onCreate selectedLessonPartId:" + selectedLessonPartId);
 
-        updateUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, selectedLesson_id);
+        updateUri = ContentUris.withAppendedId(LessonsContract.MyLessonPartsEntry.CONTENT_URI, selectedLessonPartId);
 
         Log.d(TAG, "onCreate updateUri:" + updateUri);
 
@@ -88,10 +88,10 @@ public class EditLessonActivity extends AppCompatActivity {
                     cursor.close();
                     finish();
                 } else {
-                    String lessonTitle = cursor.getString(cursor.
-                            getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
+                    String lessonPartTitle = cursor.getString(cursor.
+                            getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
 
-                    myEditText.setText(lessonTitle);
+                    myEditText.setText(lessonPartTitle);
                     cursor.close();
                 }
 
@@ -112,13 +112,13 @@ public class EditLessonActivity extends AppCompatActivity {
     }
 
     /**
-     * onClickEditLesson is called when the "EDIT" button is clicked.
-     * It retrieves user input and edits that lesson title data into the underlying database.
+     * onClickEditPartLesson is called when the "EDIT" button is clicked.
+     * It retrieves user input and edits that lesson part title data into the underlying database.
      */
-    public void onClickEditLesson(View view) {
+    public void onClickEditPartLesson(View view) {
 
         // Copy the data from the database to the text view
-        if (selectedLesson_id == -1) {
+        if (selectedLessonPartId == -1) {
             Toast.makeText(getBaseContext(), "No Lesson selected!", Toast.LENGTH_LONG).show();
             finish();
         }
@@ -134,7 +134,7 @@ public class EditLessonActivity extends AppCompatActivity {
         // Create new empty ContentValues object
         ContentValues contentValues = new ContentValues();
         // Put the lesson title into the ContentValues
-        contentValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, input);
+        contentValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE, input);
 
         // Insert the content values via a ContentResolver
         int nUpdates = getContentResolver().update(

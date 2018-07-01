@@ -512,8 +512,17 @@ public class MainActivity extends AppCompatActivity implements
 
     private void editLessonPart(long _id) {
 
-        Toast.makeText(this,
-                "editLessonPart", Toast.LENGTH_LONG).show();
+        Log.d(TAG, "editLessonPart _id:" + _id);
+
+        // Create a new intent to start an EditTaskActivity
+        Class destinationActivity = EditPartActivity.class;
+        Intent editLessonPartIntent = new Intent(mContext, destinationActivity);
+        editLessonPartIntent.putExtra(SELECTED_LESSON_PART_ID, _id);
+        startActivity(editLessonPartIntent);
+
+        // Deselect the last view selected
+        partsFragment.deselectViews();
+        selectedLessonPart_id = -1;
 
     }
 
