@@ -15,7 +15,7 @@ import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 
 
-public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.LessonViewHolder>{
+public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.LessonPartViewHolder>{
 
 
     private static final String TAG = PartsListAdapter.class.getSimpleName();
@@ -25,6 +25,9 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
 
     // Store the data to be displayed
     private Cursor partsCursor;
+
+    // For selecting a view
+    private long selectedItemId;
 
     /**
      * An on-click handler that we've defined to make it easy for an Activity to interface with
@@ -46,6 +49,11 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
                                  int clickedItemIndex,
                                  long lesson_id,
                                  String lessonName);
+    }
+
+    // Function that receives communication from Main Fragment for selecting an item
+    public void setSelectedItemId(long _id) {
+        selectedItemId = _id;
     }
 
     /**
@@ -81,7 +89,7 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
      */
     @NonNull
     @Override
-    public LessonViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int viewType) {
+    public LessonPartViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int viewType) {
 
         Context context = viewGroup.getContext();
 
@@ -90,7 +98,7 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
         boolean shouldAttachToParentImmediately = false;
 
         View view = inflater.inflate(layoutIdForListItem, viewGroup, shouldAttachToParentImmediately);
-        LessonViewHolder viewHolder = new LessonViewHolder(view);
+        LessonPartViewHolder viewHolder = new LessonPartViewHolder(view);
 
         viewHolderCount++;
         Log.d(TAG, "onCreateViewHolder: number of ViewHolders created: " + viewHolderCount);
@@ -110,22 +118,31 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
      * @param position The position of the item within the adapter's data set.
      */
     @Override
-    public void onBindViewHolder(@NonNull final LessonViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull final LessonPartViewHolder holder, int position) {
 
         Log.d(TAG, "#" + position);
 
         if(!partsCursor.moveToPosition(position))
             return;
 
-        String lessonName = partsCursor.getString(partsCursor.
-                getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
+        String lessonPartTitle = partsCursor.getString(partsCursor.
+                getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
+        Long item_id = partsCursor.getLong(partsCursor.
+                getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
 
-        if (lessonName != null && !lessonName.equals("")) {
-            holder.partTextView.setText(lessonName);
+        if (lessonPartTitle != null && !lessonPartTitle.equals("")) {
+            holder.partTextView.setText(lessonPartTitle);
             holder.partTextView.setVisibility(View.VISIBLE);
         }
 
-        Log.v(TAG, "onBindViewHolder lessonName:" + lessonName);
+        Log.v(TAG, "onBindViewHolder lessonName:" + lessonPartTitle);
+
+        // For handling the setSelectedView
+        if (selectedItemId >= 0) {
+            if (selectedItemId == item_id) {
+                holder.parentView.setSelected(true);
+            }
+        }
 
         // Retrieve the _id from the cursor and
         //long _id = lessonsCursor.getLong(lessonsCursor.getColumnIndex(LessonsContract.MyLessonsEntry._ID));
@@ -183,12 +200,13 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
     /**
      * Cache of the children views for a list item.
      */
-    class LessonViewHolder extends RecyclerView.ViewHolder
+    class LessonPartViewHolder extends RecyclerView.ViewHolder
             implements View.OnClickListener, View.OnLongClickListener {
 
         private ImageView partImageView;
         private TextView partTextView;
         private TextView errorTextView;
+        private View parentView;
 
         final Context context;
 
@@ -199,7 +217,7 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
          * @param itemView The View that you inflated in
          *                 {@link PartsListAdapter#onCreateViewHolder(ViewGroup, int)}
          */
-        private LessonViewHolder(View itemView) {
+        private LessonPartViewHolder(View itemView) {
 
             super(itemView);
 
@@ -208,6 +226,7 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
             partImageView =  itemView.findViewById(R.id.iv_main_part_image);
             partTextView = itemView.findViewById(R.id.tv_main_lesson_part_name);
             errorTextView = itemView.findViewById(R.id.tv_lesson_part_image_error_message_label);
+            parentView = itemView.findViewById(R.id.ll_lesson_part_title);
 
             // Call setOnClickListener on the View passed into the constructor
             // (use 'this' as the OnClickListener)

@@ -47,6 +47,8 @@ public class MainFragment extends Fragment implements
 
     // Fields for handling the saving and restoring of view state
     private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
+    private static final String SELECTED_LESSON_ID = "selectedLessonId";
+
     private Parcelable recyclerViewState;
 
     private static final int ID_LESSONS_LOADER = 1;
@@ -114,6 +116,9 @@ public class MainFragment extends Fragment implements
             Log.v(TAG, "recovering savedInstanceState");
             recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
             mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+            selectedLesson_id = savedInstanceState.getLong(SELECTED_LESSON_ID);
+        } else {
+            selectedLesson_id = -1;
         }
 
         mLoadingIndicator.setVisibility(View.VISIBLE);
@@ -137,9 +142,11 @@ public class MainFragment extends Fragment implements
     public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
         Parcelable recyclerViewState = mClassesList.getLayoutManager().onSaveInstanceState();
         savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
+        savedInstanceState.putLong(SELECTED_LESSON_ID, selectedLesson_id);
 
         super.onSaveInstanceState(savedInstanceState);
     }
+
 
     /**
      * This method will make the View for data visible and hide the error message.
@@ -181,16 +188,15 @@ public class MainFragment extends Fragment implements
 
         Log.v(TAG, "onListItemClick lessonName:" + lessonName);
 
-        mLessonCallback.onLessonClicked(lesson_id);
-
-        // Deselect with one click
-        // Deselect the last view selected
-        if (null != mSelectedView) {
-            mSelectedView.setSelected(false);
-            mSelectedView = null;
-            selectedLesson_id = -1;
-            mLessonCallback.onLessonSelected(selectedLesson_id);
+        // If the actual view is selected, deselect it and return
+        if (view.isSelected()) {
+            view.setSelected(false);
+            deselectViews();
+            return;
         }
+
+        // Or clicks on the view
+        mLessonCallback.onLessonClicked(lesson_id);
 
     }
 
@@ -208,28 +214,13 @@ public class MainFragment extends Fragment implements
 
         Log.v(TAG, "onListItemLongClick lessonName:" + lessonName);
 
-        // If the actual view is selected, deselect it
+        // If the actual view is selected, return
         if (view.isSelected()) {
-            view.setSelected(false);
-            // Deselect also the last reference
-            if (null != mSelectedView) {
-                mSelectedView.setSelected(false);
-                mSelectedView = null;
-                selectedLesson_id = -1;
-                // deselect passing -1
-                mLessonCallback.onLessonSelected(selectedLesson_id);
-            }
             return;
         }
 
         // Deselect the last view selected
-        if (null != mSelectedView) {
-            mSelectedView.setSelected(false);
-            mSelectedView = null;
-            selectedLesson_id = -1;
-            // deselect passing -1
-            mLessonCallback.onLessonSelected(selectedLesson_id);
-        }
+        deselectViews();
 
         // Select the view if the app is in create mode
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
@@ -311,8 +302,9 @@ public class MainFragment extends Fragment implements
         // Send to the main activity the order to setting the idling resource state
         mIdlingCallback.onIdlingResource(true);
 
-        // Pass the data to the fragment
-        this.setCursor(data);
+        // Pass the data to the adapter
+        setCursor(data);
+        mAdapter.setSelectedItemId(selectedLesson_id);
 
     }
 
@@ -356,6 +348,7 @@ public class MainFragment extends Fragment implements
             // Set the data for the adapter
             mAdapter.setLessonsCursorData(cursor);
             showLessonsDataView();
+
         }
     }
 
@@ -364,8 +357,8 @@ public class MainFragment extends Fragment implements
         if (null != mSelectedView) {
             mSelectedView.setSelected(false);
             mSelectedView = null;
-            selectedLesson_id = -1;
         }
+        selectedLesson_id = -1;
     }
 
 }

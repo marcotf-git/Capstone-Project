@@ -26,15 +26,18 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
     // Store the data to be displayed
     private Cursor lessonsCursor;
 
+    // For selecting a view
+    private long selectedItemId;
+
     /**
-     * An on-click handler that we've defined to make it easy for an Activity to interface with
+     * An on-click handler that we've defined to make it easy for an Activity (or Fragment) to interface with
      * our RecyclerView
      */
     final private ListItemClickListener mOnClickListener;
 
     /**
-     * The interface that receives onClick messages and is implemented in MainActivity (communicates
-     * with the MainActivity).
+     * The interface that receives onClick messages and is implemented in Main Activity or Fragment (communicates
+     * with the Main Activity or Fragment).
      */
     public interface ListItemClickListener {
         void onListItemClick(View view,
@@ -48,6 +51,11 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
                                  String lessonName);
     }
 
+    // Function that receives communication from Main Fragment for selecting an item
+    public void setSelectedItemId(long _id) {
+        selectedItemId = _id;
+    }
+
     /**
      * Constructor for ListAdapter that accepts a number of items to display and the specification
      * for the ListItemClickListener.
@@ -57,6 +65,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
     LessonsListAdapter(ListItemClickListener listener) {
         mOnClickListener = listener;
         viewHolderCount = 0;
+        selectedItemId = -1;
     }
 
 
@@ -65,7 +74,6 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
         this.lessonsCursor = cursor;
         notifyDataSetChanged();
     }
-
 
 
     /**
@@ -120,6 +128,8 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
 
         String lessonName = lessonsCursor.getString(lessonsCursor.
                 getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
+        Long item_id = lessonsCursor.getLong(lessonsCursor.
+                getColumnIndex(LessonsContract.MyLessonsEntry._ID));
 
         if (lessonName != null && !lessonName.equals("")) {
             holder.lessonTextView.setText(lessonName);
@@ -127,6 +137,13 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
         }
 
         Log.v(TAG, "onBindViewHolder lessonName:" + lessonName);
+
+        // For handling the setSelectedView
+        if (selectedItemId >= 0) {
+            if (selectedItemId == item_id) {
+                holder.parentView.setSelected(true);
+            }
+        }
 
         // Retrieve the _id from the cursor and
         //long _id = lessonsCursor.getLong(lessonsCursor.getColumnIndex(LessonsContract.MyLessonsEntry._ID));
@@ -190,6 +207,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
         private ImageView lessonImageView;
         private TextView lessonTextView;
         private TextView errorTextView;
+        private View parentView;
 
         final Context context;
 
@@ -209,6 +227,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
             lessonImageView =  itemView.findViewById(R.id.iv_main_lesson_image);
             lessonTextView = itemView.findViewById(R.id.tv_main_lesson_name);
             errorTextView = itemView.findViewById(R.id.tv_lesson_image_error_message_label);
+            parentView = itemView.findViewById(R.id.ll_lesson_title);
 
             // Call setOnClickListener on the View passed into the constructor
             // (use 'this' as the OnClickListener)

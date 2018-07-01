@@ -41,13 +41,15 @@ public class PartsFragment extends Fragment implements
 
     private View mSelectedView;
     private long referenceLesson_id;
-    private long selectedPart_id;
+    private long selectedLessonPart_id;
 
     private PartsListAdapter mAdapter;
     private Context mContext;
 
     // Fields for handling the saving and restoring of view state
     private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
+    private static final String SELECTED_LESSON_PART_ID = "selectedLessonPartId";
+
     private Parcelable recyclerViewState;
 
     private static final int ID_LESSON_PARTS_LOADER = 2;
@@ -115,6 +117,10 @@ public class PartsFragment extends Fragment implements
             Log.v(TAG, "recovering savedInstanceState");
             recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
             mPartsList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+
+            selectedLessonPart_id = savedInstanceState.getLong(SELECTED_LESSON_PART_ID);
+        } else {
+            selectedLessonPart_id = -1;
         }
 
         mLoadingIndicator.setVisibility(View.VISIBLE);
@@ -138,6 +144,7 @@ public class PartsFragment extends Fragment implements
     public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
         Parcelable recyclerViewState = mPartsList.getLayoutManager().onSaveInstanceState();
         savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
+        savedInstanceState.putLong(SELECTED_LESSON_PART_ID, selectedLessonPart_id);
 
         super.onSaveInstanceState(savedInstanceState);
     }
@@ -178,22 +185,19 @@ public class PartsFragment extends Fragment implements
      * @param clickedItemIndex Index in the list of the item that was clicked.
      */
     @Override
-    public void onListItemClick(View view, int clickedItemIndex, long lesson_id, String lessonName) {
+    public void onListItemClick(View view, int clickedItemIndex, long lesson_part_id,
+                                String lessonPartTitle) {
 
-        Log.v(TAG, "onListItemClick lessonName:" + lessonName);
+        Log.v(TAG, "onListItemClick lessonPartTitle:" + lessonPartTitle);
 
-        mPartCallback.onPartClicked(lesson_id);
-
-        // Deselect with one click
-        // Deselect the last view selected
-        if (null != mSelectedView) {
-            mSelectedView.setSelected(false);
-            mSelectedView = null;
-            selectedPart_id = -1;
-            // deselect passing -1
-            mPartCallback.onPartSelected(selectedPart_id);
+        // If the actual view is selected, deselect it and return
+        if (view.isSelected()) {
+            view.setSelected(false);
+            deselectViews();
+            return;
         }
 
+        mPartCallback.onPartSelected(selectedLessonPart_id);
     }
 
 
@@ -206,32 +210,19 @@ public class PartsFragment extends Fragment implements
      * @param clickedItemIndex Index in the list of the item that was clicked.
      */
     @Override
-    public void onListItemLongClick(View view, int clickedItemIndex, long lesson_id, String lessonName) {
+    public void onListItemLongClick(View view, int clickedItemIndex, long lesson_part_id,
+                                    String lessonPartTitle) {
 
-        Log.v(TAG, "onListItemLongClick lessonName:" + lessonName);
+        Log.v(TAG, "onListItemLongClick lessonPartTitle:" + lessonPartTitle);
 
-        // If the actual view is selected, deselect it
+        // If the actual view is selected, return
         if (view.isSelected()) {
-            view.setSelected(false);
-            // Deselect also the last reference
-            if (null != mSelectedView) {
-                mSelectedView.setSelected(false);
-                mSelectedView = null;
-                selectedPart_id = -1;
-                // deselect passing -1
-                mPartCallback.onPartSelected(selectedPart_id);
-            }
             return;
         }
 
         // Deselect the last view selected
-        if (null != mSelectedView) {
-            mSelectedView.setSelected(false);
-            mSelectedView = null;
-            selectedPart_id = -1;
-            // deselect passing -1
-            mPartCallback.onPartSelected(selectedPart_id);
-        }
+        deselectViews();
+
 
         // Select the view if the app is in create mode
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
@@ -244,8 +235,8 @@ public class PartsFragment extends Fragment implements
             // Save a reference to the view
             mSelectedView = view;
             // Save the _id of the lesson selected
-            selectedPart_id = lesson_id;
-            mPartCallback.onPartSelected(selectedPart_id);
+            selectedLessonPart_id = lesson_part_id;
+            mPartCallback.onPartSelected(selectedLessonPart_id);
         }
 
     }
@@ -316,8 +307,9 @@ public class PartsFragment extends Fragment implements
         // Send to the main activity the order to setting the idling resource state
         mIdlingCallback.onIdlingResource(true);
 
-        // Pass the data to the fragment
-        this.setCursor(data);
+        // Pass the data to the adapter
+        setCursor(data);
+        mAdapter.setSelectedItemId(selectedLessonPart_id);
 
     }
 
@@ -369,8 +361,8 @@ public class PartsFragment extends Fragment implements
         if (null != mSelectedView) {
             mSelectedView.setSelected(false);
             mSelectedView = null;
-            selectedPart_id = -1;
         }
+        selectedLessonPart_id = -1;
     }
 
     // Set the reference to the selected lesson
