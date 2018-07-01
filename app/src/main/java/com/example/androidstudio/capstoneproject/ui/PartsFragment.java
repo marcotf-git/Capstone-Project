@@ -190,8 +190,8 @@ public class PartsFragment extends Fragment implements
 
         Log.v(TAG, "onListItemClick lessonPartTitle:" + lessonPartTitle);
 
-        // If the actual view is selected, deselect it and return
-        if (view.isSelected()) {
+        // If the actual view or other view is selected, deselect it and return
+        if (view.isSelected() || selectedLessonPart_id >=0) {
             view.setSelected(false);
             deselectViews();
             return;

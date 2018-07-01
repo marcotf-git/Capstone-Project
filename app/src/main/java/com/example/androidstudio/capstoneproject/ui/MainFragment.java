@@ -188,8 +188,8 @@ public class MainFragment extends Fragment implements
 
         Log.v(TAG, "onListItemClick lessonName:" + lessonName);
 
-        // If the actual view is selected, deselect it and return
-        if (view.isSelected()) {
+        // If the actual or other view view is selected, deselect it and return
+        if (view.isSelected() || selectedLesson_id >= 0) {
             view.setSelected(false);
             deselectViews();
             return;
