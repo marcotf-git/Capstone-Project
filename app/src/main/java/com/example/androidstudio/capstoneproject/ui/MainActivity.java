@@ -76,11 +76,16 @@ public class MainActivity extends AppCompatActivity implements
     private static final String SELECTED_LESSON_ID = "selectedLessonId";
     private static final String CLICKED_LESSON_PART_ID = "clickedLessonPartId";
     private static final String SELECTED_LESSON_PART_ID = "selectedLessonPartId";
+    private static final String MAIN_VISIBILITY = "mainVisibility";
+    private static final String PARTS_VISIBILITY = "partsVisibility";
 
     private long clickedLesson_id;
     private long selectedLesson_id;
     private long clickedLessonPart_id;
     private long selectedLessonPart_id;
+
+    private int mainVisibility;
+    private int partsVisibility;
 
     // Menus and buttons
     private Menu mMenu;
@@ -122,6 +127,8 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mContext = this;
+
         // Add the toolbar as the default app bar
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
@@ -131,8 +138,6 @@ public class MainActivity extends AppCompatActivity implements
             // Disable the Up button
             actionBar.setDisplayHomeAsUpEnabled(false);
         }
-
-        mContext = this;
 
         /*
          Set the Floating Action Button (FAB) to its corresponding View.
@@ -166,16 +171,25 @@ public class MainActivity extends AppCompatActivity implements
         partsContainer = findViewById(R.id.parts_container);
 
         // Initialize the data vars for this class
-        if (null != savedInstanceState) {
-            clickedLesson_id = savedInstanceState.getLong(CLICKED_LESSON_ID);
-            selectedLesson_id = savedInstanceState.getLong(SELECTED_LESSON_ID);
-            clickedLessonPart_id = savedInstanceState.getLong(CLICKED_LESSON_PART_ID);
-            selectedLessonPart_id = savedInstanceState.getLong(SELECTED_LESSON_PART_ID);
-        } else {
+        if (null == savedInstanceState) {
             clickedLesson_id = -1;
             selectedLesson_id = -1;
             clickedLessonPart_id = -1;
             selectedLessonPart_id = -1;
+            // Phone visibility
+            mainVisibility = VISIBLE;
+            partsVisibility = GONE;
+        } else {
+            clickedLesson_id = savedInstanceState.getLong(CLICKED_LESSON_ID);
+            selectedLesson_id = savedInstanceState.getLong(SELECTED_LESSON_ID);
+            clickedLessonPart_id = savedInstanceState.getLong(CLICKED_LESSON_PART_ID);
+            selectedLessonPart_id = savedInstanceState.getLong(SELECTED_LESSON_PART_ID);
+            mainVisibility = savedInstanceState.getInt(MAIN_VISIBILITY);
+            partsVisibility = savedInstanceState.getInt(PARTS_VISIBILITY);
+
+            Log.d(TAG, "recovering mainVisibility:" + mainVisibility);
+            Log.d(TAG, "recovering partsVisibility:" + partsVisibility);
+
         }
 
         // Creates the fragment for showing the lessons
@@ -195,7 +209,12 @@ public class MainActivity extends AppCompatActivity implements
         } else {
             mainFragment = (MainFragment) fragmentManager.findFragmentByTag("MainFragment");
             partsFragment = (PartsFragment) fragmentManager.findFragmentByTag("PartsFragment");
+            lessonsContainer.setVisibility(mainVisibility);
+            partsContainer.setVisibility(partsVisibility);
         }
+
+        Log.d(TAG, "lessonsContainer visibility:" + lessonsContainer.getVisibility());
+        Log.d(TAG, "partsContainer visibility:" + partsContainer.getVisibility());
 
         // Get the IdlingResource instance
         getIdlingResource();
@@ -227,6 +246,12 @@ public class MainActivity extends AppCompatActivity implements
         savedInstanceState.putLong(SELECTED_LESSON_ID, selectedLesson_id);
         savedInstanceState.putLong(CLICKED_LESSON_PART_ID, clickedLessonPart_id);
         savedInstanceState.putLong(SELECTED_LESSON_PART_ID, selectedLessonPart_id);
+
+        Log.d(TAG, "saving mainVisibility:" + mainVisibility);
+        Log.d(TAG, "saving partsVisibility:" + partsVisibility);
+
+        savedInstanceState.putInt(MAIN_VISIBILITY, lessonsContainer.getVisibility());
+        savedInstanceState.putInt(PARTS_VISIBILITY, partsContainer.getVisibility());
 
         super.onSaveInstanceState(savedInstanceState);
     }
@@ -389,21 +414,16 @@ public class MainActivity extends AppCompatActivity implements
         return super.onOptionsItemSelected(item);
     }
 
-
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
 
         flag_preferences_updates = true;
-
         String lessonsQueryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
                 this.getString(R.string.pref_mode_view));
-
         Log.d(TAG, "onSharedPreferenceChanged lessonsQueryOption:" + lessonsQueryOption);
-
         updateView();
 
     }
-
 
     // Reload the activity
     private void refreshActivity() {
@@ -431,13 +451,14 @@ public class MainActivity extends AppCompatActivity implements
 
         // Call the fragment for showing the delete dialog
         DialogFragment deleteLessonFragment = new DeleteLessonDialogFragment();
+
         // Pass the _id of the lesson
         Bundle bundle = new Bundle();
         bundle.putLong("_id", _id);
         deleteLessonFragment.setArguments(bundle);
+
         // Show the dialog box
         deleteLessonFragment.show(getSupportFragmentManager(), "DeleteLessonDialogFragment");
-
     }
 
 
@@ -474,13 +495,19 @@ public class MainActivity extends AppCompatActivity implements
 
     // Helper method for hiding the PartsFragment
     public void closePartsFragment() {
+
+        Log.d(TAG, "closePartsFragment");
+
         // deselect the views on the fragment that will be closed
         partsFragment.deselectViews();
+
         // clear the reference var
         selectedLessonPart_id = -1;
+
         // Change the views
         partsContainer.setVisibility(GONE);
         lessonsContainer.setVisibility(VISIBLE);
+
         // Disable the Up button
         if (null != actionBar) {
             actionBar.setDisplayHomeAsUpEnabled(false);
@@ -505,13 +532,14 @@ public class MainActivity extends AppCompatActivity implements
         // Show the lesson parts fragment
         lessonsContainer.setVisibility(GONE);
         partsContainer.setVisibility(VISIBLE);
+
         // Enable the Up button
         if (null != actionBar) {
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
-        // Send the data to the fragment
-        partsFragment.serReferenceLesson(_id);
 
+        // Send the data to the fragment
+        partsFragment.setReferenceLesson(_id);
     }
 
     // Method for receiving communication from the DeleteLessonFragment

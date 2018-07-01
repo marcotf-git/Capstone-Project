@@ -374,7 +374,7 @@ public class PartsFragment extends Fragment implements
     }
 
     // Set the reference to the selected lesson
-    public void serReferenceLesson(long _id) {
+    public void setReferenceLesson(long _id) {
 
         // Write the data that will be used by the loader
         referenceLesson_id = _id;
