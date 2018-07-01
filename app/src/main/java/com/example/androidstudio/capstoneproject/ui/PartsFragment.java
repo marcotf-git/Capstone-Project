@@ -34,25 +34,27 @@ public class PartsFragment extends Fragment implements
 
     private static final String TAG = PartsFragment.class.getSimpleName();
 
+    // Fields for handling the saving and restoring of view state
+    private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
+    private Parcelable recyclerViewState;
+
+    // Loader id
+    private static final int ID_LESSON_PARTS_LOADER = 2;
+
+    // PartsFragment state vars
+    private View mSelectedView;
+    private long referenceLesson_id;
+    private static long selectedLessonPart_id;
+
+    // Views
     private TextView mErrorMessageDisplay;
     private ProgressBar mLoadingIndicator;
     private RecyclerView mPartsList;
+
     private GridLayoutManager layoutManager;
-
-    private View mSelectedView;
-    private long referenceLesson_id;
-    private long selectedLessonPart_id;
-
     private PartsListAdapter mAdapter;
     private Context mContext;
 
-    // Fields for handling the saving and restoring of view state
-    private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
-    private static final String SELECTED_LESSON_PART_ID = "selectedLessonPartId";
-
-    private Parcelable recyclerViewState;
-
-    private static final int ID_LESSON_PARTS_LOADER = 2;
 
     // Callbacks to the main activity
     OnLessonPartListener mPartCallback;
@@ -117,8 +119,6 @@ public class PartsFragment extends Fragment implements
             Log.v(TAG, "recovering savedInstanceState");
             recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
             mPartsList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
-
-            selectedLessonPart_id = savedInstanceState.getLong(SELECTED_LESSON_PART_ID);
         } else {
             selectedLessonPart_id = -1;
         }
@@ -144,7 +144,6 @@ public class PartsFragment extends Fragment implements
     public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
         Parcelable recyclerViewState = mPartsList.getLayoutManager().onSaveInstanceState();
         savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
-        savedInstanceState.putLong(SELECTED_LESSON_PART_ID, selectedLessonPart_id);
 
         super.onSaveInstanceState(savedInstanceState);
     }

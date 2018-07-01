@@ -34,24 +34,28 @@ public class MainFragment extends Fragment implements
 
     private static final String TAG = MainFragment.class.getSimpleName();
 
+    // Fields for handling the saving and restoring of view state
+    private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
+
+    // Loader id
+    private static final int ID_LESSONS_LOADER = 1;
+
+    // View state var
+    private Parcelable recyclerViewState;
+
+    // MainFragment state vars
+    private static long selectedLesson_id;
+
+    // Views
     private TextView mErrorMessageDisplay;
     private ProgressBar mLoadingIndicator;
     private RecyclerView mClassesList;
     private GridLayoutManager layoutManager;
-
     private View mSelectedView;
-    private long selectedLesson_id;
 
     private LessonsListAdapter mAdapter;
     private Context mContext;
 
-    // Fields for handling the saving and restoring of view state
-    private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
-    private static final String SELECTED_LESSON_ID = "selectedLessonId";
-
-    private Parcelable recyclerViewState;
-
-    private static final int ID_LESSONS_LOADER = 1;
 
     // Callbacks to the main activity
     OnLessonListener mLessonCallback;
@@ -116,7 +120,6 @@ public class MainFragment extends Fragment implements
             Log.v(TAG, "recovering savedInstanceState");
             recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
             mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
-            selectedLesson_id = savedInstanceState.getLong(SELECTED_LESSON_ID);
         } else {
             selectedLesson_id = -1;
         }
@@ -142,7 +145,6 @@ public class MainFragment extends Fragment implements
     public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
         Parcelable recyclerViewState = mClassesList.getLayoutManager().onSaveInstanceState();
         savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
-        savedInstanceState.putLong(SELECTED_LESSON_ID, selectedLesson_id);
 
         super.onSaveInstanceState(savedInstanceState);
     }
@@ -160,7 +162,6 @@ public class MainFragment extends Fragment implements
         // Then, make sure the JSON data is visible
         mClassesList.setVisibility(View.VISIBLE);
     }
-
 
     /**
      * This method will make the error message visible and hide data View.

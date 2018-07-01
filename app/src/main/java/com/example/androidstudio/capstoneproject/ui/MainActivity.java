@@ -77,16 +77,16 @@ public class MainActivity extends AppCompatActivity implements
     private static final String SELECTED_LESSON_ID = "selectedLessonId";
     private static final String CLICKED_LESSON_PART_ID = "clickedLessonPartId";
     private static final String SELECTED_LESSON_PART_ID = "selectedLessonPartId";
-    private static final String MAIN_VISIBILITY = "mainVisibility";
-    private static final String PARTS_VISIBILITY = "partsVisibility";
 
-    private long clickedLesson_id;
-    private long selectedLesson_id;
-    private long clickedLessonPart_id;
-    private long selectedLessonPart_id;
 
-    private int mainVisibility;
-    private int partsVisibility;
+    // App state information
+    private static long clickedLesson_id;
+    private static long selectedLesson_id;
+    private static long clickedLessonPart_id;
+    private static long selectedLessonPart_id;
+    private static int mainVisibility;
+    private static int partsVisibility;
+    private static boolean flag_preferences_updates = false;
 
     // Menus and buttons
     private Menu mMenu;
@@ -94,14 +94,13 @@ public class MainActivity extends AppCompatActivity implements
     private ActionBar actionBar;
     private FloatingActionButton mButton;
 
-    // flag for preference updates
-    private static boolean flag_preferences_updates = false;
-
     private Context mContext;
 
+    // Views
     private FrameLayout lessonsContainer;
     private FrameLayout partsContainer;
 
+    // Fragments
     private MainFragment mainFragment;
     private PartsFragment partsFragment;
 
@@ -184,17 +183,6 @@ public class MainActivity extends AppCompatActivity implements
             // Phone visibility
             mainVisibility = VISIBLE;
             partsVisibility = GONE;
-        } else {
-            clickedLesson_id = savedInstanceState.getLong(CLICKED_LESSON_ID);
-            selectedLesson_id = savedInstanceState.getLong(SELECTED_LESSON_ID);
-            clickedLessonPart_id = savedInstanceState.getLong(CLICKED_LESSON_PART_ID);
-            selectedLessonPart_id = savedInstanceState.getLong(SELECTED_LESSON_PART_ID);
-            mainVisibility = savedInstanceState.getInt(MAIN_VISIBILITY);
-            partsVisibility = savedInstanceState.getInt(PARTS_VISIBILITY);
-
-            Log.d(TAG, "recovering mainVisibility:" + mainVisibility);
-            Log.d(TAG, "recovering partsVisibility:" + partsVisibility);
-
         }
 
         // Initialize the fragments and its views
@@ -252,20 +240,12 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
-    // This method is saving the position of the recycler view
+    // This method is saving the visibility of the fragments in static vars
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
 
-        savedInstanceState.putLong(CLICKED_LESSON_ID, clickedLesson_id);
-        savedInstanceState.putLong(SELECTED_LESSON_ID, selectedLesson_id);
-        savedInstanceState.putLong(CLICKED_LESSON_PART_ID, clickedLessonPart_id);
-        savedInstanceState.putLong(SELECTED_LESSON_PART_ID, selectedLessonPart_id);
-
-        Log.d(TAG, "saving mainVisibility:" + mainVisibility);
-        Log.d(TAG, "saving partsVisibility:" + partsVisibility);
-
-        savedInstanceState.putInt(MAIN_VISIBILITY, lessonsContainer.getVisibility());
-        savedInstanceState.putInt(PARTS_VISIBILITY, partsContainer.getVisibility());
+        mainVisibility = lessonsContainer.getVisibility();
+        partsVisibility = partsContainer.getVisibility();
 
         super.onSaveInstanceState(savedInstanceState);
     }
@@ -275,14 +255,12 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onStart() {
         super.onStart();
-
         Log.v("onStart", "on start");
 
         if (flag_preferences_updates) {
             Log.d("onStart", "preferences changed");
             updateView();
         }
-
     }
 
     @Override
