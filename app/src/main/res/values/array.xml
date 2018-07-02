@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="drawer_menu">
+        <item>@string/login</item>
+        <item>@string/logout</item>
+    </string-array>
+</resources>

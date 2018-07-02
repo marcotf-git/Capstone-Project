@@ -10,9 +10,12 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.NavigationView;
 import android.support.test.espresso.IdlingResource;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -22,13 +25,23 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.androidstudio.capstoneproject.IdlingResource.SimpleIdlingResource;
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.example.androidstudio.capstoneproject.data.TestUtil;
+import com.firebase.ui.auth.AuthUI;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+
+import java.util.Arrays;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
@@ -72,14 +85,18 @@ public class MainActivity extends AppCompatActivity implements
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
+    public static final String ANONYMOUS = "anonymous";
+
+    // Firebase auth: choose an arbitrary request code value
+    private static final int RC_SIGN_IN = 1;
+
     // Final string to store state information
     private static final String CLICKED_LESSON_ID = "clickedLessonId";
     private static final String SELECTED_LESSON_ID = "selectedLessonId";
     private static final String CLICKED_LESSON_PART_ID = "clickedLessonPartId";
     private static final String SELECTED_LESSON_PART_ID = "selectedLessonPartId";
 
-
-    // App state information
+    // App state information variables
     private static long clickedLesson_id;
     private static long selectedLesson_id;
     private static long clickedLessonPart_id;
@@ -88,17 +105,30 @@ public class MainActivity extends AppCompatActivity implements
     private static int partsVisibility;
     private static boolean flag_preferences_updates = false;
 
+    private String mUsername;
+
+    // Firebase instance variables
+    private FirebaseDatabase mFirebaseDatabase;
+    private DatabaseReference mLessonsDatabaseReference;
+    private FirebaseAuth mFirebaseAuth;
+    private FirebaseAuth.AuthStateListener mAuthStateListener;
+
     // Menus and buttons
     private Menu mMenu;
     private Toolbar mToolbar;
     private ActionBar actionBar;
     private FloatingActionButton mButton;
 
+    // Drawer menu variables
+    private DrawerLayout mDrawerLayout;
+    private NavigationView navigationView;
+
     private Context mContext;
 
     // Views
     private FrameLayout lessonsContainer;
     private FrameLayout partsContainer;
+    private TextView mUsernameTextView;
 
     // Fragments
     private MainFragment mainFragment;
@@ -129,14 +159,16 @@ public class MainActivity extends AppCompatActivity implements
 
         mContext = this;
 
+        mUsername = ANONYMOUS;
+
         // Add the toolbar as the default app bar
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
         // Get a support ActionBar corresponding to this toolbar
         actionBar = getSupportActionBar();
         if (null != actionBar) {
-            // Disable the Up button
-            actionBar.setDisplayHomeAsUpEnabled(false);
+            // Enable the Up button (icon will be set in onPrepareMenu
+            actionBar.setDisplayHomeAsUpEnabled(true);
         }
 
         /*
@@ -170,11 +202,11 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
 
-        // Initialize the activity views
+        // Initialize the containers for fragments
         lessonsContainer = findViewById(R.id.lessons_container);
         partsContainer = findViewById(R.id.parts_container);
 
-        // Initialize the data vars for this class
+        // Initialize the state vars
         if (null == savedInstanceState) {
             clickedLesson_id = -1;
             selectedLesson_id = -1;
@@ -183,12 +215,13 @@ public class MainActivity extends AppCompatActivity implements
             // Phone visibility
             mainVisibility = VISIBLE;
             partsVisibility = GONE;
+
         }
 
-        // Initialize the fragments and its views
+        // Initialize the fragments
         FragmentManager fragmentManager = getSupportFragmentManager();
         // Only create fragment when needed
-        if (savedInstanceState == null) {
+        if (null == savedInstanceState) {
 
             Log.v(TAG, "creating MainFragment");
             mainFragment = new MainFragment();
@@ -203,17 +236,13 @@ public class MainActivity extends AppCompatActivity implements
                     .commit();
 
         } else {
-
             mainFragment = (MainFragment) fragmentManager.findFragmentByTag("MainFragment");
             partsFragment = (PartsFragment) fragmentManager.findFragmentByTag("PartsFragment");
-
-            lessonsContainer.setVisibility(mainVisibility);
-            partsContainer.setVisibility(partsVisibility);
-
-            if (partsVisibility == VISIBLE) {
-                actionBar.setDisplayHomeAsUpEnabled(true);
-            }
         }
+
+        // Set the fragment views visibility
+        lessonsContainer.setVisibility(mainVisibility);
+        partsContainer.setVisibility(partsVisibility);
 
         Log.d(TAG, "lessonsContainer visibility:" + lessonsContainer.getVisibility());
         Log.d(TAG, "partsContainer visibility:" + partsContainer.getVisibility());
@@ -237,26 +266,132 @@ public class MainActivity extends AppCompatActivity implements
         //Controller controller = new Controller();
         //controller.start(this);
 
+        // Initialize Firebase components
+        mFirebaseDatabase = FirebaseDatabase.getInstance();
+        // Get the root of the path
+        mLessonsDatabaseReference = mFirebaseDatabase.getReference();
+        // Initialize the FirebaseAuth instance and the AuthStateListener method so
+        // we can track whenever the user signs in or out.
+        mFirebaseAuth = FirebaseAuth.getInstance();
+        // Initialize Firebase Auth listener
+        mAuthStateListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                FirebaseUser user = firebaseAuth.getCurrentUser();
+                if (user != null){
+                    // user is signed in
+                    onSignedInInitialize(user.getDisplayName());
+                } else {
+                    onSignedOutCleanup();
+                }
+            }
+        };
+
+        // Set the drawer menu
+        mDrawerLayout = findViewById(R.id.drawer_layout);
+        navigationView = findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(
+            new NavigationView.OnNavigationItemSelectedListener() {
+                @Override
+                public boolean onNavigationItemSelected(MenuItem menuItem) {
+                    // close drawer when item is tapped
+                    mDrawerLayout.closeDrawers();
+                    int itemThatWasClickedId = menuItem.getItemId();
+                    // Update the UI based on the item selected
+                    switch (itemThatWasClickedId) {
+                        case R.id.action_login:
+                            // Firebase UI login
+                            login();
+                            break;
+                        case R.id.action_logout:
+                            logout();
+                            break;
+                        default:
+                            break;
+                    }
+                    return true;
+                }
+            });
+
+        // Set the username int the drawer
+        View headerView = navigationView.getHeaderView(0);
+        mUsernameTextView = (TextView) headerView.findViewById(R.id.tv_user_name);
+        mUsernameTextView.setText(mUsername);
+
     }
 
+
+    // Helper method for Firebase login
+    private void login() {
+        Log.v(TAG, "login");
+        FirebaseUser user = mFirebaseAuth.getCurrentUser();
+        if (user != null){
+            // user is signed in
+            Toast.makeText(MainActivity.this, "You're already signed in!",
+                    Toast.LENGTH_SHORT).show();
+        } else {
+            // user is signed out
+            startActivityForResult(
+                    AuthUI.getInstance()
+                            .createSignInIntentBuilder()
+                            // Do not automatically save user credentials
+                            .setIsSmartLockEnabled(false)
+                            .setAvailableProviders(Arrays.asList(
+                                    new AuthUI.IdpConfig.EmailBuilder().build(),
+                                    new AuthUI.IdpConfig.GoogleBuilder().build()))
+                            .build(),
+                    RC_SIGN_IN);
+        }
+    }
+
+    // Method for sign in for the listener
+    private void onSignedInInitialize(String username){
+        mUsername = username;
+        mUsernameTextView.setText(mUsername);
+        Log.v(TAG, "onSignedInInitialize mUsername:" + mUsername);
+    }
+
+    // Handle cancelled sign in
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == RC_SIGN_IN) {
+            if (resultCode == RESULT_OK) {
+                Toast.makeText(this, "Signed in!", Toast.LENGTH_SHORT).show();
+            } else if (resultCode == RESULT_CANCELED) {
+                Toast.makeText(this, "Sign in canceled", Toast.LENGTH_SHORT).show();
+             }
+        }
+    }
+
+    // Helper method for Firebase logout
+    private void logout () {
+        Log.v(TAG, "logout");
+        AuthUI.getInstance().signOut(this);
+        Toast.makeText(MainActivity.this, "Signed out!",
+                Toast.LENGTH_SHORT).show();
+    }
+
+    // Method for sign out for the listener
+    private void onSignedOutCleanup(){
+        Log.v(TAG, "onSignedOutCleanup");
+        mUsername = ANONYMOUS;
+        mUsernameTextView.setText(mUsername);
+    }
 
     // This method is saving the visibility of the fragments in static vars
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
-
         mainVisibility = lessonsContainer.getVisibility();
         partsVisibility = partsContainer.getVisibility();
-
         super.onSaveInstanceState(savedInstanceState);
     }
-
 
     // In onStart, if preferences have been changed, refresh the view
     @Override
     protected void onStart() {
         super.onStart();
         Log.v("onStart", "on start");
-
         if (flag_preferences_updates) {
             Log.d("onStart", "preferences changed");
             updateView();
@@ -264,12 +399,31 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        // Attach the Firebase Auth listener
+        mFirebaseAuth.addAuthStateListener(mAuthStateListener);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Remove Firebase Auth listener
+        if (mAuthStateListener != null) {
+            mFirebaseAuth.removeAuthStateListener(mAuthStateListener);
+        }
+        //mUserNameText.setText("");
+    }
+
+    @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Remove listener from PreferenceManager
         PreferenceManager.getDefaultSharedPreferences(this)
                 .unregisterOnSharedPreferenceChangeListener(this);
     }
 
+    // Inflate the menu
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -283,12 +437,9 @@ public class MainActivity extends AppCompatActivity implements
      */
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-
         super.onPrepareOptionsMenu(menu);
-
         // Save a reference to the menu
         mMenu = menu;
-
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
                 this.getString(R.string.pref_mode_view));
@@ -311,6 +462,13 @@ public class MainActivity extends AppCompatActivity implements
             mMenu.findItem(R.id.action_upload).setVisible(true);
             mMenu.findItem(R.id.action_refresh).setVisible(false);
             mButton.setVisibility(VISIBLE);
+        }
+
+        // Set the drawer menu icon according to views
+        if (mainVisibility == VISIBLE) {
+            actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
+        } else {
+            actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
         }
 
         return true;
@@ -396,8 +554,14 @@ public class MainActivity extends AppCompatActivity implements
                 break;
 
             case android.R.id.home:
-                closePartsFragment();
-                break;
+                Log.d(TAG, "onOptionsItemSelected mainVisibility:" + mainVisibility);
+                // Set the action according to the views visibility
+                if (mainVisibility == VISIBLE) {
+                    mDrawerLayout.openDrawer(GravityCompat.START);
+                    return true;
+                } else {
+                    closePartsFragment();
+                }
 
             default:
                 break;
@@ -408,13 +572,11 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
-
         flag_preferences_updates = true;
         String lessonsQueryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
                 this.getString(R.string.pref_mode_view));
         Log.d(TAG, "onSharedPreferenceChanged lessonsQueryOption:" + lessonsQueryOption);
         updateView();
-
     }
 
     // Reload the activity
@@ -424,107 +586,79 @@ public class MainActivity extends AppCompatActivity implements
         startActivity(getIntent());
     }
 
-
-    /**
-     * Helper function to reload data and update the view, called by the shared preference listener
-     */
+    // Helper function to reload data and update the view, called by the shared preference listener
     public void updateView() {
         Log.v(TAG, "updateView");
         flag_preferences_updates = false;
     }
 
-
-    /**
-     * Helper function to delete data and update the view
-     */
+    // Helper function to delete lesson data and update the view
     private void deleteLesson(long _id) {
-
         Log.v(TAG, "deleteLesson _id:" + _id);
-
         // Call the fragment for showing the delete dialog
         DialogFragment deleteLessonFragment = new DeleteLessonDialogFragment();
-
         // Pass the _id of the lesson
         Bundle bundle = new Bundle();
         bundle.putLong("_id", _id);
         deleteLessonFragment.setArguments(bundle);
-
         // Show the dialog box
         deleteLessonFragment.show(getSupportFragmentManager(), "DeleteLessonDialogFragment");
     }
 
-
+    // Helper function to edit lesson
     private void editLesson(long _id) {
-
         Log.d(TAG, "editLesson _id:" + _id);
-
         // Create a new intent to start an EditTaskActivity
         Class destinationActivity = EditLessonActivity.class;
         Intent editLessonIntent = new Intent(mContext, destinationActivity);
         editLessonIntent.putExtra(SELECTED_LESSON_ID, _id);
         startActivity(editLessonIntent);
-
         // Deselect the last view selected
         mainFragment.deselectViews();
         selectedLesson_id = -1;
     }
 
-
+    // Helper function to delete lesson part
     private void deleteLessonPart(long _id) {
-
         Log.v(TAG, "deleteLessonPart _id:" + _id);
-
         // Call the fragment for showing the delete dialog
         DialogFragment deleteLessonPartFragment = new DeletePartDialogFragment();
-
         // Pass the _id of the lesson
         Bundle bundle = new Bundle();
         bundle.putLong("_id", _id);
         deleteLessonPartFragment.setArguments(bundle);
-
         // Show the dialog box
         deleteLessonPartFragment.show(getSupportFragmentManager(), "DeletePartDialogFragment");
-
     }
 
-
+    // Helper function to edit lesson part
     private void editLessonPart(long _id) {
-
         Log.d(TAG, "editLessonPart _id:" + _id);
-
         // Create a new intent to start an EditTaskActivity
         Class destinationActivity = EditPartActivity.class;
         Intent editLessonPartIntent = new Intent(mContext, destinationActivity);
         editLessonPartIntent.putExtra(SELECTED_LESSON_PART_ID, _id);
         startActivity(editLessonPartIntent);
-
         // Deselect the last view selected
         partsFragment.deselectViews();
         selectedLessonPart_id = -1;
-
     }
 
     // Helper method for hiding the PartsFragment
     public void closePartsFragment() {
-
         Log.d(TAG, "closePartsFragment");
-
         // deselect the views on the fragment that will be closed
         partsFragment.deselectViews();
-
         // clear the reference var
         selectedLessonPart_id = -1;
-
         // Change the views
         partsContainer.setVisibility(GONE);
+        partsVisibility = GONE;
         lessonsContainer.setVisibility(VISIBLE);
-
-        // Disable the Up button
-        if (null != actionBar) {
-            actionBar.setDisplayHomeAsUpEnabled(false);
-        }
+        mainVisibility = VISIBLE;
+        // Set the drawer menu icon according to views
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
     }
-
 
     // Method for receiving communication from the MainFragment
     @Override
@@ -535,20 +669,19 @@ public class MainActivity extends AppCompatActivity implements
     // Method for receiving communication from the MainFragment
     @Override
     public void onLessonClicked(long _id) {
-
         Log.d(TAG, "onLessonClicked _id:" + _id);
-
         clickedLesson_id = _id;
-
         // Show the lesson parts fragment
         lessonsContainer.setVisibility(GONE);
+        mainVisibility = GONE;
         partsContainer.setVisibility(VISIBLE);
-
-        // Enable the Up button
-        if (null != actionBar) {
-            actionBar.setDisplayHomeAsUpEnabled(true);
+        partsVisibility = VISIBLE;
+        // Set the drawer menu icon according to views
+        if (mainVisibility == VISIBLE) {
+            actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
+        } else {
+            actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
         }
-
         // Send the data to the fragment
         partsFragment.setReferenceLesson(_id);
     }
@@ -556,16 +689,12 @@ public class MainActivity extends AppCompatActivity implements
     // Method for receiving communication from the DeleteLessonFragment
     @Override
     public void onDialogPositiveClick(DialogFragment dialog, long _id) {
-
         ContentResolver contentResolver = mContext.getContentResolver();
         /* The delete method deletes the row by its _id */
         Uri uriToDelete = LessonsContract.MyLessonsEntry.CONTENT_URI.buildUpon()
                 .appendPath("" + _id + "").build();
-
         Log.d(TAG, "onDialogPositiveClick: Uri to delete:" + uriToDelete.toString());
-
         int numberOfLessonsDeleted = contentResolver.delete(uriToDelete, null, null);
-
         if (numberOfLessonsDeleted > 0) {
             Toast.makeText(this,
                     numberOfLessonsDeleted + " item(s) removed!", Toast.LENGTH_LONG).show();
@@ -578,7 +707,6 @@ public class MainActivity extends AppCompatActivity implements
             mainFragment.deselectViews();
             selectedLesson_id = -1;
         }
-
     }
 
     // Method for receiving communication from the DeleteLessonFragment
@@ -611,20 +739,15 @@ public class MainActivity extends AppCompatActivity implements
     // Receive communication form DeleteDialogPartFragment
     @Override
     public void onDialogPartPositiveClick(DialogFragment dialog, long _id) {
-
         ContentResolver contentResolver = mContext.getContentResolver();
         /* The delete method deletes the row by its _id */
         Uri uriToDelete = LessonsContract.MyLessonPartsEntry.CONTENT_URI.buildUpon()
                 .appendPath("" + _id + "").build();
-
         Log.d(TAG, "onDialogPartPositiveClick: Uri to delete:" + uriToDelete.toString());
-
         int numberOfPartsDeleted = contentResolver.delete(uriToDelete, null, null);
-
         if (numberOfPartsDeleted > 0) {
             Toast.makeText(this,
                     numberOfPartsDeleted + " item(s) removed!", Toast.LENGTH_LONG).show();
-
             // Deselect the last view selected
             partsFragment.deselectViews();
             selectedLessonPart_id = -1;

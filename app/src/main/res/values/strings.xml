@@ -46,4 +46,10 @@
     <string name="edit_lesson_part_title_label">Edit Lesson Part</string>
     <string name="edit_lesson_part_title">Please, edit the Lesson Part Title!</string>
 
+    <string name="login">Login</string>
+    <string name="logout">Logout</string>
+    <string name="user_email">user email</string>
+    <string name="username">user name:</string>
+    <string name="username_hint">username</string>
+
 </resources>
