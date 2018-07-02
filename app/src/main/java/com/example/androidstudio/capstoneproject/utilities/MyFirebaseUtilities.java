@@ -1,6 +1,8 @@
 package com.example.androidstudio.capstoneproject.utilities;
 
 import android.content.ContentResolver;
+import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
@@ -154,7 +156,7 @@ public class MyFirebaseUtilities {
 //                Lesson lesson = documentSnapshot.toObject(Lesson.class);
 //                String jsonString = MyFirebaseUtilities.serialize(lesson);
 //                Log.v(TAG, "refreshDatabase onSuccess lesson jsonString:" + jsonString);
-//                MyFirebaseUtilities.refreshLesson(lesson);
+//                MyFirebaseUtilities.refreshLesson(mContext, lesson);
 //            }
 //        });
 
@@ -172,7 +174,7 @@ public class MyFirebaseUtilities {
                                 Lesson lesson = document.toObject(Lesson.class);
                                 String jsonString = MyFirebaseUtilities.serialize(lesson);
                                 Log.v(TAG, "refreshDatabase onComplete lesson jsonString:" + jsonString);
-                                MyFirebaseUtilities.refreshLesson(lesson);
+                                MyFirebaseUtilities.refreshLesson(mContext, lesson);
                             }
                         } else {
                             Log.d(TAG, "Error getting documents: ", task.getException());
@@ -180,86 +182,10 @@ public class MyFirebaseUtilities {
                     }
                 });
 
-
-//        ContentResolver contentResolver = mContext.getContentResolver();
-//        Cursor lessonCursor = contentResolver.query(LessonsContract.MyLessonsEntry.CONTENT_URI,
-//                null,
-//                null,
-//                null,
-//                null);
-//
-//        if (lessonCursor != null) {
-//            lessonCursor.moveToFirst();
-//        }
-//
-//        int nRows = lessonCursor != null ? lessonCursor.getCount() : 0;
-//
-//        // Pass the data cursor to Lesson instance
-//        long lesson_id;
-//        String user_uid;
-//        String lesson_title;
-//        String time_stamp;
-//
-//        Lesson lesson;
-//
-//        for (int i = 0; i < nRows; i++) {
-//
-//            lesson_id = lessonCursor.
-//                    getLong(lessonCursor.getColumnIndex(LessonsContract.MyLessonsEntry._ID));
-//            user_uid = userUid;
-//            lesson_title = lessonCursor.
-//                    getString(lessonCursor.getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
-//
-//            time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
-//                    .format(new Date());
-//
-//            lesson = new Lesson();
-//            lesson.setLesson_id(lesson_id);
-//            lesson.setUser_uid(user_uid);
-//            lesson.setLesson_title(lesson_title);
-//            lesson.setTime_stamp(time_stamp);
-//
-//            String jsonString = this.serialize(lesson);
-//
-//            Log.v(TAG, "uploadDatabase lesson jsonString:" + jsonString);
-//
-//
-//            final String documentName = String.format( Locale.US, "%s_%02d",
-//                    lesson.getUser_uid(), lesson.getLesson_id());
-//
-//            Log.v(TAG, "uploadDatabase documentName:" + documentName);
-//
-//
-//            cloudFirestore.collection("lessons").document(documentName)
-//                    .set(lesson)
-//                    .addOnSuccessListener(new OnSuccessListener<Void>() {
-//                        @Override
-//                        public void onSuccess(Void aVoid) {
-//                            Log.d(TAG, "DocumentSnapshot successfully written with name:" + documentName);
-//                        }
-//                    })
-//                    .addOnFailureListener(new OnFailureListener() {
-//                        @Override
-//                        public void onFailure(@NonNull Exception e) {
-//                            Log.w(TAG, "Error writing document", e);
-//                        }
-//                    });
-//
-//            if (!lessonCursor.moveToNext()){
-//                break;
-//            }
-//
-//        }
-//
-//
-//        if (lessonCursor != null) {
-//            lessonCursor.close();
-//        }
-
     }
 
 
-    static private void refreshLesson(Lesson lesson) {
+    static private void refreshLesson(Context context, Lesson lesson) {
 
         if (null == lesson) {
             return;
@@ -271,6 +197,47 @@ public class MyFirebaseUtilities {
         // update if found
         // create if didn't exist
 
+
+        ContentResolver contentResolver = context.getContentResolver();
+        Cursor lessonCursor = contentResolver.query(LessonsContract.MyLessonsEntry.CONTENT_URI,
+                null,
+                null,
+                null,
+                null);
+
+        if (lessonCursor != null) {
+            lessonCursor.moveToFirst();
+        }
+
+        int nRows = -1;
+        if (lessonCursor != null) {
+            nRows = lessonCursor.getCount();
+        }
+
+        if (lessonCursor != null) {
+            lessonCursor.close();
+        }
+
+        // Update the row
+        if (nRows >= 0) {
+
+            // open the database for updating
+            
+            /* Create values to update */
+            ContentValues editLessonValues = new ContentValues();
+            editLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, lesson.getLesson_title());
+
+            Uri updateUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, lesson.getLesson_id());
+
+            int numberOfLessonsUpdated = contentResolver.update(updateUri,
+                    editLessonValues, null, null);
+
+            if (numberOfLessonsUpdated >= 0) {
+                Log.v(TAG, "refreshLesson " + numberOfLessonsUpdated +
+                        " item(s) updated: lesson_id:" + lesson.getLesson_id());
+            }
+
+        }
 
     }
 
