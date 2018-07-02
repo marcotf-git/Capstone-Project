@@ -26,9 +26,7 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
-import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -36,13 +34,22 @@ import com.example.androidstudio.capstoneproject.IdlingResource.SimpleIdlingReso
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.example.androidstudio.capstoneproject.data.TestUtil;
+import com.example.androidstudio.capstoneproject.utilities.MyFirebaseUtilities;
 import com.firebase.ui.auth.AuthUI;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreSettings;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
@@ -113,8 +120,7 @@ public class MainActivity extends AppCompatActivity implements
     private String mUserUid;
 
     // Firebase instance variables
-    private FirebaseDatabase mFirebaseDatabase;
-    private DatabaseReference mLessonsDatabaseReference;
+    private FirebaseFirestore mFirestoreDatabase;
     private FirebaseAuth mFirebaseAuth;
     private FirebaseAuth.AuthStateListener mAuthStateListener;
 
@@ -268,14 +274,14 @@ public class MainActivity extends AppCompatActivity implements
             mIdlingResource.setIdleState(false);
         }
 
-        // Load data from http with the Retrofit library
-        //Controller controller = new Controller();
-        //controller.start(this);
 
         // Initialize Firebase components
-        mFirebaseDatabase = FirebaseDatabase.getInstance();
-        // Get the root of the path
-        mLessonsDatabaseReference = mFirebaseDatabase.getReference();
+        mFirestoreDatabase = FirebaseFirestore.getInstance();
+        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
+                .setTimestampsInSnapshotsEnabled(true)
+                .build();
+        mFirestoreDatabase.setFirestoreSettings(settings);
+
         // Initialize the FirebaseAuth instance and the AuthStateListener method so
         // we can track whenever the user signs in or out.
         mFirebaseAuth = FirebaseAuth.getInstance();
@@ -527,6 +533,16 @@ public class MainActivity extends AppCompatActivity implements
 
         switch (itemThatWasClickedId) {
 
+            case android.R.id.home:
+                Log.d(TAG, "onOptionsItemSelected mainVisibility:" + mainVisibility);
+                // Set the action according to the views visibility
+                if (mainVisibility == VISIBLE) {
+                    mDrawerLayout.openDrawer(GravityCompat.START);
+                    return true;
+                } else {
+                    closePartsFragment();
+                }
+
             case R.id.select_view:
                 sharedPreferences.edit()
                         .putString(this.getString(R.string.pref_mode_key),
@@ -568,11 +584,23 @@ public class MainActivity extends AppCompatActivity implements
                 refreshActivity();
                 break;
 
-            case R.id.action_insert_fake_data:
-                Log.d(TAG, "Insert fake data action selected");
-                TestUtil.insertFakeData(this);
+            case R.id.action_edit:
+                Log.d(TAG, "Deletion action selected");
+                // Try to action first on the more specific item
+                if (selectedLessonPart_id != -1) {
+                    editLessonPart(selectedLessonPart_id);
+                } else if (selectedLesson_id != -1) {
+                    editLesson(selectedLesson_id);
+                } else {
                     Toast.makeText(this,
-                            "Fake data inserted!", Toast.LENGTH_LONG).show();
+                            "Please, select an item to delete!", Toast.LENGTH_LONG).show();
+                }
+                break;
+
+            case R.id.action_upload:
+                MyFirebaseUtilities myFirebase = new MyFirebaseUtilities(this,
+                        mFirestoreDatabase, mUserUid);
+                myFirebase.uploadDatabase();
                 break;
 
             case R.id.action_delete:
@@ -588,28 +616,12 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 break;
 
-            case R.id.action_edit:
-                Log.d(TAG, "Deletion action selected");
-                // Try to action first on the more specific item
-                if (selectedLessonPart_id != -1) {
-                    editLessonPart(selectedLessonPart_id);
-                } else if (selectedLesson_id != -1) {
-                    editLesson(selectedLesson_id);
-                } else {
-                    Toast.makeText(this,
-                            "Please, select an item to delete!", Toast.LENGTH_LONG).show();
-                }
+            case R.id.action_insert_fake_data:
+                Log.d(TAG, "Insert fake data action selected");
+                TestUtil.insertFakeData(this);
+                Toast.makeText(this,
+                        "Fake data inserted!", Toast.LENGTH_LONG).show();
                 break;
-
-            case android.R.id.home:
-                Log.d(TAG, "onOptionsItemSelected mainVisibility:" + mainVisibility);
-                // Set the action according to the views visibility
-                if (mainVisibility == VISIBLE) {
-                    mDrawerLayout.openDrawer(GravityCompat.START);
-                    return true;
-                } else {
-                    closePartsFragment();
-                }
 
             case R.id.action_cancel:
                break;
@@ -811,5 +823,8 @@ public class MainActivity extends AppCompatActivity implements
         Toast.makeText(mContext,
                 "Canceled!", Toast.LENGTH_LONG).show();
     }
+
+
+
 
 }
