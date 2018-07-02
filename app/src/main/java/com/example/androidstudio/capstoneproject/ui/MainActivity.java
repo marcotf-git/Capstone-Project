@@ -216,7 +216,6 @@ public class MainActivity extends AppCompatActivity implements
             // Phone visibility
             mainVisibility = VISIBLE;
             partsVisibility = GONE;
-
         }
 
         // Initialize the fragments
@@ -286,9 +285,6 @@ public class MainActivity extends AppCompatActivity implements
                     if (!(mUsername.equals(ANONYMOUS))) {
                         Toast.makeText(MainActivity.this, "Signed out!",
                                 Toast.LENGTH_SHORT).show();
-                    } else {
-                        Snackbar.make(lessonsContainer, "You are not signed.",
-                                Snackbar.LENGTH_LONG).show();
                     }
                     onSignedOutCleanup();
                 }
@@ -367,7 +363,7 @@ public class MainActivity extends AppCompatActivity implements
             if (resultCode == RESULT_OK) {
                 Toast.makeText(this, "Signed in!", Toast.LENGTH_SHORT).show();
             } else if (resultCode == RESULT_CANCELED) {
-                Toast.makeText(this, "Sign in canceled", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Sign in canceled!", Toast.LENGTH_SHORT).show();
              }
         }
     }
@@ -375,7 +371,10 @@ public class MainActivity extends AppCompatActivity implements
     // Helper method for Firebase logout
     private void logout () {
         Log.v(TAG, "logout");
-
+        if (mUsername.equals(ANONYMOUS)) {
+            Snackbar.make(lessonsContainer, "You are not signed!",
+                    Snackbar.LENGTH_LONG).show();
+        }
         AuthUI.getInstance().signOut(this);
     }
 
