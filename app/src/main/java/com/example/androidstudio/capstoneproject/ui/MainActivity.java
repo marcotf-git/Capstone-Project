@@ -510,7 +510,7 @@ public class MainActivity extends AppCompatActivity implements
             } else {
                 mMenu.findItem(R.id.action_upload).setVisible(false);
             }
-            mMenu.findItem(R.id.action_refresh).setVisible(false);
+            mMenu.findItem(R.id.action_refresh).setVisible(true);
             mButton.setVisibility(VISIBLE);
         }
 
@@ -530,6 +530,7 @@ public class MainActivity extends AppCompatActivity implements
 
         int itemThatWasClickedId = item.getItemId();
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        MyFirebaseUtilities myFirebase;
 
         switch (itemThatWasClickedId) {
 
@@ -573,7 +574,7 @@ public class MainActivity extends AppCompatActivity implements
                 } else {
                     mMenu.findItem(R.id.action_upload).setVisible(false);
                 }
-                mMenu.findItem(R.id.action_refresh).setVisible(false);
+                mMenu.findItem(R.id.action_refresh).setVisible(true);
                 mButton.setVisibility(VISIBLE);
                 Log.v(TAG, "Create mode selected");
                 break;
@@ -581,6 +582,8 @@ public class MainActivity extends AppCompatActivity implements
             case R.id.action_refresh:
                 Toast.makeText(this, "Reloading the data", Toast.LENGTH_LONG)
                         .show();
+                myFirebase = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
+                myFirebase.refreshDatabase();
                 refreshActivity();
                 break;
 
@@ -598,8 +601,7 @@ public class MainActivity extends AppCompatActivity implements
                 break;
 
             case R.id.action_upload:
-                MyFirebaseUtilities myFirebase = new MyFirebaseUtilities(this,
-                        mFirestoreDatabase, mUserUid);
+                myFirebase = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
                 myFirebase.uploadDatabase();
                 break;
 

@@ -143,23 +143,42 @@ public class MyFirebaseUtilities {
     // Do not delete if existing
     public void refreshDatabase() {
 
-        Lesson lesson = new Lesson();
+        // Get a document by document name
+//        final String documentName = String.format( Locale.US, "%s_%02d",
+//                this.userUid, 1);
+//        Log.v(TAG, "refreshDatabase documentName:" + documentName);
+//        DocumentReference docRef = cloudFirestore.collection("lessons").document(documentName);
+//        docRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
+//            @Override
+//            public void onSuccess(DocumentSnapshot documentSnapshot) {
+//                Lesson lesson = documentSnapshot.toObject(Lesson.class);
+//                String jsonString = MyFirebaseUtilities.serialize(lesson);
+//                Log.v(TAG, "refreshDatabase onSuccess lesson jsonString:" + jsonString);
+//                MyFirebaseUtilities.refreshLesson(lesson);
+//            }
+//        });
 
-        lesson.setUser_uid(this.userUid);
-        lesson.setLesson_id(1);
-        final String documentName = String.format( Locale.US, "%s_%02d",
-                lesson.getUser_uid(), lesson.getLesson_id());
-
-        Log.v(TAG, "refreshDatabase documentName:" + documentName);
-
-        // Get a document
-        DocumentReference docRef = cloudFirestore.collection("cities").document(documentName);
-        docRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-            @Override
-            public void onSuccess(DocumentSnapshot documentSnapshot) {
-                Lesson lesson = documentSnapshot.toObject(Lesson.class);
-            }
-        });
+        // Get multiple documents
+        cloudFirestore.collection("lessons")
+                //.whereEqualTo("field_name", true)
+                .get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                Log.d(TAG, "refreshDatabase onComplete document.getId():" +
+                                        document.getId() + " => " + document.getData());
+                                Lesson lesson = document.toObject(Lesson.class);
+                                String jsonString = MyFirebaseUtilities.serialize(lesson);
+                                Log.v(TAG, "refreshDatabase onComplete lesson jsonString:" + jsonString);
+                                MyFirebaseUtilities.refreshLesson(lesson);
+                            }
+                        } else {
+                            Log.d(TAG, "Error getting documents: ", task.getException());
+                        }
+                    }
+                });
 
 
 //        ContentResolver contentResolver = mContext.getContentResolver();
@@ -240,6 +259,22 @@ public class MyFirebaseUtilities {
     }
 
 
+    static private void refreshLesson(Lesson lesson) {
+
+        if (null == lesson) {
+            return;
+        }
+
+        Log.v(TAG, "refreshLesson lesson_id:" + lesson.getLesson_id());
+
+        // query the local database to see if find the lesson
+        // update if found
+        // create if didn't exist
+
+
+    }
+
+
     /**
      * Serialize string.
      *
@@ -247,7 +282,7 @@ public class MyFirebaseUtilities {
      * @param obj Object to serialize
      * @return Serialized string
      */
-    private <T> String serialize(T obj) {
+    static private <T> String serialize(T obj) {
         Gson gson = new Gson();
         return gson.toJson(obj);
     }
@@ -262,7 +297,7 @@ public class MyFirebaseUtilities {
      * @return De-serialized object
      * @throws ClassNotFoundException the class not found exception
      */
-    private <T> T deSerialize(String jsonString, Class<T> tClass) throws ClassNotFoundException {
+    static private <T> T deSerialize(String jsonString, Class<T> tClass) throws ClassNotFoundException {
         if (!isValid(jsonString)) {
             return null;
         }
