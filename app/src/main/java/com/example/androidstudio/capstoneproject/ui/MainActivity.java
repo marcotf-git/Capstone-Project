@@ -11,6 +11,7 @@ import android.support.annotation.Nullable;
 import android.support.annotation.VisibleForTesting;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
+import android.support.design.widget.Snackbar;
 import android.support.test.espresso.IdlingResource;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentManager;
@@ -282,6 +283,13 @@ public class MainActivity extends AppCompatActivity implements
                     // user is signed in
                     onSignedInInitialize(user.getDisplayName());
                 } else {
+                    if (!(mUsername.equals(ANONYMOUS))) {
+                        Toast.makeText(MainActivity.this, "Signed out!",
+                                Toast.LENGTH_SHORT).show();
+                    } else {
+                        Snackbar.make(lessonsContainer, "You are not signed.",
+                                Snackbar.LENGTH_LONG).show();
+                    }
                     onSignedOutCleanup();
                 }
             }
@@ -367,9 +375,8 @@ public class MainActivity extends AppCompatActivity implements
     // Helper method for Firebase logout
     private void logout () {
         Log.v(TAG, "logout");
+
         AuthUI.getInstance().signOut(this);
-        Toast.makeText(MainActivity.this, "Signed out!",
-                Toast.LENGTH_SHORT).show();
     }
 
     // Method for sign out for the listener

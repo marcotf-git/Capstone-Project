@@ -9,4 +9,7 @@
     <color name="colorPrimaryLight">#7986cb</color>
     <color name="colorAccentLight">#f48fb1</color>
 
+    <color name="colorItemPressed">#65cdd1ea</color>
+
+
 </resources>
