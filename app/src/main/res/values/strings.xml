@@ -49,7 +49,10 @@
     <string name="login">Login</string>
     <string name="logout">Logout</string>
     <string name="user_email">user email</string>
-    <string name="username">user name:</string>
+    <string name="username">User Name:</string>
     <string name="username_hint">username</string>
+    <string name="userEmail">Email:</string>
+    <string name="userEmail_hint">email</string>
+    <string name="menu_action_cancel_label">Cancel</string>
 
 </resources>

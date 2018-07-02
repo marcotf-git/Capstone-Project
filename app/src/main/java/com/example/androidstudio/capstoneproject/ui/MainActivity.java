@@ -106,7 +106,11 @@ public class MainActivity extends AppCompatActivity implements
     private static int partsVisibility;
     private static boolean flag_preferences_updates = false;
 
+    // User data variables
     private String mUsername;
+    private String mUserEmail;
+    // The user's ID, unique to the Firebase project.
+    private String mUserUid;
 
     // Firebase instance variables
     private FirebaseDatabase mFirebaseDatabase;
@@ -130,6 +134,7 @@ public class MainActivity extends AppCompatActivity implements
     private FrameLayout lessonsContainer;
     private FrameLayout partsContainer;
     private TextView mUsernameTextView;
+    private TextView mUserEmailTextView;
 
     // Fragments
     private MainFragment mainFragment;
@@ -161,6 +166,7 @@ public class MainActivity extends AppCompatActivity implements
         mContext = this;
 
         mUsername = ANONYMOUS;
+        mUserEmail = "";
 
         // Add the toolbar as the default app bar
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -280,9 +286,10 @@ public class MainActivity extends AppCompatActivity implements
                 FirebaseUser user = firebaseAuth.getCurrentUser();
                 if (user != null){
                     // user is signed in
-                    onSignedInInitialize(user.getDisplayName());
+                    onSignedInInitialize(user.getDisplayName(), user.getEmail(), user.getUid());
                 } else {
-                    if (!(mUsername.equals(ANONYMOUS))) {
+                    // user is signed out
+                    if (!mUsername.equals(ANONYMOUS)) {
                         Toast.makeText(MainActivity.this, "Signed out!",
                                 Toast.LENGTH_SHORT).show();
                     }
@@ -320,8 +327,9 @@ public class MainActivity extends AppCompatActivity implements
         // Set the username int the drawer
         View headerView = navigationView.getHeaderView(0);
         mUsernameTextView = (TextView) headerView.findViewById(R.id.tv_user_name);
+        mUserEmailTextView = (TextView) headerView.findViewById(R.id.tv_user_email);
         mUsernameTextView.setText(mUsername);
-
+        mUserEmailTextView.setText(mUserEmail);
     }
 
 
@@ -349,9 +357,28 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     // Method for sign in for the listener
-    private void onSignedInInitialize(String username){
+    private void onSignedInInitialize(String username, String userEmail, String userUid) {
+
         mUsername = username;
+        mUserEmail = userEmail;
+        mUserUid = userUid;
+
+        // Set the drawer
         mUsernameTextView.setText(mUsername);
+        mUserEmailTextView.setText(mUserEmail);
+
+        // Set the visibility of the upload action icon
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
+                this.getString(R.string.pref_mode_view));
+        if (null != mMenu) {
+            if (queryOption.equals(this.getString(R.string.pref_mode_create))) {
+                mMenu.findItem(R.id.action_upload).setVisible(true);
+            } else {
+                mMenu.findItem(R.id.action_upload).setVisible(false);
+            }
+        }
+
         Log.v(TAG, "onSignedInInitialize mUsername:" + mUsername);
     }
 
@@ -382,7 +409,14 @@ public class MainActivity extends AppCompatActivity implements
     private void onSignedOutCleanup(){
         Log.v(TAG, "onSignedOutCleanup");
         mUsername = ANONYMOUS;
+        mUserEmail = "";
+        mUserUid = "";
         mUsernameTextView.setText(mUsername);
+        mUserEmailTextView.setText(mUserEmail);
+        // Set the visibility of the upload action icon
+        if (null != mMenu) {
+            mMenu.findItem(R.id.action_upload).setVisible(false);
+        }
     }
 
     // This method is saving the visibility of the fragments in static vars
@@ -465,7 +499,11 @@ public class MainActivity extends AppCompatActivity implements
             // Prepare the visibility of the creation action items
             mMenu.findItem(R.id.action_delete).setVisible(true);
             mMenu.findItem(R.id.action_edit).setVisible(true);
-            mMenu.findItem(R.id.action_upload).setVisible(true);
+            if (!mUsername.equals(ANONYMOUS)) {
+                mMenu.findItem(R.id.action_upload).setVisible(true);
+            } else {
+                mMenu.findItem(R.id.action_upload).setVisible(false);
+            }
             mMenu.findItem(R.id.action_refresh).setVisible(false);
             mButton.setVisibility(VISIBLE);
         }
@@ -514,7 +552,11 @@ public class MainActivity extends AppCompatActivity implements
                 // Set visibility of action icons
                 mMenu.findItem(R.id.action_delete).setVisible(true);
                 mMenu.findItem(R.id.action_edit).setVisible(true);
-                mMenu.findItem(R.id.action_upload).setVisible(true);
+                if (!mUsername.equals(ANONYMOUS)) {
+                    mMenu.findItem(R.id.action_upload).setVisible(true);
+                } else {
+                    mMenu.findItem(R.id.action_upload).setVisible(false);
+                }
                 mMenu.findItem(R.id.action_refresh).setVisible(false);
                 mButton.setVisibility(VISIBLE);
                 Log.v(TAG, "Create mode selected");
@@ -568,6 +610,9 @@ public class MainActivity extends AppCompatActivity implements
                 } else {
                     closePartsFragment();
                 }
+
+            case R.id.action_cancel:
+               break;
 
             default:
                 break;
