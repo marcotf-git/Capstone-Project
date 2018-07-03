@@ -105,7 +105,7 @@ public class MainActivity extends AppCompatActivity implements
     private static long selectedLessonPart_id;
     private static int mainVisibility;
     private static int partsVisibility;
-    private static boolean flag_preferences_updates = false;
+    //private static boolean flag_preferences_updates = false;
 
     // User data variables
     private String mUsername;
@@ -427,17 +427,6 @@ public class MainActivity extends AppCompatActivity implements
         super.onSaveInstanceState(savedInstanceState);
     }
 
-    // In onStart, if preferences have been changed, refresh the view
-    @Override
-    protected void onStart() {
-        super.onStart();
-        Log.v("onStart", "on start");
-        if (flag_preferences_updates) {
-            Log.d("onStart", "preferences changed");
-            updateView();
-        }
-    }
-
     @Override
     protected void onResume() {
         super.onResume();
@@ -574,11 +563,9 @@ public class MainActivity extends AppCompatActivity implements
                 break;
 
             case R.id.action_refresh:
-//                Toast.makeText(this, "Reloading the data", Toast.LENGTH_LONG)
-//                        .show();
                 myFirebase = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
                 myFirebase.refreshDatabase();
-                //refreshActivity();
+                deselectViews();
                 break;
 
             case R.id.action_edit:
@@ -648,24 +635,17 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
-        flag_preferences_updates = true;
         String lessonsQueryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
                 this.getString(R.string.pref_mode_view));
         Log.d(TAG, "onSharedPreferenceChanged lessonsQueryOption:" + lessonsQueryOption);
-        updateView();
     }
-
-    // Reload the activity
-    private void refreshActivity() {
-        //Controller.clearRecipesList();
-        finish();
-        startActivity(getIntent());
-    }
-
-    // Helper function to reload data and update the view, called by the shared preference listener
-    public void updateView() {
-        Log.v(TAG, "updateView");
-        flag_preferences_updates = false;
+    
+    private void deselectViews() {
+        // Deselect the last view selected
+        mainFragment.deselectViews();
+        selectedLesson_id = -1;
+        partsFragment.deselectViews();
+        selectedLessonPart_id = -1;
     }
 
     // Helper function to delete lesson data and update the view
