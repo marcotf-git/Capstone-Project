@@ -534,6 +534,7 @@ public class MainActivity extends AppCompatActivity implements
                                 this.getString(R.string.pref_mode_view)).apply();
                 // Set visibility of action icons
                 mMenu.findItem(R.id.action_delete).setVisible(false);
+                mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
                 mMenu.findItem(R.id.action_edit).setVisible(false);
                 mMenu.findItem(R.id.action_upload).setVisible(false);
                 mMenu.findItem(R.id.action_refresh).setVisible(true);
@@ -554,8 +555,10 @@ public class MainActivity extends AppCompatActivity implements
                 mMenu.findItem(R.id.action_delete).setVisible(true);
                 mMenu.findItem(R.id.action_edit).setVisible(true);
                 if (!mUsername.equals(ANONYMOUS)) {
+                    mMenu.findItem(R.id.action_delete_from_cloud).setVisible(true);
                     mMenu.findItem(R.id.action_upload).setVisible(true);
                 } else {
+                    mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
                     mMenu.findItem(R.id.action_upload).setVisible(false);
                 }
                 mMenu.findItem(R.id.action_refresh).setVisible(true);
@@ -609,7 +612,6 @@ public class MainActivity extends AppCompatActivity implements
                 Log.d(TAG, "Delete from Cloud action selected");
                 // Try to action first on the more specific item
                 if  (selectedLesson_id != -1) {
-
                     deleteLessonFromCloud(selectedLesson_id);
                 } else {
                     Toast.makeText(this,
