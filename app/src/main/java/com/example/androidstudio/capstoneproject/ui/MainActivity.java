@@ -98,6 +98,8 @@ public class MainActivity extends AppCompatActivity implements
     private static final String CLICKED_LESSON_PART_ID = "clickedLessonPartId";
     private static final String SELECTED_LESSON_PART_ID = "selectedLessonPartId";
     private static final String LOCAL_USER_UID = "localUserUid";
+    private static final String USER_DATABASE = "userDatabase";
+    private static final String GROUP_DATABASE = "groupDatabase";
 
     // App state information variables
     private static long clickedLesson_id;
@@ -106,13 +108,13 @@ public class MainActivity extends AppCompatActivity implements
     private static long selectedLessonPart_id;
     private static int mainVisibility;
     private static int partsVisibility;
+    private static String databaseVisibility;
     // The user's ID, unique to the Firebase project.
     private static String mUserUid;
 
     // User data variables
     private String mUsername;
     private String mUserEmail;
-
 
     // Firebase instance variables
     private FirebaseFirestore mFirestoreDatabase;
@@ -170,7 +172,7 @@ public class MainActivity extends AppCompatActivity implements
         mUserEmail = "";
 
         // Recover the local user uid for handling the database global consistency
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         mUserUid = sharedPreferences.getString(LOCAL_USER_UID,"");
 
         // Add the toolbar as the default app bar
@@ -227,6 +229,7 @@ public class MainActivity extends AppCompatActivity implements
             // Phone visibility
             mainVisibility = VISIBLE;
             partsVisibility = GONE;
+            databaseVisibility = USER_DATABASE;
         }
 
         // Initialize the fragments
@@ -315,16 +318,28 @@ public class MainActivity extends AppCompatActivity implements
                     int itemThatWasClickedId = menuItem.getItemId();
                     // Update the UI based on the item selected
                     switch (itemThatWasClickedId) {
+
                         case R.id.action_login:
                             // Firebase UI login
                             login();
                             break;
+
                         case R.id.action_logout:
                             logout();
                             break;
+
+                        case R.id.nav_my_lessons:
+                            databaseVisibility = USER_DATABASE;
+                            break;
+
+                        case R.id.nav_group_lessons:
+                            databaseVisibility = GROUP_DATABASE;
+                            break;
+
                         default:
                             break;
                     }
+                    contextualizeMenu(sharedPreferences);
                     return true;
                 }
             });
@@ -333,10 +348,66 @@ public class MainActivity extends AppCompatActivity implements
         View headerView = navigationView.getHeaderView(0);
         mUsernameTextView = (TextView) headerView.findViewById(R.id.tv_user_name);
         mUserEmailTextView = (TextView) headerView.findViewById(R.id.tv_user_email);
+        // Set the database view state
         mUsernameTextView.setText(mUsername);
         mUserEmailTextView.setText(mUserEmail);
+        Menu menuDrawer = navigationView.getMenu();
+        menuDrawer.findItem(R.id.nav_my_lessons).setChecked(databaseVisibility.equals(USER_DATABASE));
+
     }
 
+
+    private void contextualizeMenu(SharedPreferences sharedPreferences) {
+
+        String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
+                this.getString(R.string.pref_mode_view));
+
+        if (queryOption.equals(this.getString(R.string.pref_mode_create))) {
+            mMenu.findItem(R.id.action_delete).setVisible(true);
+        } else {
+            mMenu.findItem(R.id.action_delete).setVisible(false);
+        }
+
+        if (databaseVisibility.equals(USER_DATABASE) &&
+                queryOption.equals(this.getString(R.string.pref_mode_create))) {
+            mMenu.findItem(R.id.action_insert_fake_data).setVisible(true);
+        } else {
+            mMenu.findItem(R.id.action_insert_fake_data).setVisible(false);
+        }
+
+        if (databaseVisibility.equals(USER_DATABASE) &&
+                queryOption.equals(this.getString(R.string.pref_mode_create)) &&
+                !mUsername.equals(ANONYMOUS)) {
+            mMenu.findItem(R.id.action_delete_from_cloud).setVisible(true);
+            mMenu.findItem(R.id.action_upload).setVisible(true);
+            mButton.setVisibility(VISIBLE);
+        } else {
+            mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
+            mMenu.findItem(R.id.action_upload).setVisible(false);
+            mButton.setVisibility(GONE);
+        }
+
+        if (!mUsername.equals(ANONYMOUS)) {
+            mMenu.findItem(R.id.action_refresh).setVisible(true);
+        } else {
+            mMenu.findItem(R.id.action_refresh).setVisible(false);
+        }
+
+        if (databaseVisibility.equals(USER_DATABASE) &&
+                queryOption.equals(this.getString(R.string.pref_mode_create))) {
+            mMenu.findItem(R.id.action_edit).setVisible(true);
+        } else {
+            mMenu.findItem(R.id.action_edit).setVisible(false);
+        }
+
+        // Set the drawer menu icon according to views
+        if (mainVisibility == VISIBLE) {
+            actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
+        } else {
+            actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
+        }
+
+    }
 
     // Helper method for Firebase login
     private void login() {
@@ -474,8 +545,10 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         super.onPrepareOptionsMenu(menu);
+
         // Save a reference to the menu
         mMenu = menu;
+
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
                 this.getString(R.string.pref_mode_view));
@@ -483,27 +556,13 @@ public class MainActivity extends AppCompatActivity implements
         if (queryOption.equals(this.getString(R.string.pref_mode_view))) {
             menu.findItem(R.id.select_view).setChecked(true);
             // Prepare the visibility of the creation action items
-            mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
-            mMenu.findItem(R.id.action_delete).setVisible(false);
-            mMenu.findItem(R.id.action_edit).setVisible(false);
-            mMenu.findItem(R.id.action_upload).setVisible(false);
-            mMenu.findItem(R.id.action_refresh).setVisible(true);
-            mButton.setVisibility(GONE);
+            contextualizeMenu(sharedPreferences);
         }
 
         if (queryOption.equals(this.getString(R.string.pref_mode_create))) {
             menu.findItem(R.id.select_create).setChecked(true);
             // Prepare the visibility of the creation action items
-            mMenu.findItem(R.id.action_delete).setVisible(true);
-            if (!mUsername.equals(ANONYMOUS)) {
-                mMenu.findItem(R.id.action_delete_from_cloud).setVisible(true);
-                mMenu.findItem(R.id.action_upload).setVisible(true);
-            } else {
-                mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
-                mMenu.findItem(R.id.action_upload).setVisible(false);
-            }
-            mMenu.findItem(R.id.action_refresh).setVisible(true);
-            mButton.setVisibility(VISIBLE);
+            contextualizeMenu(sharedPreferences);
         }
 
         // Set the drawer menu icon according to views
@@ -522,7 +581,6 @@ public class MainActivity extends AppCompatActivity implements
 
         int itemThatWasClickedId = item.getItemId();
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        MyFirebaseUtilities myFirebase;
 
         switch (itemThatWasClickedId) {
 
@@ -538,16 +596,12 @@ public class MainActivity extends AppCompatActivity implements
                 break;
 
             case R.id.select_view:
+                mMenu.findItem(R.id.select_view).setChecked(true);
                 sharedPreferences.edit()
                         .putString(this.getString(R.string.pref_mode_key),
                                 this.getString(R.string.pref_mode_view)).apply();
                 // Set visibility of action icons
-                mMenu.findItem(R.id.action_delete).setVisible(false);
-                mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
-                mMenu.findItem(R.id.action_edit).setVisible(false);
-                mMenu.findItem(R.id.action_upload).setVisible(false);
-                mMenu.findItem(R.id.action_refresh).setVisible(true);
-                mButton.setVisibility(GONE);
+                contextualizeMenu(sharedPreferences);
                 // Deselect the last view selected
                 mainFragment.deselectViews();
                 partsFragment.deselectViews();
@@ -557,27 +611,18 @@ public class MainActivity extends AppCompatActivity implements
                 break;
 
             case R.id.select_create:
+                mMenu.findItem(R.id.select_create).setChecked(true);
                 sharedPreferences.edit()
                         .putString(this.getString(R.string.pref_mode_key),
                                 this.getString(R.string.pref_mode_create)).apply();
                 // Set visibility of action icons
-                mMenu.findItem(R.id.action_delete).setVisible(true);
-                mMenu.findItem(R.id.action_edit).setVisible(true);
-                if (!mUsername.equals(ANONYMOUS)) {
-                    mMenu.findItem(R.id.action_delete_from_cloud).setVisible(true);
-                    mMenu.findItem(R.id.action_upload).setVisible(true);
-                } else {
-                    mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
-                    mMenu.findItem(R.id.action_upload).setVisible(false);
-                }
-                mMenu.findItem(R.id.action_refresh).setVisible(true);
-                mButton.setVisibility(VISIBLE);
+                contextualizeMenu(sharedPreferences);
                 Log.v(TAG, "Create mode selected");
                 break;
 
             case R.id.action_refresh:
-                myFirebase = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
-                myFirebase.refreshDatabase();
+                MyFirebaseUtilities myFirebaseUtilities = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
+                myFirebaseUtilities.refreshDatabase();
                 deselectViews();
                 break;
 
@@ -596,8 +641,8 @@ public class MainActivity extends AppCompatActivity implements
 
             case R.id.action_upload:
                 if (selectedLesson_id != -1) {
-                    myFirebase = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
-                    myFirebase.uploadDatabase(selectedLesson_id);
+                    myFirebaseUtilities = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
+                    myFirebaseUtilities.uploadDatabase(selectedLesson_id);
                 } else {
                     Toast.makeText(this,
                             "Please, select a lesson to upload!", Toast.LENGTH_LONG).show();

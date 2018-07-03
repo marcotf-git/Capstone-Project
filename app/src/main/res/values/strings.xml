@@ -56,5 +56,7 @@
     <string name="userEmail_hint">email</string>
     <string name="menu_action_cancel_label">Cancel</string>
     <string name="menu_action_delete_from_cloud_label">Delete from Cloud</string>
+    <string name="my_lessons">My Lessons</string>
+    <string name="group_lessons">Group Lessons</string>
 
 </resources>

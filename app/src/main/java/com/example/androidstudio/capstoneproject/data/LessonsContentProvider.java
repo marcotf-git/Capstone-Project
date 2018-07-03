@@ -21,6 +21,10 @@ public class LessonsContentProvider extends ContentProvider {
     public static final int MY_LESSON_WITH_ID = 101;
     public static final int MY_LESSON_PARTS = 200;
     public static final int MY_LESSON_PART_WITH_ID = 201;
+    public static final int GROUP_LESSONS = 1000;
+    public static final int GROUP_LESSON_WITH_ID = 1001;
+    public static final int GROUP_LESSON_PARTS = 2000;
+    public static final int GROUP_LESSON_PART_WITH_ID = 2001;
 
     // Declare a static variable for the Uri matcher
     private static final UriMatcher sUriMatcher = buildUriMatcher();
@@ -43,6 +47,11 @@ public class LessonsContentProvider extends ContentProvider {
         uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSONS + "/#", MY_LESSON_WITH_ID);
         uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSON_PARTS, MY_LESSON_PARTS);
         uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSON_PARTS + "/#", MY_LESSON_PART_WITH_ID);
+
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_GROUP_LESSONS, GROUP_LESSONS);
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_GROUP_LESSONS + "/#", GROUP_LESSON_WITH_ID);
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_GROUP_LESSON_PARTS, GROUP_LESSON_PARTS);
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_GROUP_LESSON_PARTS + "/#", GROUP_LESSON_PART_WITH_ID);
 
         return uriMatcher;
 
@@ -180,6 +189,53 @@ public class LessonsContentProvider extends ContentProvider {
                         null);
                 break;
 
+            // Query for the group_lessons directory
+            case GROUP_LESSONS:
+                retCursor =  db.query(LessonsContract.GroupLessonsEntry.TABLE_NAME,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null,
+                        null,
+                        sortOrder);
+                break;
+
+            case GROUP_LESSON_WITH_ID:
+                // Get the lesson "_id" from the URI path
+                String group_lesson_id = uri.getPathSegments().get(1);
+                // Use selections/selectionArgs to filter for this "_id"
+                retCursor =  db.query(LessonsContract.GroupLessonsEntry.TABLE_NAME,
+                        projection,
+                        "_id=?",
+                        new String[]{group_lesson_id},
+                        null,
+                        null,
+                        null);
+                break;
+
+            case GROUP_LESSON_PARTS:
+                retCursor =  db.query(LessonsContract.GroupLessonPartsEntry.TABLE_NAME,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null,
+                        null,
+                        sortOrder);
+                break;
+
+            case GROUP_LESSON_PART_WITH_ID:
+                // Get the part "_id" from the URI path
+                String group_lesson_part_id = uri.getPathSegments().get(1);
+                // Use selections/selectionArgs to filter for this "_id"
+                retCursor =  db.query(LessonsContract.GroupLessonPartsEntry.TABLE_NAME,
+                        projection,
+                        "_id=?",
+                        new String[]{group_lesson_part_id},
+                        null,
+                        null,
+                        null);
+                break;
+
             // Default exception
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
@@ -193,7 +249,8 @@ public class LessonsContentProvider extends ContentProvider {
     }
 
 
-    // Implement delete to delete a single row of data
+    // Implement delete to delete a single row of data, in case of my_lessons
+    // Implement to clean the database, in case og group_lessons
     @Override
     public int delete(@NonNull Uri uri, String selection, String[] selectionArgs) {
 
@@ -223,6 +280,17 @@ public class LessonsContentProvider extends ContentProvider {
                 // Use selections/selectionArgs to filter for this "_id"
                 rowsDeleted = db.delete(LessonsContract.MyLessonPartsEntry.TABLE_NAME,
                         "_id=?", new String[]{part_id});
+                break;
+
+            // clean the local database, in case of the group (for sync with cloud)
+            case GROUP_LESSONS:
+                rowsDeleted = db.delete(LessonsContract.MyLessonsEntry.TABLE_NAME,
+                        null, null);
+                break;
+
+            case GROUP_LESSON_PARTS:
+                rowsDeleted = db.delete(LessonsContract.MyLessonPartsEntry.TABLE_NAME,
+                        null, null);
                 break;
 
             default:

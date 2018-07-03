@@ -10,7 +10,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "lessons.db";
 
     // If you change the database schema, you must increment the database version
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
 
     // Constructor
     public LessonsDbHelper(Context context) {
@@ -20,7 +20,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
 
-        // Create a table to hold the lesson data
+        // Create a table to hold the lesson data of the user
         final String SQL_CREATE_MY_LESSONS_TABLE =
 
                 "CREATE TABLE " +  LessonsContract.MyLessonsEntry.TABLE_NAME + " (" +
@@ -46,7 +46,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
                 ");";
 
 
-        // Create a table to hold the lesson part data
+        // Create a table to hold the lesson part data of the user
         final String SQL_CREATE_MY_LESSON_PARTS_TABLE =
 
                 "CREATE TABLE " +  LessonsContract.MyLessonPartsEntry.TABLE_NAME + " (" +
@@ -77,9 +77,63 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
                          */
                         //" UNIQUE (" + LessonsContract.MyLessonPartsEntry._ID + ") ON CONFLICT REPLACE);";
 
+        // Create a table to hold the lesson data of the group
+        final String SQL_CREATE_GROUP_LESSONS_TABLE =
+
+                "CREATE TABLE " +  LessonsContract.GroupLessonsEntry.TABLE_NAME + " (" +
+
+                        /*
+                         * MyLessonsEntry did not explicitly declare a column called "_id". However,
+                         * MyLessonsEntry implements the interface, "BaseColumns", which does have a field
+                         * named "_id". We use that here to designate our table's primary key.
+                         */
+                        LessonsContract.GroupLessonsEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+
+                        LessonsContract.GroupLessonsEntry.COLUMN_LESSON_ID + " INTEGER NOT NULL," +
+
+                        LessonsContract.GroupLessonsEntry.COLUMN_LESSON_TITLE + " TEXT NOT NULL," +
+
+                        LessonsContract.GroupLessonsEntry.COLUMN_LESSON_TIME_STAMP + " TEXT NOT NULL," +
+
+                        LessonsContract.GroupLessonsEntry.COLUMN_USER_UID + " TEXT NOT NULL" +
+
+                        ");";
+
+
+        // Create a table to hold the lesson part data of the group
+        final String SQL_CREATE_GROUP_LESSON_PARTS_TABLE =
+
+                "CREATE TABLE " +  LessonsContract.GroupLessonPartsEntry.TABLE_NAME + " (" +
+
+                        /*
+                         * MyLessonPartsEntry did not explicitly declare a column called "_id". However,
+                         * MyLessonPartsEntry implements the interface, "BaseColumns", which does have a field
+                         * named "_id". We use that here to designate our table's primary key.
+                         */
+                        LessonsContract.GroupLessonPartsEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+
+                        LessonsContract.GroupLessonPartsEntry.COLUMN_PART_ID + " INTEGER NOT NULL," +
+                        // Must map to an lesson_id
+                        LessonsContract.GroupLessonPartsEntry.COLUMN_LESSON_ID + " INTEGER NOT NULL," +
+
+                        LessonsContract.GroupLessonPartsEntry.COLUMN_PART_TITLE + " TEXT NOT NULL," +
+                        // Must map to an lesson user_id
+                        LessonsContract.GroupLessonPartsEntry.COLUMN_USER_UID + " INTEGER NOT NULL," +
+
+                        "FOREIGN KEY(" + LessonsContract.GroupLessonPartsEntry.COLUMN_USER_UID + "," +
+                                        LessonsContract.GroupLessonPartsEntry.COLUMN_LESSON_ID + ") " +
+                        "REFERENCES " + LessonsContract.GroupLessonsEntry.TABLE_NAME +
+                                    "(" + LessonsContract.GroupLessonsEntry.COLUMN_USER_UID + "," +
+                                        LessonsContract.GroupLessonsEntry.COLUMN_LESSON_ID +")" +
+
+                        ");";
+
+
         // Create the database
         sqLiteDatabase.execSQL(SQL_CREATE_MY_LESSONS_TABLE);
         sqLiteDatabase.execSQL(SQL_CREATE_MY_LESSON_PARTS_TABLE);
+        sqLiteDatabase.execSQL(SQL_CREATE_GROUP_LESSONS_TABLE);
+        sqLiteDatabase.execSQL(SQL_CREATE_GROUP_LESSON_PARTS_TABLE);
 
     }
 
@@ -91,6 +145,8 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
         // instead of dropping it, so that existing data is not deleted.
         sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + LessonsContract.MyLessonPartsEntry.TABLE_NAME);
         sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + LessonsContract.MyLessonsEntry.TABLE_NAME);
+        sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + LessonsContract.GroupLessonPartsEntry.TABLE_NAME);
+        sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + LessonsContract.GroupLessonsEntry.TABLE_NAME);
         onCreate(sqLiteDatabase);
     }
 }

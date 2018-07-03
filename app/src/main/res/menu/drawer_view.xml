@@ -8,4 +8,14 @@
             android:id="@+id/action_logout"
             android:title="@string/logout" />
     </group>
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_my_lessons"
+            android:title="@string/my_lessons" />
+        <item
+            android:id="@+id/nav_group_lessons"
+            android:title="@string/group_lessons" />
+    </group>
+
 </menu>
