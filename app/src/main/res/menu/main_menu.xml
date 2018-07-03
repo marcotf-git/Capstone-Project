@@ -18,7 +18,7 @@
         android:id="@+id/action_cancel"
         android:orderInCategory="7"
         android:title="@string/menu_action_cancel_label"
-        app:showAsAction="never"/>
+        app:showAsAction="never" />
 
     <item
         android:id="@+id/action_insert_fake_data"

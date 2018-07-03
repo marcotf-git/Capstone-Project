@@ -97,6 +97,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final String SELECTED_LESSON_ID = "selectedLessonId";
     private static final String CLICKED_LESSON_PART_ID = "clickedLessonPartId";
     private static final String SELECTED_LESSON_PART_ID = "selectedLessonPartId";
+    private static final String LOCAL_USER_UID = "localUserUid";
 
     // App state information variables
     private static long clickedLesson_id;
@@ -105,13 +106,13 @@ public class MainActivity extends AppCompatActivity implements
     private static long selectedLessonPart_id;
     private static int mainVisibility;
     private static int partsVisibility;
-    //private static boolean flag_preferences_updates = false;
+    // The user's ID, unique to the Firebase project.
+    private static String mUserUid;
 
     // User data variables
     private String mUsername;
     private String mUserEmail;
-    // The user's ID, unique to the Firebase project.
-    private String mUserUid;
+
 
     // Firebase instance variables
     private FirebaseFirestore mFirestoreDatabase;
@@ -167,6 +168,10 @@ public class MainActivity extends AppCompatActivity implements
 
         mUsername = ANONYMOUS;
         mUserEmail = "";
+
+        // Recover the local user uid for handling the database global consistency
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        mUserUid = sharedPreferences.getString(LOCAL_USER_UID,"");
 
         // Add the toolbar as the default app bar
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -363,12 +368,15 @@ public class MainActivity extends AppCompatActivity implements
         mUserEmail = userEmail;
         mUserUid = userUid;
 
+        // save the user uid locally
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        sharedPreferences.edit().putString(LOCAL_USER_UID, mUserUid).apply();
+
         // Set the drawer
         mUsernameTextView.setText(mUsername);
         mUserEmailTextView.setText(mUserEmail);
 
         // Set the visibility of the upload action icon
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
                 this.getString(R.string.pref_mode_view));
         if (null != mMenu) {
@@ -410,7 +418,6 @@ public class MainActivity extends AppCompatActivity implements
         Log.v(TAG, "onSignedOutCleanup");
         mUsername = ANONYMOUS;
         mUserEmail = "";
-        mUserUid = "";
         mUsernameTextView.setText(mUsername);
         mUserEmailTextView.setText(mUserEmail);
         // Set the visibility of the upload action icon

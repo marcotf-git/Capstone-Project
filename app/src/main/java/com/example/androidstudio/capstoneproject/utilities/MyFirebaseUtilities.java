@@ -161,6 +161,7 @@ public class MyFirebaseUtilities {
 //        });
 
         // Get multiple documents
+
         cloudFirestore.collection("lessons")
                 //.whereEqualTo("field_name", true)
                 .get()
@@ -175,7 +176,12 @@ public class MyFirebaseUtilities {
                                 Lesson lesson = document.toObject(Lesson.class);
                                 String jsonString = MyFirebaseUtilities.serialize(lesson);
                                 Log.v(TAG, "refreshDatabase onComplete lesson jsonString:" + jsonString);
-                                MyFirebaseUtilities.refreshLesson(mContext, lesson);
+
+                                // refresh the lessons of the local user on its separate table
+                                // this gives consistency to the database
+                                if (userUid.equals(lesson.getUser_uid())) {
+                                    MyFirebaseUtilities.refreshLesson(mContext, lesson);
+                                }
                             }
                         } else {
                             Log.d(TAG, "Error getting documents: ", task.getException());
