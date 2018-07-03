@@ -27,6 +27,7 @@
     <string name="add_button">Add</string>
     <string name="add_lesson_title">Please, add the Lesson Title!</string>
     <string name="dialog_delete_lesson">Delete the lesson?</string>
+    <string name="dialog_delete_lesson_from_cloud">Delete the lesson from Cloud?</string>
     <string name="delete">Delete</string>
     <string name="cancel">Cancel</string>
     <string name="title_activity_edit_lesson">Edit Lesson Activity</string>
@@ -54,5 +55,6 @@
     <string name="userEmail">Email:</string>
     <string name="userEmail_hint">email</string>
     <string name="menu_action_cancel_label">Cancel</string>
+    <string name="menu_action_delete_from_cloud_label">Delete from Cloud</string>
 
 </resources>

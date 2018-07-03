@@ -46,6 +46,8 @@ public class MyFirebaseUtilities {
         void onUploadFailure(@NonNull Exception e);
         void onDownloadComplete();
         void onDownloadFailure(@NonNull Exception e);
+        void onDeletedSuccess();
+        void onDeleteFailure(@NonNull Exception e);
     }
 
     // Constructor
@@ -166,6 +168,7 @@ public class MyFirebaseUtilities {
                     @Override
                     public void onComplete(@NonNull Task<QuerySnapshot> task) {
                         if (task.isSuccessful()) {
+                            mCallback.onDownloadComplete();
                             for (QueryDocumentSnapshot document : task.getResult()) {
                                 Log.d(TAG, "refreshDatabase onComplete document.getId():" +
                                         document.getId() + " => " + document.getData());
@@ -173,11 +176,10 @@ public class MyFirebaseUtilities {
                                 String jsonString = MyFirebaseUtilities.serialize(lesson);
                                 Log.v(TAG, "refreshDatabase onComplete lesson jsonString:" + jsonString);
                                 MyFirebaseUtilities.refreshLesson(mContext, lesson);
-                                mCallback.onDownloadComplete();
                             }
                         } else {
                             Log.d(TAG, "Error getting documents: ", task.getException());
-                            mCallback.onUploadFailure(task.getException());
+                            mCallback.onDownloadFailure(task.getException());
                         }
                     }
                 });
@@ -190,39 +192,31 @@ public class MyFirebaseUtilities {
         if (null == lesson) {
             return;
         }
-
         Log.v(TAG, "refreshLesson lesson_id:" + lesson.getLesson_id());
 
-        // query the local database to see if find the lesson
+        // query the local database to see if find the lesson with the _id
         // update if found
         // create if didn't exist
-
-
+        Uri queryUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI,
+                lesson.getLesson_id());
         ContentResolver contentResolver = context.getContentResolver();
-        Cursor lessonCursor = contentResolver.query(LessonsContract.MyLessonsEntry.CONTENT_URI,
+        Cursor lessonCursor = contentResolver.query(queryUri,
                 null,
                 null,
                 null,
                 null);
 
-        if (lessonCursor != null) {
-            lessonCursor.moveToFirst();
-        }
-
         int nRows = -1;
         if (lessonCursor != null) {
+            lessonCursor.moveToFirst();
             nRows = lessonCursor.getCount();
-        }
-
-        if (lessonCursor != null) {
             lessonCursor.close();
         }
 
         // Update the row
-        if (nRows >= 0) {
-
+        if (nRows > 0) {
             // open the database for updating
-
+            Log.v(TAG, "refreshLesson updating lesson _id:" + lesson.getLesson_id());
             /* Create values to update */
             ContentValues editLessonValues = new ContentValues();
             editLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, lesson.getLesson_title());
@@ -237,7 +231,50 @@ public class MyFirebaseUtilities {
                         " item(s) updated: lesson_id:" + lesson.getLesson_id());
             }
 
+        } else {
+
+            // create the row in the local database
+            Log.v(TAG, "refreshLesson creating row for lesson _id:" + lesson.getLesson_id());
+
+            /* Create values to insert */
+            ContentValues insertLessonValues = new ContentValues();
+            insertLessonValues.put(LessonsContract.MyLessonsEntry._ID, lesson.getLesson_id());
+            insertLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, lesson.getLesson_title());
+
+            Uri uri = contentResolver.insert(LessonsContract.MyLessonsEntry.CONTENT_URI, insertLessonValues);
+
+            if (uri != null) {
+                Log.v(TAG, "insert uri:" + uri.toString());
+            }
+
         }
+
+    }
+
+
+    public void deleteLessonFromCloud(Long lesson_id) {
+
+        final String documentName = String.format( Locale.US, "%s_%02d",
+                userUid, lesson_id);
+
+        Log.v(TAG, "deleteLessonFromCloud documentName:" + documentName);
+
+        cloudFirestore.collection("lessons").document(documentName)
+                .delete()
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        Log.d(TAG, "deleteLessonFromCloud: DocumentSnapshot successfully deleted!");
+                        mCallback.onDeletedSuccess();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.w(TAG, "deleteLessonFromCloud: Error deleting document", e);
+                        mCallback.onDeleteFailure(e);
+                    }
+                });
 
     }
 

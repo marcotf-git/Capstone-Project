@@ -16,14 +16,20 @@
 
     <item
         android:id="@+id/action_cancel"
-        android:orderInCategory="6"
+        android:orderInCategory="7"
         android:title="@string/menu_action_cancel_label"
         app:showAsAction="never"/>
 
     <item
         android:id="@+id/action_insert_fake_data"
-        android:orderInCategory="5"
+        android:orderInCategory="6"
         android:title="@string/menu_action_insert_fake_label"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/action_delete_from_cloud"
+        android:orderInCategory="5"
+        android:title="@string/menu_action_delete_from_cloud_label"
         app:showAsAction="never"/>
 
     <item

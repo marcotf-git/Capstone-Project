@@ -81,7 +81,8 @@ public class MainActivity extends AppCompatActivity implements
         PartsFragment.OnIdlingResourceListener,
         DeleteLessonDialogFragment.DeleteLessonDialogListener,
         DeletePartDialogFragment.DeletePartDialogListener,
-        MyFirebaseUtilities.OnCloudListener{
+        MyFirebaseUtilities.OnCloudListener,
+        DeleteLessonCloudDialogFragment.DeleteLessonCloudDialogListener {
 
 
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -616,6 +617,18 @@ public class MainActivity extends AppCompatActivity implements
                 }
                 break;
 
+            case R.id.action_delete_from_cloud:
+                Log.d(TAG, "Delete from Cloud action selected");
+                // Try to action first on the more specific item
+                if  (selectedLesson_id != -1) {
+
+                    deleteLessonFromCloud(selectedLesson_id);
+                } else {
+                    Toast.makeText(this,
+                            "Please, select a lesson to delete from Cloud!", Toast.LENGTH_LONG).show();
+                }
+                break;
+
             case R.id.action_insert_fake_data:
                 Log.d(TAG, "Insert fake data action selected");
                 TestUtil.insertFakeData(this);
@@ -664,8 +677,21 @@ public class MainActivity extends AppCompatActivity implements
         Bundle bundle = new Bundle();
         bundle.putLong("_id", _id);
         deleteLessonFragment.setArguments(bundle);
-        // Show the dialog box
+         // Show the dialog box
         deleteLessonFragment.show(getSupportFragmentManager(), "DeleteLessonDialogFragment");
+    }
+
+    // Helper function to delete lesson data from cloud (delete the lesson document)
+    private void deleteLessonFromCloud(long _id) {
+        Log.v(TAG, "deleteLessonFromCloud _id:" + _id);
+        // Call the fragment for showing the delete dialog
+        DialogFragment deleteLessonCloudFragment = new DeleteLessonCloudDialogFragment();
+        // Pass the _id of the lesson
+        Bundle bundle = new Bundle();
+        bundle.putLong("_id", _id);
+        deleteLessonCloudFragment.setArguments(bundle);
+        // Show the dialog box
+        deleteLessonCloudFragment.show(getSupportFragmentManager(), "DeleteLessonCloudDialogFragment");
     }
 
     // Helper function to edit lesson
@@ -852,4 +878,34 @@ public class MainActivity extends AppCompatActivity implements
         Toast.makeText(mContext,
                 "Error on downloading:" + e.getMessage(), Toast.LENGTH_LONG).show();
     }
+
+    @Override
+    public void onDeletedSuccess() {
+        Toast.makeText(mContext,
+                "Lesson deleted from Cloud!", Toast.LENGTH_LONG).show();
+        // Deselect the last view selected
+        mainFragment.deselectViews();
+        selectedLesson_id = -1;
+    }
+
+    @Override
+    public void onDeleteFailure(@NonNull Exception e) {
+        Toast.makeText(mContext,
+                "Error on deleting from Cloud:" + e.getMessage(), Toast.LENGTH_LONG).show();
+    }
+
+    // receive communication from DeleteLessonCloudDialogFragment instance
+    @Override
+    public void onDialogDeleteCloudPositiveClick(DialogFragment dialog, long lesson_id) {
+        MyFirebaseUtilities myFirebase;
+        myFirebase = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
+        myFirebase.deleteLessonFromCloud(selectedLesson_id);
+    }
+
+    @Override
+    public void onDialogDeleteCloudNegativeClick(DialogFragment dialog) {
+        Toast.makeText(mContext,
+                "Canceled!", Toast.LENGTH_LONG).show();
+    }
+
 }
