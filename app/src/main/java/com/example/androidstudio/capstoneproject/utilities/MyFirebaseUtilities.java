@@ -15,8 +15,6 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
-import com.google.firebase.firestore.DocumentReference;
-import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
@@ -25,10 +23,7 @@ import com.google.gson.GsonBuilder;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Formatter;
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 import static com.google.common.net.HostSpecifier.isValid;
 
@@ -47,24 +42,26 @@ public class MyFirebaseUtilities {
 
     // Listener for sending information to the Activity
     public interface OnCloudListener {
-        public void onUploadSuccess(DocumentReference documentReference);
-        public void onUploadFailure(@NonNull Exception e);
-        public void onDownloadComplete(@NonNull Task<QuerySnapshot> task);
+        void onUploadSuccess();
+        void onUploadFailure(@NonNull Exception e);
+        void onDownloadComplete();
+        void onDownloadFailure(@NonNull Exception e);
     }
 
     // Constructor
     public MyFirebaseUtilities(Context context, FirebaseFirestore firestoreDatabase, String userUid) {
         this.cloudFirestore = firestoreDatabase;
         this.userUid = userUid;
-        //mCallback = (OnCloudListener) context;
+        mCallback = (OnCloudListener) context;
         mContext = context;
     }
 
-    // Helper method for uploading the database to Cloud Firestore
-    public void uploadDatabase() {
+    // Helper method for uploading a specific lesson to Cloud Firestore
+    public void uploadDatabase(Long lesson_id) {
 
         ContentResolver contentResolver = mContext.getContentResolver();
-        Cursor lessonCursor = contentResolver.query(LessonsContract.MyLessonsEntry.CONTENT_URI,
+        Uri uploadUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, lesson_id);
+        Cursor lessonCursor = contentResolver.query(uploadUri,
                 null,
                 null,
                 null,
@@ -77,7 +74,6 @@ public class MyFirebaseUtilities {
         int nRows = lessonCursor != null ? lessonCursor.getCount() : 0;
 
         // Pass the data cursor to Lesson instance
-        long lesson_id;
         String user_uid;
         String lesson_title;
         String time_stamp;
@@ -118,12 +114,14 @@ public class MyFirebaseUtilities {
                     @Override
                     public void onSuccess(Void aVoid) {
                         Log.d(TAG, "DocumentSnapshot successfully written with name:" + documentName);
+                        mCallback.onUploadSuccess();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
                         Log.w(TAG, "Error writing document", e);
+                        mCallback.onUploadFailure(e);
                     }
                 });
 
@@ -175,9 +173,11 @@ public class MyFirebaseUtilities {
                                 String jsonString = MyFirebaseUtilities.serialize(lesson);
                                 Log.v(TAG, "refreshDatabase onComplete lesson jsonString:" + jsonString);
                                 MyFirebaseUtilities.refreshLesson(mContext, lesson);
+                                mCallback.onDownloadComplete();
                             }
                         } else {
                             Log.d(TAG, "Error getting documents: ", task.getException());
+                            mCallback.onUploadFailure(task.getException());
                         }
                     }
                 });
@@ -222,7 +222,7 @@ public class MyFirebaseUtilities {
         if (nRows >= 0) {
 
             // open the database for updating
-            
+
             /* Create values to update */
             ContentValues editLessonValues = new ContentValues();
             editLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, lesson.getLesson_title());

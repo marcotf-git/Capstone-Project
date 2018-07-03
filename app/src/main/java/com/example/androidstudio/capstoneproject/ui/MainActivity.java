@@ -36,20 +36,12 @@ import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.example.androidstudio.capstoneproject.data.TestUtil;
 import com.example.androidstudio.capstoneproject.utilities.MyFirebaseUtilities;
 import com.firebase.ui.auth.AuthUI;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
@@ -88,7 +80,8 @@ public class MainActivity extends AppCompatActivity implements
         PartsFragment.OnLessonPartListener,
         PartsFragment.OnIdlingResourceListener,
         DeleteLessonDialogFragment.DeleteLessonDialogListener,
-        DeletePartDialogFragment.DeletePartDialogListener{
+        DeletePartDialogFragment.DeletePartDialogListener,
+        MyFirebaseUtilities.OnCloudListener{
 
 
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -580,11 +573,11 @@ public class MainActivity extends AppCompatActivity implements
                 break;
 
             case R.id.action_refresh:
-                Toast.makeText(this, "Reloading the data", Toast.LENGTH_LONG)
-                        .show();
+//                Toast.makeText(this, "Reloading the data", Toast.LENGTH_LONG)
+//                        .show();
                 myFirebase = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
                 myFirebase.refreshDatabase();
-                refreshActivity();
+                //refreshActivity();
                 break;
 
             case R.id.action_edit:
@@ -601,8 +594,13 @@ public class MainActivity extends AppCompatActivity implements
                 break;
 
             case R.id.action_upload:
-                myFirebase = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
-                myFirebase.uploadDatabase();
+                if (selectedLesson_id != -1) {
+                    myFirebase = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
+                    myFirebase.uploadDatabase(selectedLesson_id);
+                } else {
+                    Toast.makeText(this,
+                            "Please, select a lesson to upload!", Toast.LENGTH_LONG).show();
+                }
                 break;
 
             case R.id.action_delete:
@@ -827,6 +825,31 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
+    // Receive communication form MyFirebaseUtilities instance
+    @Override
+    public void onUploadSuccess() {
+        Toast.makeText(mContext,
+                "Lesson uploaded!", Toast.LENGTH_LONG).show();
+        // Deselect the last view selected
+        mainFragment.deselectViews();
+        selectedLesson_id = -1;
+    }
 
+    @Override
+    public void onUploadFailure(@NonNull Exception e) {
+        Toast.makeText(mContext,
+                "Error on uploading:" + e.getMessage(), Toast.LENGTH_LONG).show();
+    }
 
+    @Override
+    public void onDownloadComplete() {
+        Toast.makeText(mContext,
+                "Download completed. Updating the local database...", Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onDownloadFailure(@NonNull Exception e) {
+        Toast.makeText(mContext,
+                "Error on downloading:" + e.getMessage(), Toast.LENGTH_LONG).show();
+    }
 }
