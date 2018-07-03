@@ -526,6 +526,7 @@ public class MainActivity extends AppCompatActivity implements
                 } else {
                     closePartsFragment();
                 }
+                break;
 
             case R.id.select_view:
                 sharedPreferences.edit()

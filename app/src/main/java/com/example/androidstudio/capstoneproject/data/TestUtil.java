@@ -19,7 +19,7 @@ public class TestUtil {
 
         ContentResolver contentResolver = context.getContentResolver();
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 6; i++) {
 
             ContentValues testLessonValues = new ContentValues();
             testLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, "Lesson " + i);
@@ -52,7 +52,7 @@ public class TestUtil {
                 Log.e(TAG, "insertFakeData cursor error!");
             }
 
-            for (int j = 0; j < 10; j++) {
+            for (int j = 0; j < 6; j++) {
 
                 ContentValues testLessonPartsValues = new ContentValues();
                 testLessonPartsValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID, lesson_id);
