@@ -476,6 +476,7 @@ public class MainActivity extends AppCompatActivity implements
         if (queryOption.equals(this.getString(R.string.pref_mode_view))) {
             menu.findItem(R.id.select_view).setChecked(true);
             // Prepare the visibility of the creation action items
+            mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
             mMenu.findItem(R.id.action_delete).setVisible(false);
             mMenu.findItem(R.id.action_edit).setVisible(false);
             mMenu.findItem(R.id.action_upload).setVisible(false);
@@ -487,10 +488,11 @@ public class MainActivity extends AppCompatActivity implements
             menu.findItem(R.id.select_create).setChecked(true);
             // Prepare the visibility of the creation action items
             mMenu.findItem(R.id.action_delete).setVisible(true);
-            mMenu.findItem(R.id.action_edit).setVisible(true);
             if (!mUsername.equals(ANONYMOUS)) {
+                mMenu.findItem(R.id.action_delete_from_cloud).setVisible(true);
                 mMenu.findItem(R.id.action_upload).setVisible(true);
             } else {
+                mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
                 mMenu.findItem(R.id.action_upload).setVisible(false);
             }
             mMenu.findItem(R.id.action_refresh).setVisible(true);
