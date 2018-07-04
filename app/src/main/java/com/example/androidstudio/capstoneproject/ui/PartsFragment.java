@@ -169,7 +169,7 @@ public class PartsFragment extends Fragment implements
      */
     private void showPartsDataView() {
         // First, make sure the error is invisible
-        mErrorMessageDisplay.setVisibility(View.INVISIBLE);
+        mErrorMessageDisplay.setVisibility(View.GONE);
         // Then, make sure the JSON data is visible
         mPartsList.setVisibility(View.VISIBLE);
     }
@@ -182,6 +182,7 @@ public class PartsFragment extends Fragment implements
      * need to check whether each view is currently visible or invisible.
      */
     private void showErrorMessage() {
+        Log.v(TAG, "showErrorMessage");
         // First, hide the currently visible data
         mPartsList.setVisibility(View.INVISIBLE);
         // Then, show the error
@@ -333,13 +334,14 @@ public class PartsFragment extends Fragment implements
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
 
+        Log.v(TAG, "onLoadFinished cursor:" + data.toString());
+
         // Send to the main activity the order to setting the idling resource state
         mIdlingCallback.onIdlingResource(true);
 
         // Pass the data to the adapter
         setCursor(data);
         mAdapter.setSelectedItemId(selectedLessonPart_id);
-
     }
 
     /**
@@ -354,7 +356,7 @@ public class PartsFragment extends Fragment implements
          * Since this Loader's data is now invalid, we need to clear the Adapter that is
          * displaying the data.
          */
-        this.setCursor(null);
+        setCursor(null);
     }
 
 
@@ -373,16 +375,9 @@ public class PartsFragment extends Fragment implements
     public void setCursor(Cursor cursor) {
 
         mLoadingIndicator.setVisibility(View.INVISIBLE);
+        mAdapter.setLessonPartsCursorData(cursor);
+        showPartsDataView();
 
-        // Try to handle error on loading
-        if(cursor == null){
-            showErrorMessage();
-        } else {
-            // Saves a reference to the cursor
-            // Set the data for the adapter
-            mAdapter.setLessonPartsCursorData(cursor);
-            showPartsDataView();
-        }
     }
 
     public void setDatabaseVisibility(String dbVisibility) {
@@ -390,13 +385,20 @@ public class PartsFragment extends Fragment implements
 
         Log.v(TAG,"setDatabaseVisibility databaseVisibility:" + databaseVisibility);
 
-        // Query the database and set the adapter with the cursor data
-        if (null != getActivity()) {
+        if(null != getActivity()) {
+
+            // Query the database and set the adapter with the cursor data
+            getActivity().getSupportLoaderManager().destroyLoader(ID_LESSON_PARTS_LOADER);
+            getActivity().getSupportLoaderManager().destroyLoader(ID_GROUP_LESSON_PARTS_LOADER);
+
             if (databaseVisibility.equals(USER_DATABASE)) {
-                getActivity().getSupportLoaderManager().restartLoader(ID_LESSON_PARTS_LOADER, null, this);
+                getActivity().getSupportLoaderManager().initLoader(ID_LESSON_PARTS_LOADER,
+                        null, this);
             } else if (databaseVisibility.equals(GROUP_DATABASE)) {
-                getActivity().getSupportLoaderManager().restartLoader(ID_GROUP_LESSON_PARTS_LOADER, null, this);
+                getActivity().getSupportLoaderManager().initLoader(ID_GROUP_LESSON_PARTS_LOADER,
+                        null, this);
             }
+
         }
     }
 
@@ -421,14 +423,20 @@ public class PartsFragment extends Fragment implements
         // Write the data that will be used by the loader
         referenceLesson_id = _id;
 
-        // Query the database and set the adapter with the cursor data
-        if (null != getActivity()) {
-            Log.v(TAG, "setReferenceLesson: setting the database with lesson _id:" + _id);
+        if(null != getActivity()) {
+
+            // Query the database and set the adapter with the cursor data
+            getActivity().getSupportLoaderManager().destroyLoader(ID_LESSON_PARTS_LOADER);
+            getActivity().getSupportLoaderManager().destroyLoader(ID_GROUP_LESSON_PARTS_LOADER);
+
             if (databaseVisibility.equals(USER_DATABASE)) {
-                getActivity().getSupportLoaderManager().restartLoader(ID_LESSON_PARTS_LOADER, null, this);
+                getActivity().getSupportLoaderManager().initLoader(ID_LESSON_PARTS_LOADER,
+                        null, this);
             } else if (databaseVisibility.equals(GROUP_DATABASE)) {
-                getActivity().getSupportLoaderManager().restartLoader(ID_GROUP_LESSON_PARTS_LOADER, null, this);
+                getActivity().getSupportLoaderManager().initLoader(ID_GROUP_LESSON_PARTS_LOADER,
+                        null, this);
             }
+
         }
 
     }

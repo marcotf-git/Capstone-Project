@@ -1,11 +1,15 @@
 package com.example.androidstudio.capstoneproject.data;
 
+import java.util.ArrayList;
+
 public class Lesson {
 
     private long lesson_id;
     private String user_uid;
     private String lesson_title;
     private String time_stamp;
+    private ArrayList<LessonPart> lesson_parts;
+
 
 
     public Lesson() {
@@ -48,6 +52,25 @@ public class Lesson {
 
     public void setTime_stamp(String time_stamp) {
         this.time_stamp = time_stamp;
+    }
+
+    public ArrayList<LessonPart> getLesson_parts() {
+        return lesson_parts;
+    }
+
+    public void setLesson_parts(ArrayList<LessonPart> lesson_parts) {
+        this.lesson_parts = lesson_parts;
+    }
+
+    @Override
+    public String toString() {
+        return "Lesson{" +
+                "lesson_id=" + lesson_id +
+                ", user_uid='" + user_uid + '\'' +
+                ", lesson_title='" + lesson_title + '\'' +
+                ", time_stamp='" + time_stamp + '\'' +
+                ", lesson_parts=" + lesson_parts +
+                '}';
     }
 }
 

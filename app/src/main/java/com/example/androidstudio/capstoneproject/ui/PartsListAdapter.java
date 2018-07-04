@@ -69,7 +69,14 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
 
 
     void setLessonPartsCursorData(Cursor cursor){
-        Log.v(TAG, "setLessonsCursorData cursor:" + cursor.toString());
+
+        Log.v(TAG, "setLessonsCursorData");
+
+        // close last cursor
+        if(partsCursor != null) {
+            partsCursor.close();
+        }
+
         this.partsCursor = cursor;
         notifyDataSetChanged();
     }

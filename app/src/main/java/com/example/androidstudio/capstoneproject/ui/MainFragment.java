@@ -170,7 +170,7 @@ public class MainFragment extends Fragment implements
      */
     private void showLessonsDataView() {
         // First, make sure the error is invisible
-        mErrorMessageDisplay.setVisibility(View.INVISIBLE);
+        mErrorMessageDisplay.setVisibility(View.GONE);
         // Then, make sure the JSON data is visible
         mClassesList.setVisibility(View.VISIBLE);
     }
@@ -182,6 +182,7 @@ public class MainFragment extends Fragment implements
      * need to check whether each view is currently visible or invisible.
      */
     private void showErrorMessage() {
+        Log.v(TAG, "showErrorMessage");
         // First, hide the currently visible data
         mClassesList.setVisibility(View.INVISIBLE);
         // Then, show the error
@@ -347,7 +348,7 @@ public class MainFragment extends Fragment implements
          * Since this Loader's data is now invalid, we need to clear the Adapter that is
          * displaying the data.
          */
-        this.setCursor(null);
+        setCursor(null);
     }
 
 
@@ -367,15 +368,11 @@ public class MainFragment extends Fragment implements
 
         mLoadingIndicator.setVisibility(View.INVISIBLE);
 
-        // Try to handle error on loading
-        if(cursor == null){
-            showErrorMessage();
-        } else {
-            // Saves a reference to the cursor
-            // Set the data for the adapter
-            mAdapter.setLessonsCursorData(cursor);
-            showLessonsDataView();
-        }
+        // Saves a reference to the cursor
+        // Set the data for the adapter
+        mAdapter.setLessonsCursorData(cursor);
+        showLessonsDataView();
+        
     }
 
 
@@ -386,11 +383,15 @@ public class MainFragment extends Fragment implements
 
         // Query the database and set the adapter with the cursor data
         if (null != getActivity()) {
+
+            getActivity().getSupportLoaderManager().destroyLoader(ID_LESSONS_LOADER);
+            getActivity().getSupportLoaderManager().destroyLoader(ID_GROUP_LESSONS_LOADER);
+
             if (databaseVisibility.equals(USER_DATABASE)) {
-                getActivity().getSupportLoaderManager().restartLoader(ID_LESSONS_LOADER,
+                getActivity().getSupportLoaderManager().initLoader(ID_LESSONS_LOADER,
                         null, this);
             } else if (databaseVisibility.equals(GROUP_DATABASE)) {
-                getActivity().getSupportLoaderManager().restartLoader(ID_GROUP_LESSONS_LOADER,
+                getActivity().getSupportLoaderManager().initLoader(ID_GROUP_LESSONS_LOADER,
                         null, this);
             }
         }

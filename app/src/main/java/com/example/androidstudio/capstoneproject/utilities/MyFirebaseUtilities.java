@@ -10,6 +10,7 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.example.androidstudio.capstoneproject.data.Lesson;
+import com.example.androidstudio.capstoneproject.data.LessonPart;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -22,6 +23,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
@@ -66,8 +68,8 @@ public class MyFirebaseUtilities {
     public void uploadDatabase(Long lesson_id) {
 
         ContentResolver contentResolver = mContext.getContentResolver();
-        Uri uploadUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, lesson_id);
-        Cursor lessonCursor = contentResolver.query(uploadUri,
+        Uri lessonUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, lesson_id);
+        Cursor lessonCursor = contentResolver.query(lessonUri,
                 null,
                 null,
                 null,
@@ -97,6 +99,7 @@ public class MyFirebaseUtilities {
             time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                     .format(new Date());
 
+            // Construct a Lesson instance and set with the data from database
             lesson = new Lesson();
             lesson.setLesson_id(lesson_id);
             lesson.setUser_uid(user_uid);
@@ -108,6 +111,44 @@ public class MyFirebaseUtilities {
             Log.v(TAG, "uploadDatabase lesson jsonString:" + jsonString);
 
 
+            // Set with data from lesson parts
+            String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
+            String[] selectionArgs = {Long.toString(lesson_id)};
+            Cursor partsCursor = contentResolver.query(
+                    LessonsContract.MyLessonPartsEntry.CONTENT_URI,
+                    null,
+                    selection,
+                    selectionArgs,
+                    null);
+
+            ArrayList<LessonPart> lessonParts = new ArrayList<LessonPart>();
+
+            Long part_id;
+            String part_title;
+            LessonPart lessonPart = new LessonPart();
+
+            if (null != partsCursor) {
+                partsCursor.moveToFirst();
+                int nPartsRows = partsCursor.getCount();
+                for (int j = 0; j < nPartsRows; j++) {
+                    part_id = partsCursor.
+                            getLong(lessonCursor.getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
+                    part_title = lessonCursor.
+                            getString(lessonCursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
+
+                    lessonPart.setPart_id(part_id);
+                    lessonPart.setLesson_id(lesson_id);
+                    lessonPart.setTitle(part_title);
+
+                    lessonParts.add(lessonPart);
+                }
+            }
+
+            lesson.setLesson_parts(lessonParts);
+
+            Log.v(TAG, "uploadDatabase lesson:" + lesson.toString());
+
+            // Upload the lesson to firestore cloud
             final String documentName = String.format( Locale.US, "%s_%02d",
                     lesson.getUser_uid(), lesson.getLesson_id());
 
