@@ -634,6 +634,7 @@ public class MainActivity extends AppCompatActivity implements
                 break;
 
             case R.id.action_refresh:
+                mainFragment.setLoadingIndicator(true);
                 MyFirebaseUtilities myFirebaseUtilities = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
                 myFirebaseUtilities.refreshDatabase(databaseVisibility);
                 deselectViews();
@@ -653,6 +654,7 @@ public class MainActivity extends AppCompatActivity implements
                 break;
 
             case R.id.action_upload:
+                mainFragment.setLoadingIndicator(true);
                 if (selectedLesson_id != -1) {
                     myFirebaseUtilities = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
                     myFirebaseUtilities.uploadDatabase(selectedLesson_id);
@@ -926,6 +928,7 @@ public class MainActivity extends AppCompatActivity implements
     // Receive communication form MyFirebaseUtilities instance
     @Override
     public void onUploadSuccess() {
+        mainFragment.setLoadingIndicator(false);
         Toast.makeText(mContext,
                 "Lesson uploaded!", Toast.LENGTH_LONG).show();
         // Deselect the last view selected
@@ -935,18 +938,21 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onUploadFailure(@NonNull Exception e) {
+        mainFragment.setLoadingIndicator(false);
         Toast.makeText(mContext,
                 "Error on uploading:" + e.getMessage(), Toast.LENGTH_LONG).show();
     }
 
     @Override
     public void onDownloadComplete() {
+        mainFragment.setLoadingIndicator(false);
         Toast.makeText(mContext,
                 "Download completed. Updating the local database...", Toast.LENGTH_LONG).show();
     }
 
     @Override
     public void onDownloadFailure(@NonNull Exception e) {
+        mainFragment.setLoadingIndicator(false);
         Toast.makeText(mContext,
                 "Error on downloading:" + e.getMessage(), Toast.LENGTH_LONG).show();
     }

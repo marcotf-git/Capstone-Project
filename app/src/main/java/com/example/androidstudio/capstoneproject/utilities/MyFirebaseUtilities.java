@@ -338,6 +338,8 @@ public class MyFirebaseUtilities {
 
                         Uri partUri = contentResolver.insert(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                                 insertLessonPartValues);
+
+                        Log.v(TAG, "refreshUserLesson partUri inserted:" + partUri);
                     }
                 }
             }
@@ -386,22 +388,46 @@ public class MyFirebaseUtilities {
             insertLessonValues.put(LessonsContract.GroupLessonsEntry.COLUMN_LESSON_TIME_STAMP, lesson.getTime_stamp());
             insertLessonValues.put(LessonsContract.GroupLessonsEntry.COLUMN_USER_UID, lesson.getUser_uid());
 
-            Uri uri = contentResolver.insert(LessonsContract.GroupLessonsEntry.CONTENT_URI, insertLessonValues);
+            Uri lessonUri = contentResolver.insert(LessonsContract.GroupLessonsEntry.CONTENT_URI, insertLessonValues);
 
             // for inserting the parts, extract the _id of the uri!
+            Long inserted_lesson_id;
+            if (lessonUri != null) {
+                Log.v(TAG, "insert uri:" + lessonUri.toString());
+                // for inserting the parts, extract the _id of the uri!
+                inserted_lesson_id = Long.parseLong(lessonUri.getPathSegments().get(1));
+                // insert all the parts of the lesson
+                ArrayList<LessonPart> lessonParts = lesson.getLesson_parts();
+                // Insert all the parts, with the lesson_id value of the last _id inserted in the local database
+                // This will give consistency and separates the local database consistency from the remote
+                if (null != lessonParts) {
+                    for (LessonPart lessonPart : lessonParts) {
+                        ContentValues insertLessonPartValues = new ContentValues();
+                        // this is not the same as in the cloud: we use the lesson _id of the last lesson inserted
+                        // this is for local database consistency
+                        insertLessonPartValues.put(LessonsContract.GroupLessonPartsEntry.COLUMN_LESSON_ID,
+                                inserted_lesson_id);
+                        // this is the part id as in the cloud
+                        insertLessonPartValues.put(LessonsContract.GroupLessonPartsEntry.COLUMN_PART_ID,
+                                lessonPart.getPart_id());
+                        insertLessonPartValues.put(LessonsContract.GroupLessonPartsEntry.COLUMN_PART_TITLE,
+                                lessonPart.getTitle());
+                        insertLessonPartValues.put(LessonsContract.GroupLessonPartsEntry.COLUMN_USER_UID,
+                                lesson.getUser_uid());
 
-            if (null != uri) {
-                Log.v(TAG, "uri inserted:" + uri);
+                        Uri partUri = contentResolver.insert(LessonsContract.GroupLessonPartsEntry.CONTENT_URI,
+                                insertLessonPartValues);
+
+                        Log.v(TAG, "refreshGroupLessons partUri inserted:" + partUri);
+
+                    }
+                }
             }
-
-
-
-
         }
-
      }
 
 
+    // Helper function for deleting a lesson from cloud
     public void deleteLessonFromCloud(Long lesson_id) {
 
         final String documentName = String.format( Locale.US, "%s_%02d",

@@ -10,7 +10,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "lessons.db";
 
     // If you change the database schema, you must increment the database version
-    private static final int DATABASE_VERSION = 19;
+    private static final int DATABASE_VERSION = 20;
 
     // Constructor
     public LessonsDbHelper(Context context) {
@@ -123,7 +123,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
 
                         LessonsContract.GroupLessonPartsEntry.COLUMN_PART_TITLE + " TEXT NOT NULL," +
 
-                        LessonsContract.GroupLessonPartsEntry.COLUMN_USER_UID + " INTEGER NOT NULL," +
+                        LessonsContract.GroupLessonPartsEntry.COLUMN_USER_UID + " TEXT NOT NULL," +
 
                         // Now, the consistency is with the LESSON_ID, not with the _ID of the table lessons
                         // (USER_ID, LESSON_ID) <--> (USER_ID, LESSON_ID)
