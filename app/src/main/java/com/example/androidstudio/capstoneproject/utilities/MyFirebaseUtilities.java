@@ -111,7 +111,7 @@ public class MyFirebaseUtilities {
             Log.v(TAG, "uploadDatabase lesson jsonString:" + jsonString);
 
 
-            // Set with data from lesson parts
+            // Load lesson parts into the lesson
             String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
             String[] selectionArgs = {Long.toString(lesson_id)};
             Cursor partsCursor = contentResolver.query(
@@ -123,24 +123,25 @@ public class MyFirebaseUtilities {
 
             ArrayList<LessonPart> lessonParts = new ArrayList<LessonPart>();
 
-            Long part_id;
-            String part_title;
-            LessonPart lessonPart = new LessonPart();
-
             if (null != partsCursor) {
                 partsCursor.moveToFirst();
                 int nPartsRows = partsCursor.getCount();
                 for (int j = 0; j < nPartsRows; j++) {
-                    part_id = partsCursor.
-                            getLong(lessonCursor.getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
-                    part_title = lessonCursor.
-                            getString(lessonCursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
 
-                    lessonPart.setPart_id(part_id);
+                    String lessonPartTitle = partsCursor.getString(partsCursor.
+                            getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
+                    Long item_id = partsCursor.getLong(partsCursor.
+                            getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
+
+                    LessonPart lessonPart = new LessonPart();
+                    lessonPart.setPart_id(item_id);
                     lessonPart.setLesson_id(lesson_id);
-                    lessonPart.setTitle(part_title);
+                    lessonPart.setTitle(lessonPartTitle);
+
+                    Log.v(TAG, "lessonPart:" + lessonPart.toString());
 
                     lessonParts.add(lessonPart);
+                    partsCursor.moveToNext();
                 }
             }
 
@@ -258,7 +259,7 @@ public class MyFirebaseUtilities {
         Log.v(TAG, "refreshUserLesson lesson_id:" + lesson.getLesson_id());
 
         // query the local database to see if find the lesson with the _id
-        // update if found
+        // delete it and save another if found
         // create if didn't exist
         Uri queryUri;
         queryUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI,
@@ -284,46 +285,62 @@ public class MyFirebaseUtilities {
             lessonCursor.close();
         }
 
-        // Update the row
+
         if (nRows > 0) {
-            // open the database for updating
-            Log.v(TAG, "refreshLesson updating lesson _id:" + lesson.getLesson_id());
-            /* Create values to update */
-            ContentValues editLessonValues = new ContentValues();
-            editLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, lesson.getLesson_title());
-            // update
-            Uri updateUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, lesson.getLesson_id());
 
-            int numberOfLessonsUpdated = 0;
-            if (updateUri != null) {
-                numberOfLessonsUpdated = contentResolver.update(updateUri,
-                        editLessonValues, null, null);
-            }
+            // first, delete the parts by the lesson id
+            Uri deleteUri = ContentUris.withAppendedId(LessonsContract.MyLessonPartsEntry.CONTENT_URI_BY_LESSON_ID,
+                    lesson.getLesson_id());
+            int numberOfPartsDeleted = contentResolver.delete(
+                    deleteUri,
+                    null,
+                    null);
+            Log.v(TAG, "refreshUserLesson numberOfPartsDeleted:" + numberOfPartsDeleted);
 
-            if (numberOfLessonsUpdated >= 0) {
-                Log.v(TAG, "refreshLesson " + numberOfLessonsUpdated +
-                        " item(s) updated: lesson_id:" + lesson.getLesson_id());
-            }
+            // second, delete the lesson itself
+            Uri deleteLessonUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI,
+                    lesson.getLesson_id());
+            int numberOfLessonsDeleted = contentResolver.delete(
+                    deleteLessonUri,
+                    null,
+                    null);
+            Log.v(TAG, "refreshLesson numberOfLessonsDeleted:" + numberOfLessonsDeleted);
 
-        } else {
-
-            // create the row in the local database
-            Log.v(TAG, "refreshLesson creating row for lesson _id:" + lesson.getLesson_id());
-
+            // now, insert the new lesson
             /* Create values to insert */
             // insert with the same id (because it will make the consistency)
             ContentValues insertLessonValues = new ContentValues();
             insertLessonValues.put(LessonsContract.MyLessonsEntry._ID, lesson.getLesson_id());
             insertLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, lesson.getLesson_title());
 
-            Uri uri = contentResolver.insert(LessonsContract.MyLessonsEntry.CONTENT_URI, insertLessonValues);
+            Uri lessonUri = contentResolver.insert(LessonsContract.MyLessonsEntry.CONTENT_URI, insertLessonValues);
 
-            if (uri != null) {
-                Log.v(TAG, "insert uri:" + uri.toString());
+            Long inserted_lesson_id = null;
+
+            if (lessonUri != null) {
+                Log.v(TAG, "insert uri:" + lessonUri.toString());
+                // for inserting the parts, extract the _id of the uri!
+                inserted_lesson_id = Long.parseLong(lessonUri.getPathSegments().get(1));
             }
 
-            // for inserting the parts, extract the _id of the uri!
+            // insert all the parts of the lesson
+            if (null != inserted_lesson_id) {
+                ArrayList<LessonPart> lessonParts = lesson.getLesson_parts();
+                // Insert all the parts, with the lesson_id value of the last _id inserted in the local database
+                // This will give consistency and separates the local database consistency from the remote
+                if (null != lessonParts) {
+                    for (LessonPart lessonPart : lessonParts) {
+                        ContentValues insertLessonPartValues = new ContentValues();
+                        insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID,
+                                inserted_lesson_id);
+                        insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE,
+                                lessonPart.getTitle());
 
+                        Uri partUri = contentResolver.insert(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
+                                insertLessonPartValues);
+                    }
+                }
+            }
         }
     }
 
@@ -334,6 +351,13 @@ public class MyFirebaseUtilities {
         Log.v(TAG, "refreshGroupLesson");
 
         ContentResolver contentResolver = context.getContentResolver();
+
+        int numberOfLessonPartsDeleted = contentResolver.delete(
+                LessonsContract.GroupLessonPartsEntry.CONTENT_URI,
+                null,
+                null);
+
+        Log.v(TAG, "refreshGroupLesson numberOfLessonPartsDeleted:" + numberOfLessonPartsDeleted);
 
         int numberOfLessonsDeleted = contentResolver.delete(
                 LessonsContract.GroupLessonsEntry.CONTENT_URI,
@@ -369,6 +393,10 @@ public class MyFirebaseUtilities {
             if (null != uri) {
                 Log.v(TAG, "uri inserted:" + uri);
             }
+
+
+
+
         }
 
      }

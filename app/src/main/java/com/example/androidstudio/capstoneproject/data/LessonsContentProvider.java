@@ -21,6 +21,7 @@ public class LessonsContentProvider extends ContentProvider {
     public static final int MY_LESSON_WITH_ID = 101;
     public static final int MY_LESSON_PARTS = 200;
     public static final int MY_LESSON_PART_WITH_ID = 201;
+    public static final int MY_LESSON_PARTS_BY_LESSON_ID = 202;
     public static final int GROUP_LESSONS = 1000;
     public static final int GROUP_LESSON_WITH_ID = 1001;
     public static final int GROUP_LESSON_PARTS = 2000;
@@ -47,6 +48,8 @@ public class LessonsContentProvider extends ContentProvider {
         uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSONS + "/#", MY_LESSON_WITH_ID);
         uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSON_PARTS, MY_LESSON_PARTS);
         uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSON_PARTS + "/#", MY_LESSON_PART_WITH_ID);
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.MY_LESSON_PARTS_BY_LESSON_ID +
+                "/#", MY_LESSON_PARTS_BY_LESSON_ID);
 
         uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_GROUP_LESSONS, GROUP_LESSONS);
         uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_GROUP_LESSONS + "/#", GROUP_LESSON_WITH_ID);
@@ -305,6 +308,15 @@ public class LessonsContentProvider extends ContentProvider {
                 // Use selections/selectionArgs to filter for this "_id"
                 rowsDeleted = db.delete(LessonsContract.MyLessonPartsEntry.TABLE_NAME,
                         "_id=?", new String[]{part_id});
+                break;
+
+            case MY_LESSON_PARTS_BY_LESSON_ID:
+                // Get the lesson "_id" from the URI path
+                String lesson_id_to_delete = uri.getPathSegments().get(1);
+                // Use selections/selectionArgs to filter for this "_id"
+                rowsDeleted = db.delete(LessonsContract.MyLessonPartsEntry.TABLE_NAME,
+                        LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?",
+                        new String[]{lesson_id_to_delete});
                 break;
 
             // clean the local database, in case of the group (for sync with cloud)

@@ -19,6 +19,8 @@ public class LessonsContract {
     public static final String PATH_MY_LESSONS = "my_lessons";
     // This is the path for the "my_lesson_parts" directory
     public static final String PATH_MY_LESSON_PARTS = "my_lesson_parts";
+    // new path for all parts by its lesson_id
+    public static final String MY_LESSON_PARTS_BY_LESSON_ID = "my_lesson_parts_by_part_id";
     // This is the path for the "group_lessons" directory
     public static final String PATH_GROUP_LESSONS = "group_lessons";
     // This is the path for the "group_lesson_parts" directory
@@ -48,6 +50,9 @@ public class LessonsContract {
         // my_lesson_parts table entry content URI = base content URI + path
         public static final Uri CONTENT_URI =
                 BASE_CONTENT_URI.buildUpon().appendPath(PATH_MY_LESSON_PARTS).build();
+
+        public static final Uri CONTENT_URI_BY_LESSON_ID =
+                BASE_CONTENT_URI.buildUpon().appendPath(MY_LESSON_PARTS_BY_LESSON_ID).build();
 
         // table and column names
         public static final String TABLE_NAME = "my_lesson_parts";

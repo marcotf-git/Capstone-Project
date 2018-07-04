@@ -41,7 +41,7 @@
         android:icon="@drawable/ic_action_delete"
         android:orderInCategory="6"
         android:title="@string/menu_action_delete_label"
-        app:showAsAction="ifRoom"/>
+        app:showAsAction="never"/>
 
     <item
         android:id="@+id/action_refresh"

@@ -372,7 +372,7 @@ public class MainFragment extends Fragment implements
         // Set the data for the adapter
         mAdapter.setLessonsCursorData(cursor);
         showLessonsDataView();
-        
+
     }
 
 

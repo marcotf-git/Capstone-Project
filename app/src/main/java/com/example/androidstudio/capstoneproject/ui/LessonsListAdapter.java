@@ -74,11 +74,6 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
 
         Log.v(TAG, "setLessonsCursorData");
 
-        // close last cursor
-        if (lessonsCursor != null) {
-            lessonsCursor.close();
-        }
-
         this.lessonsCursor = cursor;
         notifyDataSetChanged();
     }
