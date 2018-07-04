@@ -100,6 +100,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final String LOCAL_USER_UID = "localUserUid";
     private static final String USER_DATABASE = "userDatabase";
     private static final String GROUP_DATABASE = "groupDatabase";
+    private static final String DATABASE_VISIBILITY = "databaseVisibility";
 
     // App state information variables
     private static long clickedLesson_id;
@@ -229,7 +230,7 @@ public class MainActivity extends AppCompatActivity implements
             // Phone visibility
             mainVisibility = VISIBLE;
             partsVisibility = GONE;
-            databaseVisibility = USER_DATABASE;
+            databaseVisibility = GROUP_DATABASE;
         }
 
         // Initialize the fragments
@@ -253,6 +254,10 @@ public class MainActivity extends AppCompatActivity implements
             mainFragment = (MainFragment) fragmentManager.findFragmentByTag("MainFragment");
             partsFragment = (PartsFragment) fragmentManager.findFragmentByTag("PartsFragment");
         }
+
+        // Set fragments database visibility
+        mainFragment.setDatabaseVisibility(databaseVisibility);
+        partsFragment.setDatabaseVisibility(databaseVisibility);
 
         // Set the fragment views visibility
         lessonsContainer.setVisibility(mainVisibility);
@@ -330,10 +335,16 @@ public class MainActivity extends AppCompatActivity implements
 
                         case R.id.nav_my_lessons:
                             databaseVisibility = USER_DATABASE;
+                            // Set fragments database visibility
+                            mainFragment.setDatabaseVisibility(databaseVisibility);
+                            partsFragment.setDatabaseVisibility(databaseVisibility);
                             break;
 
                         case R.id.nav_group_lessons:
                             databaseVisibility = GROUP_DATABASE;
+                            // Set fragments database visibility
+                            mainFragment.setDatabaseVisibility(databaseVisibility);
+                            partsFragment.setDatabaseVisibility(databaseVisibility);
                             break;
 
                         default:
@@ -348,43 +359,51 @@ public class MainActivity extends AppCompatActivity implements
         View headerView = navigationView.getHeaderView(0);
         mUsernameTextView = (TextView) headerView.findViewById(R.id.tv_user_name);
         mUserEmailTextView = (TextView) headerView.findViewById(R.id.tv_user_email);
-        // Set the database view state
         mUsernameTextView.setText(mUsername);
         mUserEmailTextView.setText(mUserEmail);
+
+        // Set the drawer database view state
         Menu menuDrawer = navigationView.getMenu();
         menuDrawer.findItem(R.id.nav_my_lessons).setChecked(databaseVisibility.equals(USER_DATABASE));
+        menuDrawer.findItem(R.id.nav_group_lessons).setChecked(databaseVisibility.equals(GROUP_DATABASE));
 
     }
 
 
+    // Set the visibility of the options according to the app state
     private void contextualizeMenu(SharedPreferences sharedPreferences) {
 
-        String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
+        String modeOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
                 this.getString(R.string.pref_mode_view));
 
-        if (queryOption.equals(this.getString(R.string.pref_mode_create))) {
+
+        Log.v(TAG,"contextualizeMenu modeOption:" + modeOption + " databaseVisibility:" +
+                databaseVisibility + " mUsername:" + mUsername);
+
+
+        if (modeOption.equals(this.getString(R.string.pref_mode_create))) {
             mMenu.findItem(R.id.action_delete).setVisible(true);
         } else {
             mMenu.findItem(R.id.action_delete).setVisible(false);
         }
 
         if (databaseVisibility.equals(USER_DATABASE) &&
-                queryOption.equals(this.getString(R.string.pref_mode_create))) {
+                modeOption.equals(this.getString(R.string.pref_mode_create))) {
             mMenu.findItem(R.id.action_insert_fake_data).setVisible(true);
+            mButton.setVisibility(VISIBLE);
         } else {
             mMenu.findItem(R.id.action_insert_fake_data).setVisible(false);
+            mButton.setVisibility(GONE);
         }
 
         if (databaseVisibility.equals(USER_DATABASE) &&
-                queryOption.equals(this.getString(R.string.pref_mode_create)) &&
+                modeOption.equals(this.getString(R.string.pref_mode_create)) &&
                 !mUsername.equals(ANONYMOUS)) {
             mMenu.findItem(R.id.action_delete_from_cloud).setVisible(true);
             mMenu.findItem(R.id.action_upload).setVisible(true);
-            mButton.setVisibility(VISIBLE);
         } else {
             mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
             mMenu.findItem(R.id.action_upload).setVisible(false);
-            mButton.setVisibility(GONE);
         }
 
         if (!mUsername.equals(ANONYMOUS)) {
@@ -394,7 +413,7 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         if (databaseVisibility.equals(USER_DATABASE) &&
-                queryOption.equals(this.getString(R.string.pref_mode_create))) {
+                modeOption.equals(this.getString(R.string.pref_mode_create))) {
             mMenu.findItem(R.id.action_edit).setVisible(true);
         } else {
             mMenu.findItem(R.id.action_edit).setVisible(false);
@@ -500,8 +519,10 @@ public class MainActivity extends AppCompatActivity implements
     // This method is saving the visibility of the fragments in static vars
     @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
+
         mainVisibility = lessonsContainer.getVisibility();
         partsVisibility = partsContainer.getVisibility();
+
         super.onSaveInstanceState(savedInstanceState);
     }
 
@@ -550,19 +571,15 @@ public class MainActivity extends AppCompatActivity implements
         mMenu = menu;
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
+        String modeOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
                 this.getString(R.string.pref_mode_view));
 
-        if (queryOption.equals(this.getString(R.string.pref_mode_view))) {
+        if (modeOption.equals(this.getString(R.string.pref_mode_view))) {
             menu.findItem(R.id.select_view).setChecked(true);
-            // Prepare the visibility of the creation action items
-            contextualizeMenu(sharedPreferences);
         }
 
-        if (queryOption.equals(this.getString(R.string.pref_mode_create))) {
+        if (modeOption.equals(this.getString(R.string.pref_mode_create))) {
             menu.findItem(R.id.select_create).setChecked(true);
-            // Prepare the visibility of the creation action items
-            contextualizeMenu(sharedPreferences);
         }
 
         // Set the drawer menu icon according to views
@@ -571,6 +588,9 @@ public class MainActivity extends AppCompatActivity implements
         } else {
             actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
         }
+
+        // Prepare the visibility of the action items
+        contextualizeMenu(sharedPreferences);
 
         return true;
     }
@@ -590,7 +610,7 @@ public class MainActivity extends AppCompatActivity implements
                 if (mainVisibility == VISIBLE) {
                     mDrawerLayout.openDrawer(GravityCompat.START);
                     return true;
-                } else {
+                } else if (mainVisibility == GONE && partsVisibility == VISIBLE){
                     closePartsFragment();
                 }
                 break;
@@ -622,7 +642,7 @@ public class MainActivity extends AppCompatActivity implements
 
             case R.id.action_refresh:
                 MyFirebaseUtilities myFirebaseUtilities = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
-                myFirebaseUtilities.refreshDatabase();
+                myFirebaseUtilities.refreshDatabase(databaseVisibility);
                 deselectViews();
                 break;
 
@@ -692,9 +712,9 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
-        String lessonsQueryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
+        String modeOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
                 this.getString(R.string.pref_mode_view));
-        Log.d(TAG, "onSharedPreferenceChanged lessonsQueryOption:" + lessonsQueryOption);
+        Log.d(TAG, "onSharedPreferenceChanged modeOption:" + modeOption);
     }
     
     private void deselectViews() {
@@ -808,7 +828,7 @@ public class MainActivity extends AppCompatActivity implements
         } else {
             actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
         }
-        // Send the data to the fragment
+        // Inform the parts fragment
         partsFragment.setReferenceLesson(_id);
     }
 

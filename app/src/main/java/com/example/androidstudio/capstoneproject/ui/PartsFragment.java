@@ -36,15 +36,20 @@ public class PartsFragment extends Fragment implements
 
     // Fields for handling the saving and restoring of view state
     private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
+    private static final String USER_DATABASE = "userDatabase";
+    private static final String GROUP_DATABASE = "groupDatabase";
+
     private Parcelable recyclerViewState;
 
     // Loader id
     private static final int ID_LESSON_PARTS_LOADER = 2;
+    private static final int ID_GROUP_LESSON_PARTS_LOADER = 20;
 
     // PartsFragment state vars
     private View mSelectedView;
     private long referenceLesson_id;
     private static long selectedLessonPart_id;
+    private static String databaseVisibility;
 
     // Views
     private TextView mErrorMessageDisplay;
@@ -56,7 +61,7 @@ public class PartsFragment extends Fragment implements
     private Context mContext;
 
 
-    // Callbacks to the main activity
+    // Callbacks to send data to the main activity
     OnLessonPartListener mPartCallback;
     OnIdlingResourceListener mIdlingCallback;
 
@@ -121,6 +126,8 @@ public class PartsFragment extends Fragment implements
             mPartsList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
         } else {
             selectedLessonPart_id = -1;
+            // this is a static var (auto preserve)
+            databaseVisibility = GROUP_DATABASE;
         }
 
         mLoadingIndicator.setVisibility(View.VISIBLE);
@@ -135,7 +142,11 @@ public class PartsFragment extends Fragment implements
 
         // Query the database and set the adapter with the cursor data
         if (null != getActivity()) {
-            getActivity().getSupportLoaderManager().initLoader(ID_LESSON_PARTS_LOADER, null, this);
+            if (databaseVisibility.equals(USER_DATABASE)) {
+                getActivity().getSupportLoaderManager().initLoader(ID_LESSON_PARTS_LOADER, null, this);
+            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+                getActivity().getSupportLoaderManager().initLoader(ID_GROUP_LESSON_PARTS_LOADER, null, this);
+            }
         }
     }
 
@@ -271,6 +282,7 @@ public class PartsFragment extends Fragment implements
     public Loader<Cursor> onCreateLoader(int loaderId, Bundle bundle) {
 
         Log.d(TAG, "onCreateLoader loaderId:" + loaderId);
+        Log.d(TAG, "onCreateLoader databaseVisibility:" + databaseVisibility);
 
         switch (loaderId) {
 
@@ -286,6 +298,20 @@ public class PartsFragment extends Fragment implements
                         null,
                         lessonPartsSelection,
                         lessonPartsSelectionArgs,
+                        null);
+
+            case ID_GROUP_LESSON_PARTS_LOADER:
+                /* URI for all rows of lesson parts data in our "my_lesson_parts" table */
+                Uri groupPartsQueryUri = LessonsContract.GroupLessonPartsEntry.CONTENT_URI;
+
+                String groupPartsSelection = LessonsContract.GroupLessonPartsEntry.COLUMN_LESSON_ID + "=?";
+                String[] groupPartsSelectionArgs = {Long.toString(referenceLesson_id)};
+
+                return new CursorLoader(mContext,
+                        groupPartsQueryUri,
+                        null,
+                        groupPartsSelection,
+                        groupPartsSelectionArgs,
                         null);
 
             default:
@@ -354,6 +380,21 @@ public class PartsFragment extends Fragment implements
         }
     }
 
+    public void setDatabaseVisibility(String dbVisibility) {
+        databaseVisibility = dbVisibility;
+
+        Log.v(TAG,"setDatabaseVisibility databaseVisibility:" + databaseVisibility);
+
+        // Query the database and set the adapter with the cursor data
+        if (null != getActivity()) {
+            if (databaseVisibility.equals(USER_DATABASE)) {
+                getActivity().getSupportLoaderManager().restartLoader(ID_LESSON_PARTS_LOADER, null, this);
+            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+                getActivity().getSupportLoaderManager().restartLoader(ID_GROUP_LESSON_PARTS_LOADER, null, this);
+            }
+        }
+    }
+
     public void deselectViews() {
         // Deselect the last view selected
         if (null != mSelectedView) {
@@ -371,13 +412,18 @@ public class PartsFragment extends Fragment implements
 
     // Set the reference to the selected lesson
     public void setReferenceLesson(long _id) {
-
+        Log.v(TAG, "setReferenceLesson: lesson _id:" + _id);
         // Write the data that will be used by the loader
         referenceLesson_id = _id;
 
         // Query the database and set the adapter with the cursor data
         if (null != getActivity()) {
-            getActivity().getSupportLoaderManager().restartLoader(ID_LESSON_PARTS_LOADER, null, this);
+            Log.v(TAG, "setReferenceLesson: setting the database with lesson _id:" + _id);
+            if (databaseVisibility.equals(USER_DATABASE)) {
+                getActivity().getSupportLoaderManager().restartLoader(ID_LESSON_PARTS_LOADER, null, this);
+            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+                getActivity().getSupportLoaderManager().restartLoader(ID_GROUP_LESSON_PARTS_LOADER, null, this);
+            }
         }
 
     }

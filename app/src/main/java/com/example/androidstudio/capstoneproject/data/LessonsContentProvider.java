@@ -81,6 +81,7 @@ public class LessonsContentProvider extends ContentProvider {
         Uri returnUri; // URI to be returned
 
         switch (match) {
+
             case MY_LESSONS:
                 // Insert new values into the database
                 // Inserting values into my_lessons table
@@ -91,6 +92,7 @@ public class LessonsContentProvider extends ContentProvider {
                     throw new SQLException("Failed to insert row into " + uri);
                 }
                 break;
+
             case MY_LESSON_PARTS:
                 // Insert new values into the database
                 // Inserting values into my_lesson_parts table
@@ -101,6 +103,29 @@ public class LessonsContentProvider extends ContentProvider {
                     throw new SQLException("Failed to insert row into " + uri);
                 }
                 break;
+
+            case GROUP_LESSONS:
+                // Insert new values into the database
+                // Inserting values into my_lessons table
+                long groupLesson_id = db.insert(LessonsContract.GroupLessonsEntry.TABLE_NAME, null, values);
+                if ( groupLesson_id > 0 ) {
+                    returnUri = ContentUris.withAppendedId(LessonsContract.GroupLessonsEntry.CONTENT_URI, groupLesson_id);
+                } else {
+                    throw new SQLException("Failed to insert row into " + uri);
+                }
+                break;
+
+            case GROUP_LESSON_PARTS:
+                // Insert new values into the database
+                // Inserting values into my_lesson_parts table
+                long groupLessonPart_id = db.insert(LessonsContract.GroupLessonPartsEntry.TABLE_NAME, null, values);
+                if ( groupLessonPart_id > 0 ) {
+                    returnUri = ContentUris.withAppendedId(LessonsContract.GroupLessonPartsEntry.CONTENT_URI, groupLessonPart_id);
+                } else {
+                    throw new SQLException("Failed to insert row into " + uri);
+                }
+                break;
+
             // Set the value for the returnedUri and write the default case for unknown URI's
             // Default case throws an UnsupportedOperationException
             default:
@@ -284,12 +309,12 @@ public class LessonsContentProvider extends ContentProvider {
 
             // clean the local database, in case of the group (for sync with cloud)
             case GROUP_LESSONS:
-                rowsDeleted = db.delete(LessonsContract.MyLessonsEntry.TABLE_NAME,
+                rowsDeleted = db.delete(LessonsContract.GroupLessonsEntry.TABLE_NAME,
                         null, null);
                 break;
 
             case GROUP_LESSON_PARTS:
-                rowsDeleted = db.delete(LessonsContract.MyLessonPartsEntry.TABLE_NAME,
+                rowsDeleted = db.delete(LessonsContract.GroupLessonPartsEntry.TABLE_NAME,
                         null, null);
                 break;
 

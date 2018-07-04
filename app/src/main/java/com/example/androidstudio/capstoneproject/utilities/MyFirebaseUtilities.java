@@ -30,14 +30,18 @@ import static com.google.common.net.HostSpecifier.isValid;
 
 public class MyFirebaseUtilities {
 
-    private FirebaseFirestore cloudFirestore;
-    private String userUid;
 
     private static final String TAG = MyFirebaseUtilities.class.getSimpleName();
 
-    OnCloudListener mCallback;
+    private static final String USER_DATABASE = "userDatabase";
+    private static final String GROUP_DATABASE = "groupDatabase";
+
+    private FirebaseFirestore cloudFirestore;
+    private String userUid;
 
     private Context mContext;
+
+    private OnCloudListener mCallback;
 
 
     // Listener for sending information to the Activity
@@ -143,7 +147,7 @@ public class MyFirebaseUtilities {
 
     // Helper method for refreshing the database from Cloud Firestore
     // Do not delete if existing
-    public void refreshDatabase() {
+    public void refreshDatabase(final String databaseVisibility) {
 
         // Get a document by document name
 //        final String documentName = String.format( Locale.US, "%s_%02d",
@@ -160,6 +164,7 @@ public class MyFirebaseUtilities {
 //            }
 //        });
 
+
         // Get multiple documents
 
         cloudFirestore.collection("lessons")
@@ -169,20 +174,31 @@ public class MyFirebaseUtilities {
                     @Override
                     public void onComplete(@NonNull Task<QuerySnapshot> task) {
                         if (task.isSuccessful()) {
-                            mCallback.onDownloadComplete();
-                            for (QueryDocumentSnapshot document : task.getResult()) {
-                                Log.d(TAG, "refreshDatabase onComplete document.getId():" +
-                                        document.getId() + " => " + document.getData());
-                                Lesson lesson = document.toObject(Lesson.class);
-                                String jsonString = MyFirebaseUtilities.serialize(lesson);
-                                Log.v(TAG, "refreshDatabase onComplete lesson jsonString:" + jsonString);
 
-                                // refresh the lessons of the local user on its separate table
-                                // this gives consistency to the database
-                                if (userUid.equals(lesson.getUser_uid())) {
-                                    MyFirebaseUtilities.refreshLesson(mContext, lesson);
+                            mCallback.onDownloadComplete();
+
+                            if (databaseVisibility.equals(USER_DATABASE)) {
+
+                                for (QueryDocumentSnapshot document : task.getResult()) {
+                                    Log.d(TAG, "refreshDatabase onComplete document.getId():" +
+                                            document.getId() + " => " + document.getData());
+                                    Lesson lesson = document.toObject(Lesson.class);
+                                    String jsonString = MyFirebaseUtilities.serialize(lesson);
+                                    Log.v(TAG, "refreshDatabase onComplete lesson jsonString:" + jsonString);
+
+                                    // refresh the lessons of the local user on its separate table
+                                    // this gives consistency to the database
+                                    if (userUid.equals(lesson.getUser_uid())) {
+                                        MyFirebaseUtilities.refreshUserLesson(mContext, lesson);
+                                    }
                                 }
+
+                            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+
+                                // refresh the lessons of the group table on its separate table
+                                MyFirebaseUtilities.refreshGroupLessons(mContext, task);
                             }
+
                         } else {
                             Log.d(TAG, "Error getting documents: ", task.getException());
                             mCallback.onDownloadFailure(task.getException());
@@ -193,24 +209,32 @@ public class MyFirebaseUtilities {
     }
 
 
-    static private void refreshLesson(Context context, Lesson lesson) {
+    static private void refreshUserLesson(Context context, Lesson lesson) {
 
         if (null == lesson) {
             return;
         }
-        Log.v(TAG, "refreshLesson lesson_id:" + lesson.getLesson_id());
+        Log.v(TAG, "refreshUserLesson lesson_id:" + lesson.getLesson_id());
 
         // query the local database to see if find the lesson with the _id
         // update if found
         // create if didn't exist
-        Uri queryUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI,
-                lesson.getLesson_id());
+        Uri queryUri;
+        queryUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI,
+            lesson.getLesson_id());
+
         ContentResolver contentResolver = context.getContentResolver();
-        Cursor lessonCursor = contentResolver.query(queryUri,
-                null,
-                null,
-                null,
-                null);
+        Cursor lessonCursor;
+        if (queryUri != null) {
+            lessonCursor = contentResolver.query(queryUri,
+                    null,
+                    null,
+                    null,
+                    null);
+        } else {
+            Log.v(TAG, "Error: null cursor");
+            return;
+        }
 
         int nRows = -1;
         if (lessonCursor != null) {
@@ -226,11 +250,14 @@ public class MyFirebaseUtilities {
             /* Create values to update */
             ContentValues editLessonValues = new ContentValues();
             editLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, lesson.getLesson_title());
-
+            // update
             Uri updateUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, lesson.getLesson_id());
 
-            int numberOfLessonsUpdated = contentResolver.update(updateUri,
-                    editLessonValues, null, null);
+            int numberOfLessonsUpdated = 0;
+            if (updateUri != null) {
+                numberOfLessonsUpdated = contentResolver.update(updateUri,
+                        editLessonValues, null, null);
+            }
 
             if (numberOfLessonsUpdated >= 0) {
                 Log.v(TAG, "refreshLesson " + numberOfLessonsUpdated +
@@ -243,6 +270,7 @@ public class MyFirebaseUtilities {
             Log.v(TAG, "refreshLesson creating row for lesson _id:" + lesson.getLesson_id());
 
             /* Create values to insert */
+            // insert with the same id (because it will make the consistency)
             ContentValues insertLessonValues = new ContentValues();
             insertLessonValues.put(LessonsContract.MyLessonsEntry._ID, lesson.getLesson_id());
             insertLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, lesson.getLesson_title());
@@ -253,9 +281,56 @@ public class MyFirebaseUtilities {
                 Log.v(TAG, "insert uri:" + uri.toString());
             }
 
+            // for inserting the parts, extract the _id of the uri!
+
+        }
+    }
+
+
+    // In case of group lessons, clear the existing table and insert new data
+    static private void refreshGroupLessons(Context context, Task<QuerySnapshot> task) {
+
+        Log.v(TAG, "refreshGroupLesson");
+
+        ContentResolver contentResolver = context.getContentResolver();
+
+        int numberOfLessonsDeleted = contentResolver.delete(
+                LessonsContract.GroupLessonsEntry.CONTENT_URI,
+                null,
+                null);
+
+        Log.v(TAG, "refreshGroupLesson numberOfLessonsDeleted:" + numberOfLessonsDeleted);
+
+
+        for (QueryDocumentSnapshot document : task.getResult()) {
+
+            Log.d(TAG, "refreshGroupLessons onComplete document.getId():" +
+                    document.getId() + " => " + document.getData());
+
+            Lesson lesson = document.toObject(Lesson.class);
+            String jsonString = MyFirebaseUtilities.serialize(lesson);
+            Log.v(TAG, "refreshGroupLessons onComplete lesson jsonString:" + jsonString);
+
+            // insert the data in the clean table
+            /* Create values to insert */
+            ContentValues insertLessonValues = new ContentValues();
+            // The _id will be automatically generated for local consistency reasons.
+            // The id of the cloud will be saved is in the COLUMN_LESSON_ID instead.
+            insertLessonValues.put(LessonsContract.GroupLessonsEntry.COLUMN_LESSON_ID, lesson.getLesson_id());
+            insertLessonValues.put(LessonsContract.GroupLessonsEntry.COLUMN_LESSON_TITLE, lesson.getLesson_title());
+            insertLessonValues.put(LessonsContract.GroupLessonsEntry.COLUMN_LESSON_TIME_STAMP, lesson.getTime_stamp());
+            insertLessonValues.put(LessonsContract.GroupLessonsEntry.COLUMN_USER_UID, lesson.getUser_uid());
+
+            Uri uri = contentResolver.insert(LessonsContract.GroupLessonsEntry.CONTENT_URI, insertLessonValues);
+
+            // for inserting the parts, extract the _id of the uri!
+
+            if (null != uri) {
+                Log.v(TAG, "uri inserted:" + uri);
+            }
         }
 
-    }
+     }
 
 
     public void deleteLessonFromCloud(Long lesson_id) {

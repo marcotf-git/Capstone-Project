@@ -10,7 +10,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "lessons.db";
 
     // If you change the database schema, you must increment the database version
-    private static final int DATABASE_VERSION = 3;
+    private static final int DATABASE_VERSION = 18;
 
     // Constructor
     public LessonsDbHelper(Context context) {
@@ -58,11 +58,13 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
                          */
                         LessonsContract.MyLessonPartsEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
 
-                        LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE + " TEXT NOT NULL," +
-
                         // Must map to an lesson _id!
                         LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + " INTEGER NOT NULL," +
 
+                        LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE + " TEXT NOT NULL," +
+
+                        // Now, the consistency is with the _ID of the table lessons
+                        // (LESSON_ID) <--> (_ID)
                         "FOREIGN KEY(" + LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + ") " +
                         "REFERENCES " + LessonsContract.MyLessonsEntry.TABLE_NAME + "(" +
                         LessonsContract.MyLessonsEntry._ID +")" +
@@ -89,6 +91,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
                          */
                         LessonsContract.GroupLessonsEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
 
+                        // this is the id in the author database
                         LessonsContract.GroupLessonsEntry.COLUMN_LESSON_ID + " INTEGER NOT NULL," +
 
                         LessonsContract.GroupLessonsEntry.COLUMN_LESSON_TITLE + " TEXT NOT NULL," +
@@ -112,20 +115,21 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
                          */
                         LessonsContract.GroupLessonPartsEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
 
-                        LessonsContract.GroupLessonPartsEntry.COLUMN_PART_ID + " INTEGER NOT NULL," +
-                        // Must map to an lesson_id
+                        // this is the lesson id in the LOCAL DATABASE
                         LessonsContract.GroupLessonPartsEntry.COLUMN_LESSON_ID + " INTEGER NOT NULL," +
 
+                        // this is the part id in the author database
+                        LessonsContract.GroupLessonPartsEntry.COLUMN_PART_ID + " INTEGER NOT NULL," +
+
                         LessonsContract.GroupLessonPartsEntry.COLUMN_PART_TITLE + " TEXT NOT NULL," +
-                        // Must map to an lesson user_id
+
                         LessonsContract.GroupLessonPartsEntry.COLUMN_USER_UID + " INTEGER NOT NULL," +
 
-                        "FOREIGN KEY(" + LessonsContract.GroupLessonPartsEntry.COLUMN_USER_UID + "," +
-                                        LessonsContract.GroupLessonPartsEntry.COLUMN_LESSON_ID + ") " +
+                        // Now, the consistency is with the LESSON_ID, not with the _ID of the table lessons
+                        // (USER_ID, LESSON_ID) <--> (USER_ID, LESSON_ID)
+                        "FOREIGN KEY("  + LessonsContract.GroupLessonPartsEntry.COLUMN_LESSON_ID + ") " +
                         "REFERENCES " + LessonsContract.GroupLessonsEntry.TABLE_NAME +
-                                    "(" + LessonsContract.GroupLessonsEntry.COLUMN_USER_UID + "," +
-                                        LessonsContract.GroupLessonsEntry.COLUMN_LESSON_ID +")" +
-
+                                    "(" + LessonsContract.GroupLessonsEntry._ID +")" +
                         ");";
 
 

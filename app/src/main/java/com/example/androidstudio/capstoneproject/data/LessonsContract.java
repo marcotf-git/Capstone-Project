@@ -35,12 +35,10 @@ public class LessonsContract {
 
         // table and column names
         public static final String TABLE_NAME = "my_lessons";
-
         /* Since MyContentEntry implements the interface "BaseColumns", it has an automatically produced
          * "_id" column in addition to the column "id" below.
          */
         //public static final String COLUMN_LESSON_ID = "id";
-
         public static final String COLUMN_LESSON_TITLE = "title";
 
     }
@@ -53,9 +51,8 @@ public class LessonsContract {
 
         // table and column names
         public static final String TABLE_NAME = "my_lesson_parts";
-
+        // column names
         public static final String COLUMN_LESSON_ID = "lesson_id";
-
         public static final String COLUMN_PART_TITLE = "title";
     }
 
@@ -67,17 +64,12 @@ public class LessonsContract {
 
         // table and column names
         public static final String TABLE_NAME = "group_lessons";
-
         /* Since MyContentEntry implements the interface "BaseColumns", it has an automatically produced
          * "_id" column.
          */
-
         public static final String COLUMN_LESSON_ID = "lesson_id";
-
         public static final String COLUMN_LESSON_TITLE = "title";
-
         public static final String COLUMN_LESSON_TIME_STAMP = "time_stamp";
-
         public static final String COLUMN_USER_UID = "user_uid";
 
     }
@@ -90,17 +82,12 @@ public class LessonsContract {
 
         // table and column names
         public static final String TABLE_NAME = "group_lesson_parts";
-
         /* Since MyContentEntry implements the interface "BaseColumns", it has an automatically produced
          * "_id" column.
          */
-
         public static final String COLUMN_PART_ID = "part_id";
-
         public static final String COLUMN_LESSON_ID = "lesson_id";
-
         public static final String COLUMN_PART_TITLE = "title";
-
         public static final String COLUMN_USER_UID = "user_uid";
 
     }

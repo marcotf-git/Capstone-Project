@@ -36,15 +36,19 @@ public class MainFragment extends Fragment implements
 
     // Fields for handling the saving and restoring of view state
     private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
+    private static final String USER_DATABASE = "userDatabase";
+    private static final String GROUP_DATABASE = "groupDatabase";
 
     // Loader id
     private static final int ID_LESSONS_LOADER = 1;
+    private static final int ID_GROUP_LESSONS_LOADER = 10;
 
     // View state var
     private Parcelable recyclerViewState;
 
     // MainFragment state vars
     private static long selectedLesson_id;
+    private static String databaseVisibility;
 
     // Views
     private TextView mErrorMessageDisplay;
@@ -57,7 +61,7 @@ public class MainFragment extends Fragment implements
     private Context mContext;
 
 
-    // Callbacks to the main activity
+    // Interfaces for communication with the main activity (sending data)
     OnLessonListener mLessonCallback;
     OnIdlingResourceListener mIdlingCallback;
 
@@ -122,6 +126,8 @@ public class MainFragment extends Fragment implements
             mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
         } else {
             selectedLesson_id = -1;
+            // this is a static var (auto preserve)
+            databaseVisibility = GROUP_DATABASE;
         }
 
         mLoadingIndicator.setVisibility(View.VISIBLE);
@@ -136,7 +142,11 @@ public class MainFragment extends Fragment implements
 
         // Query the database and set the adapter with the cursor data
         if (null != getActivity()) {
-            getActivity().getSupportLoaderManager().initLoader(ID_LESSONS_LOADER, null, this);
+            if (databaseVisibility.equals(USER_DATABASE)) {
+                getActivity().getSupportLoaderManager().initLoader(ID_LESSONS_LOADER, null, this);
+            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+                getActivity().getSupportLoaderManager().initLoader(ID_GROUP_LESSONS_LOADER, null, this);
+            }
         }
     }
 
@@ -196,7 +206,7 @@ public class MainFragment extends Fragment implements
             return;
         }
 
-        // Or clicks on the view
+        // Inform the MainActivity
         mLessonCallback.onLessonClicked(lesson_id);
 
     }
@@ -288,6 +298,17 @@ public class MainFragment extends Fragment implements
                         null,
                         null);
 
+            case ID_GROUP_LESSONS_LOADER:
+                /* URI for all rows of lessons data in our "my_lessons" table */
+                Uri groupLessonsQueryUri = LessonsContract.GroupLessonsEntry.CONTENT_URI;
+
+                return new CursorLoader(mContext,
+                        groupLessonsQueryUri,
+                        null,
+                        null,
+                        null,
+                        null);
+
             default:
                 throw new RuntimeException("Loader Not Implemented: " + loaderId);
         }
@@ -353,6 +374,25 @@ public class MainFragment extends Fragment implements
             showLessonsDataView();
         }
     }
+
+
+    public void setDatabaseVisibility(String dbVisibility) {
+        databaseVisibility = dbVisibility;
+
+        Log.v(TAG,"setDatabaseVisibility databaseVisibility:" + databaseVisibility);
+
+        // Query the database and set the adapter with the cursor data
+        if (null != getActivity()) {
+            if (databaseVisibility.equals(USER_DATABASE)) {
+                getActivity().getSupportLoaderManager().restartLoader(ID_LESSONS_LOADER,
+                        null, this);
+            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+                getActivity().getSupportLoaderManager().restartLoader(ID_GROUP_LESSONS_LOADER,
+                        null, this);
+            }
+        }
+    }
+
 
     public void deselectViews() {
         // Deselect the last view selected
