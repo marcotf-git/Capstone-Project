@@ -59,6 +59,11 @@ public class LessonsContract {
         // column names
         public static final String COLUMN_LESSON_ID = "lesson_id";
         public static final String COLUMN_PART_TITLE = "title";
+        public static final String COLUMN_PART_TEXT = "text";
+        public static final String COLUMN_VIDEO = "video";
+        public static final String COLUMN_VIDEO_URL = "video_url";
+        public static final String COLUMN_IMAGE = "image";
+        public static final String COLUMN_IMAGE_URL = "image_url";
     }
 
     public static class GroupLessonsEntry implements BaseColumns {
@@ -93,6 +98,11 @@ public class LessonsContract {
         public static final String COLUMN_PART_ID = "part_id";
         public static final String COLUMN_LESSON_ID = "lesson_id";
         public static final String COLUMN_PART_TITLE = "title";
+        public static final String COLUMN_PART_TEXT = "text";
+        public static final String COLUMN_VIDEO = "video";
+        public static final String COLUMN_VIDEO_URL = "video_url";
+        public static final String COLUMN_IMAGE = "image";
+        public static final String COLUMN_IMAGE_URL = "image_url";
         public static final String COLUMN_USER_UID = "user_uid";
 
     }

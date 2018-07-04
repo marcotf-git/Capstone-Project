@@ -58,5 +58,7 @@
     <string name="menu_action_delete_from_cloud_label">Delete from Cloud</string>
     <string name="my_lessons">My Lessons</string>
     <string name="group_lessons">Group Lessons</string>
+    <string name="part_text">Part Text</string>
+    <string name="title_activity_part_detail">Part Detail Activity</string>
 
 </resources>
