@@ -8,55 +8,59 @@
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/select_view"
-            android:title="@string/view" />
+            android:title="@string/view"
+            app:showAsAction="never"
+            android:orderInCategory="1"/>
         <item
             android:id="@+id/select_create"
-            android:title="@string/create" />
+            android:title="@string/create"
+            app:showAsAction="never"
+            android:orderInCategory="2"/>
     </group>
 
     <item
         android:id="@+id/action_cancel"
-        android:orderInCategory="7"
+        android:orderInCategory="10"
         android:title="@string/menu_action_cancel_label"
         app:showAsAction="never" />
 
     <item
         android:id="@+id/action_insert_fake_data"
-        android:orderInCategory="6"
+        android:orderInCategory="8"
         android:title="@string/menu_action_insert_fake_label"
         app:showAsAction="never"/>
 
     <item
         android:id="@+id/action_delete_from_cloud"
-        android:orderInCategory="5"
+        android:orderInCategory="7"
         android:title="@string/menu_action_delete_from_cloud_label"
         app:showAsAction="never"/>
 
     <item
         android:id="@+id/action_delete"
         android:icon="@drawable/ic_action_delete"
-        android:orderInCategory="4"
+        android:orderInCategory="6"
         android:title="@string/menu_action_delete_label"
         app:showAsAction="ifRoom"/>
 
     <item
         android:id="@+id/action_refresh"
         android:icon="@drawable/ic_action_refresh"
-        android:orderInCategory="3"
+        android:orderInCategory="5"
         android:title="@string/menu_action_refresh_label"
         app:showAsAction="ifRoom"/>
 
     <item
         android:id="@+id/action_upload"
         android:icon="@drawable/ic_action_upload"
-        android:orderInCategory="2"
+        android:orderInCategory="4"
         android:title="@string/menu_action_upload_label"
         app:showAsAction="ifRoom"/>
 
     <item
         android:id="@+id/action_edit"
         android:icon="@drawable/ic_action_edit"
-        android:orderInCategory="1"
+        android:orderInCategory="3"
         android:title="@string/menu_action_edit_label"
         app:showAsAction="ifRoom"/>
 

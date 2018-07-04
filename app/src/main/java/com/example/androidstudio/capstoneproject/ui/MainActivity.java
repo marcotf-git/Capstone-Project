@@ -350,7 +350,7 @@ public class MainActivity extends AppCompatActivity implements
                         default:
                             break;
                     }
-                    contextualizeMenu(sharedPreferences);
+                    contextualizeMenu();
                     return true;
                 }
             });
@@ -371,15 +371,14 @@ public class MainActivity extends AppCompatActivity implements
 
 
     // Set the visibility of the options according to the app state
-    private void contextualizeMenu(SharedPreferences sharedPreferences) {
+    private void contextualizeMenu() {
 
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         String modeOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
                 this.getString(R.string.pref_mode_view));
 
-
         Log.v(TAG,"contextualizeMenu modeOption:" + modeOption + " databaseVisibility:" +
                 databaseVisibility + " mUsername:" + mUsername);
-
 
         if (modeOption.equals(this.getString(R.string.pref_mode_create))) {
             mMenu.findItem(R.id.action_delete).setVisible(true);
@@ -467,14 +466,8 @@ public class MainActivity extends AppCompatActivity implements
         mUserEmailTextView.setText(mUserEmail);
 
         // Set the visibility of the upload action icon
-        String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
-                this.getString(R.string.pref_mode_view));
         if (null != mMenu) {
-            if (queryOption.equals(this.getString(R.string.pref_mode_create))) {
-                mMenu.findItem(R.id.action_upload).setVisible(true);
-            } else {
-                mMenu.findItem(R.id.action_upload).setVisible(false);
-            }
+            contextualizeMenu();
         }
 
         Log.v(TAG, "onSignedInInitialize mUsername:" + mUsername);
@@ -512,7 +505,7 @@ public class MainActivity extends AppCompatActivity implements
         mUserEmailTextView.setText(mUserEmail);
         // Set the visibility of the upload action icon
         if (null != mMenu) {
-            mMenu.findItem(R.id.action_upload).setVisible(false);
+            contextualizeMenu();
         }
     }
 
@@ -590,7 +583,7 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         // Prepare the visibility of the action items
-        contextualizeMenu(sharedPreferences);
+        contextualizeMenu();
 
         return true;
     }
@@ -621,7 +614,7 @@ public class MainActivity extends AppCompatActivity implements
                         .putString(this.getString(R.string.pref_mode_key),
                                 this.getString(R.string.pref_mode_view)).apply();
                 // Set visibility of action icons
-                contextualizeMenu(sharedPreferences);
+                contextualizeMenu();
                 // Deselect the last view selected
                 mainFragment.deselectViews();
                 partsFragment.deselectViews();
@@ -636,7 +629,7 @@ public class MainActivity extends AppCompatActivity implements
                         .putString(this.getString(R.string.pref_mode_key),
                                 this.getString(R.string.pref_mode_create)).apply();
                 // Set visibility of action icons
-                contextualizeMenu(sharedPreferences);
+                contextualizeMenu();
                 Log.v(TAG, "Create mode selected");
                 break;
 
