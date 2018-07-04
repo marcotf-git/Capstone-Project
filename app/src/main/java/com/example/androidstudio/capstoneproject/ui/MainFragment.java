@@ -70,6 +70,8 @@ public class MainFragment extends Fragment implements
     public void onAttach(Context context) {
         super.onAttach(context);
 
+        mContext = context;
+
         try {
             mIdlingCallback = (OnIdlingResourceListener) context;
         } catch (ClassCastException e) {
@@ -95,7 +97,7 @@ public class MainFragment extends Fragment implements
         // Inflate the Ingredients fragment layout
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        mContext = getContext();
+        //mContext = getContext();
 
         mErrorMessageDisplay = rootView.findViewById(R.id.tv_error_message_display);
         mLoadingIndicator = rootView.findViewById(R.id.pb_loading_indicator);
@@ -297,6 +299,7 @@ public class MainFragment extends Fragment implements
                         null,
                         null,
                         null);
+
 
             case ID_GROUP_LESSONS_LOADER:
                 /* URI for all rows of lessons data in our "my_lessons" table */

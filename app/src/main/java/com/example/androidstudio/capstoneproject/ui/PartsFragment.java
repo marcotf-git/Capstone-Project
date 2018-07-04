@@ -47,7 +47,7 @@ public class PartsFragment extends Fragment implements
 
     // PartsFragment state vars
     private View mSelectedView;
-    private long referenceLesson_id;
+    private static long referenceLesson_id;
     private static long selectedLessonPart_id;
     private static String databaseVisibility;
 
@@ -69,6 +69,8 @@ public class PartsFragment extends Fragment implements
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
+
+        mContext = context;
 
         try {
             mIdlingCallback = (OnIdlingResourceListener) context;
@@ -95,7 +97,7 @@ public class PartsFragment extends Fragment implements
         // Inflate the Ingredients fragment layout
         View rootView = inflater.inflate(R.layout.fragment_parts, container, false);
 
-        mContext = getContext();
+        //mContext = getContext();
 
         mErrorMessageDisplay = rootView.findViewById(R.id.tv_error_message_display);
         mLoadingIndicator = rootView.findViewById(R.id.pb_loading_indicator);
@@ -292,6 +294,9 @@ public class PartsFragment extends Fragment implements
 
                 String lessonPartsSelection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
                 String[] lessonPartsSelectionArgs = {Long.toString(referenceLesson_id)};
+
+                Log.v(TAG, "onCreateLoader lessonPartsSelection:" + lessonPartsSelection);
+                Log.v(TAG, "onCreateLoader referenceLesson_id:" + referenceLesson_id);
 
                 return new CursorLoader(mContext,
                         partsQueryUri,

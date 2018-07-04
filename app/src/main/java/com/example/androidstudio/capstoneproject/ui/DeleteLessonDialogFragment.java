@@ -15,6 +15,8 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 public class DeleteLessonDialogFragment extends DialogFragment {
 
+    private static final String DATABASE_VISIBILITY = "databaseVisibility";
+
     private long lesson_id;
 
     private Context mContext;

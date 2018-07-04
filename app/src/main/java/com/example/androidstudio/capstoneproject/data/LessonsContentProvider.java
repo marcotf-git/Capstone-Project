@@ -313,9 +313,25 @@ public class LessonsContentProvider extends ContentProvider {
                         null, null);
                 break;
 
+            case GROUP_LESSON_WITH_ID:
+                // Get the lesson "_id" from the URI path
+                String group_lesson_id = uri.getPathSegments().get(1);
+                // Use selections/selectionArgs to filter for this "_id"
+                rowsDeleted = db.delete(LessonsContract.GroupLessonsEntry.TABLE_NAME,
+                        "_id=?", new String[]{group_lesson_id});
+                break;
+
             case GROUP_LESSON_PARTS:
                 rowsDeleted = db.delete(LessonsContract.GroupLessonPartsEntry.TABLE_NAME,
                         null, null);
+                break;
+
+            case GROUP_LESSON_PART_WITH_ID:
+                // Get the lesson "_id" from the URI path
+                String group_lesson_part_id = uri.getPathSegments().get(1);
+                // Use selections/selectionArgs to filter for this "_id"
+                rowsDeleted = db.delete(LessonsContract.GroupLessonPartsEntry.TABLE_NAME,
+                        "_id=?", new String[]{group_lesson_part_id});
                 break;
 
             default:

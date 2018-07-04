@@ -837,22 +837,30 @@ public class MainActivity extends AppCompatActivity implements
     public void onDialogPositiveClick(DialogFragment dialog, long _id) {
         ContentResolver contentResolver = mContext.getContentResolver();
         /* The delete method deletes the row by its _id */
-        Uri uriToDelete = LessonsContract.MyLessonsEntry.CONTENT_URI.buildUpon()
-                .appendPath("" + _id + "").build();
-        Log.d(TAG, "onDialogPositiveClick: Uri to delete:" + uriToDelete.toString());
-        int numberOfLessonsDeleted = contentResolver.delete(uriToDelete, null, null);
+
+        Uri uriToDelete = null;
+        if (databaseVisibility.equals(USER_DATABASE)) {
+            uriToDelete = LessonsContract.MyLessonsEntry.CONTENT_URI.buildUpon()
+                    .appendPath("" + _id + "").build();
+        } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+            uriToDelete = LessonsContract.GroupLessonsEntry.CONTENT_URI.buildUpon()
+                    .appendPath("" + _id + "").build();
+        }
+
+        int numberOfLessonsDeleted = 0;
+        if (uriToDelete != null) {
+            Log.d(TAG, "onDialogPositiveClick: Uri to delete:" + uriToDelete.toString());
+            numberOfLessonsDeleted = contentResolver.delete(uriToDelete, null, null);
+        }
+
         if (numberOfLessonsDeleted > 0) {
             Toast.makeText(this,
                     numberOfLessonsDeleted + " item(s) removed!", Toast.LENGTH_LONG).show();
-
-//            Snackbar mySnackbar = Snackbar.make(lessonsContainer,
-//                    numberOfLessonsDeleted + " item removed", Snackbar.LENGTH_LONG);
-//            mySnackbar.show();
-
             // Deselect the last view selected
             mainFragment.deselectViews();
             selectedLesson_id = -1;
         }
+
     }
 
     // Method for receiving communication from the DeleteLessonFragment
@@ -887,10 +895,24 @@ public class MainActivity extends AppCompatActivity implements
     public void onDialogPartPositiveClick(DialogFragment dialog, long _id) {
         ContentResolver contentResolver = mContext.getContentResolver();
         /* The delete method deletes the row by its _id */
-        Uri uriToDelete = LessonsContract.MyLessonPartsEntry.CONTENT_URI.buildUpon()
-                .appendPath("" + _id + "").build();
-        Log.d(TAG, "onDialogPartPositiveClick: Uri to delete:" + uriToDelete.toString());
-        int numberOfPartsDeleted = contentResolver.delete(uriToDelete, null, null);
+
+        Uri uriToDelete = null;
+
+        if (databaseVisibility.equals(USER_DATABASE)) {
+            uriToDelete = LessonsContract.MyLessonPartsEntry.CONTENT_URI.buildUpon()
+                    .appendPath("" + _id + "").build();
+        } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+            uriToDelete = LessonsContract.GroupLessonPartsEntry.CONTENT_URI.buildUpon()
+                    .appendPath("" + _id + "").build();
+        }
+
+        int numberOfPartsDeleted = 0;
+
+        if (uriToDelete != null) {
+            Log.d(TAG, "onDialogPartPositiveClick: Uri to delete:" + uriToDelete.toString());
+            numberOfPartsDeleted = contentResolver.delete(uriToDelete, null, null);
+        }
+
         if (numberOfPartsDeleted > 0) {
             Toast.makeText(this,
                     numberOfPartsDeleted + " item(s) removed!", Toast.LENGTH_LONG).show();
