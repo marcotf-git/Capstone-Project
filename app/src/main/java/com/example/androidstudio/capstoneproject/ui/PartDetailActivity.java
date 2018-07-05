@@ -14,7 +14,6 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
-import android.support.v4.view.GravityCompat;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -31,10 +30,6 @@ import android.widget.Toast;
 
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
-import com.example.androidstudio.capstoneproject.data.TestUtil;
-import com.example.androidstudio.capstoneproject.utilities.MyFirebaseUtilities;
-import com.squareup.picasso.Callback;
-import com.squareup.picasso.Picasso;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
@@ -129,6 +124,9 @@ public class PartDetailActivity extends AppCompatActivity implements
         Intent intentThatStartedThisActivity = getIntent();
         if (intentThatStartedThisActivity.hasExtra(CLICKED_LESSON_PART_ID)) {
             clickedLessonPart_id = intentThatStartedThisActivity.getLongExtra(CLICKED_LESSON_PART_ID, -1);
+        }
+
+        if (intentThatStartedThisActivity.hasExtra(DATABASE_VISIBILITY)) {
             databaseVisibility = intentThatStartedThisActivity.getStringExtra(DATABASE_VISIBILITY);
         }
 
@@ -263,7 +261,6 @@ public class PartDetailActivity extends AppCompatActivity implements
 
         }
 
-        cursor.close();
     }
 
 
@@ -440,6 +437,7 @@ public class PartDetailActivity extends AppCompatActivity implements
 
             case R.id.action_edit:
                 Log.d(TAG, "Deletion action selected");
+                editLessonPartText(clickedLessonPart_id);
                 // Try to action first on the more specific item
 //                if (selectedLessonPart_id != -1) {
 //                    editLessonPart(selectedLessonPart_id);
@@ -561,6 +559,27 @@ public class PartDetailActivity extends AppCompatActivity implements
 
         mMenu.findItem(R.id.action_insert_fake_data).setVisible(false);
 
+        if (databaseVisibility.equals(GROUP_DATABASE)) {
+            mMenu.findItem(R.id.select_view).setVisible(false);
+            mMenu.findItem(R.id.select_create).setVisible(false);
+            mMenu.findItem(R.id.action_cancel).setVisible(false);
+        } else if (databaseVisibility.equals(USER_DATABASE)) {
+            mMenu.findItem(R.id.select_view).setVisible(true);
+            mMenu.findItem(R.id.select_create).setVisible(true);
+            mMenu.findItem(R.id.action_cancel).setVisible(true);
+        }
+
+    }
+
+
+    // Helper function to edit lesson part
+    private void editLessonPartText(long _id) {
+        Log.d(TAG, "editLessonPart _id:" + _id);
+        // Create a new intent to start an
+        Class destinationActivity = EditPartTextActivity.class;
+        Intent editPartTextIntent = new Intent(mContext, destinationActivity);
+        editPartTextIntent.putExtra(CLICKED_LESSON_PART_ID, _id);
+        startActivity(editPartTextIntent);
     }
 
 
@@ -576,4 +595,8 @@ public class PartDetailActivity extends AppCompatActivity implements
         super.onSaveInstanceState(outState);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
 }

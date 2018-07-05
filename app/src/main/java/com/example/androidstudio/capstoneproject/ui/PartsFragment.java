@@ -38,6 +38,7 @@ public class PartsFragment extends Fragment implements
     private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
     private static final String USER_DATABASE = "userDatabase";
     private static final String GROUP_DATABASE = "groupDatabase";
+    private static final String DATABASE_VISIBILITY = "databaseVisibility";
 
     private Parcelable recyclerViewState;
 
@@ -103,6 +104,8 @@ public class PartsFragment extends Fragment implements
         mLoadingIndicator = rootView.findViewById(R.id.pb_loading_indicator);
         mPartsList = rootView.findViewById(R.id.rv_parts);
 
+        mLoadingIndicator.setVisibility(View.VISIBLE);
+
         // Set the layout manager
         int nColumns = numberOfColumns();
         layoutManager = new GridLayoutManager(mContext, nColumns);
@@ -128,11 +131,10 @@ public class PartsFragment extends Fragment implements
             mPartsList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
         } else {
             selectedLessonPart_id = -1;
-            // this is a static var (auto preserve)
-            databaseVisibility = GROUP_DATABASE;
         }
 
-        mLoadingIndicator.setVisibility(View.VISIBLE);
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+        databaseVisibility = sharedPreferences.getString(DATABASE_VISIBILITY, USER_DATABASE);
 
         // Return root view
         return rootView;

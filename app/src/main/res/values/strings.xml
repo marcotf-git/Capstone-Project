@@ -61,5 +61,7 @@
     <string name="part_text">Part Text</string>
     <string name="title_activity_part_detail">Part Detail Activity</string>
     <string name="edit_part_activity_label">Edit Part Activity</string>
+    <string name="edit_part_text_label">Edit Lesson Part Text</string>
+    <string name="edit_part_text">Please, edit the text!</string>
 
 </resources>

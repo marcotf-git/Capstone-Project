@@ -106,6 +106,8 @@ public class ExoPlayerFragment extends Fragment {
 
         playerView = rootView.findViewById(R.id.video_view);
 
+        // this view is the same in both layouts, but receives this name in the landscape
+        // this helps identify the device position
         isLandscape = null != getActivity().findViewById(R.id.view_activity_part_detail_landscape);
 
         Log.v(TAG, "onCreateView isLandscape:" + isLandscape);

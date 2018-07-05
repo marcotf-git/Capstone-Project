@@ -38,6 +38,7 @@ public class MainFragment extends Fragment implements
     private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
     private static final String USER_DATABASE = "userDatabase";
     private static final String GROUP_DATABASE = "groupDatabase";
+    private static final String DATABASE_VISIBILITY = "databaseVisibility";
 
     // Loader id
     private static final int ID_LESSONS_LOADER = 1;
@@ -128,9 +129,10 @@ public class MainFragment extends Fragment implements
             mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
         } else {
             selectedLesson_id = -1;
-            // this is a static var (auto preserve)
-            databaseVisibility = GROUP_DATABASE;
         }
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+        databaseVisibility = sharedPreferences.getString(DATABASE_VISIBILITY, USER_DATABASE);
 
         mLoadingIndicator.setVisibility(View.VISIBLE);
 

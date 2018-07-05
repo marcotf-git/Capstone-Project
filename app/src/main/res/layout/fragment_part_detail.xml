@@ -1,29 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    tools:context=".ui.PartDetailActivity">
 
-    <ScrollView
+    <TextView
+        android:id="@+id/tv_part_text"
+        style="?android:attr/textAppearanceMedium"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        tools:context=".ui.StepDetailActivity">
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="@dimen/part_text_inner_horiz_margin"
+        android:layout_marginRight="@dimen/part_text_inner_horiz_margin"
+        android:paddingBottom="@dimen/part_text_body_bottom_margin"
+        android:paddingTop="@dimen/part_text_body_top_margin"
+        android:textColorLink="?colorAccent"
+        android:textColor="@android:color/secondary_text_light"
+        android:lineSpacingMultiplier="@fraction/part_text_line_spacing_multiplier" />
 
-        <TextView
-            android:id="@+id/tv_part_text"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/part_text"
-            android:padding="8dp"
-            android:textSize="@dimen/part_text_size"
-            android:layout_marginLeft="8dp"
-            android:layout_marginRight="8dp"/>
-
-    </ScrollView>
-
-
-
-</LinearLayout>
+</ScrollView>

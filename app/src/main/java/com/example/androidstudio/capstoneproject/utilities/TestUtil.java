@@ -1,4 +1,4 @@
-package com.example.androidstudio.capstoneproject.data;
+package com.example.androidstudio.capstoneproject.utilities;
 
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -7,12 +7,14 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.util.Log;
 
+import com.example.androidstudio.capstoneproject.data.LessonsContract;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
 /**
- * This class is for testing.
+ * This class inserts fake data in the local database for testing.
  */
 public class TestUtil {
 
