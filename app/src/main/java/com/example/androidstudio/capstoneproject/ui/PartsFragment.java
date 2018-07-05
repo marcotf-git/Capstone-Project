@@ -210,7 +210,7 @@ public class PartsFragment extends Fragment implements
             return;
         }
 
-        mPartCallback.onPartSelected(selectedLessonPart_id);
+        mPartCallback.onPartClicked(lesson_part_id);
     }
 
 

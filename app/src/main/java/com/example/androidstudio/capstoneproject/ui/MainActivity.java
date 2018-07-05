@@ -775,7 +775,7 @@ public class MainActivity extends AppCompatActivity implements
     // Helper function to edit lesson part
     private void editLessonPart(long _id) {
         Log.d(TAG, "editLessonPart _id:" + _id);
-        // Create a new intent to start an EditTaskActivity
+        // Create a new intent to start an EditPartActivity
         Class destinationActivity = EditPartActivity.class;
         Intent editLessonPartIntent = new Intent(mContext, destinationActivity);
         editLessonPartIntent.putExtra(SELECTED_LESSON_PART_ID, _id);
@@ -882,7 +882,15 @@ public class MainActivity extends AppCompatActivity implements
     // Receive communication from the PartsFragment
     @Override
     public void onPartClicked(long _id) {
+        Log.d(TAG, "onPartClicked _id:" + _id);
         clickedLessonPart_id = _id;
+        Log.d(TAG, "onPartClicked _id:" + _id);
+        // Create a new intent to start an PartDetailActivity
+        Class destinationActivity = PartDetailActivity.class;
+        Intent partDetailIntent = new Intent(mContext, destinationActivity);
+        partDetailIntent.putExtra(CLICKED_LESSON_PART_ID, _id);
+        partDetailIntent.putExtra(DATABASE_VISIBILITY, databaseVisibility);
+        startActivity(partDetailIntent);
     }
 
     // Receive communication form DeleteDialogPartFragment

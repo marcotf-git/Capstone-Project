@@ -16,7 +16,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
-import com.example.androidstudio.bakingapp.R;
+import com.example.androidstudio.capstoneproject.R;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.ExoPlaybackException;
@@ -106,7 +106,7 @@ public class ExoPlayerFragment extends Fragment {
 
         playerView = rootView.findViewById(R.id.video_view);
 
-        isLandscape = null != getActivity().findViewById(R.id.view_activity_step_detail_landscape);
+        isLandscape = null != getActivity().findViewById(R.id.view_activity_part_detail_landscape);
 
         Log.v(TAG, "onCreateView isLandscape:" + isLandscape);
 

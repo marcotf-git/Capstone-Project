@@ -12,6 +12,7 @@ import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
@@ -28,10 +29,6 @@ public class PartDetailActivity extends AppCompatActivity implements
 
     private static final String TAG = PartDetailActivity.class.getSimpleName();
 
-
-    private static final String PLAYER_VIEW_VISIBILITY = "player_view_visibility";
-    private static final String THUMBNAIL_VIEW_VISIBILITY = "thumbnail_view_visibility";
-    private static final String ERROR_VIEW_VISIBILITY = "error_view_visibility";
     private static final String CLICKED_LESSON_PART_ID = "clickedLessonPartId";
     private static final String DATABASE_VISIBILITY = "databaseVisibility";
 
@@ -68,6 +65,7 @@ public class PartDetailActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_part_detail);
 
         mContext = this;
+
 
         // The views variables
         mPlayerView =  (View) findViewById(R.id.player_container);
@@ -202,9 +200,6 @@ public class PartDetailActivity extends AppCompatActivity implements
     }
 
 
-
-
-
     /**
      * Called by the {@link android.support.v4.app.LoaderManagerImpl} when a new Loader needs to be
      * created. This Activity only uses one loader, so we don't necessarily NEED to check the
@@ -295,9 +290,6 @@ public class PartDetailActivity extends AppCompatActivity implements
         errorMessageViewVisibility = errorMessageView.getVisibility();
 
         super.onSaveInstanceState(outState);
-
     }
-
-
 
 }
