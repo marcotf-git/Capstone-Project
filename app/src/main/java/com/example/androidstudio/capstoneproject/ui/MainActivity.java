@@ -389,9 +389,11 @@ public class MainActivity extends AppCompatActivity implements
         if (databaseVisibility.equals(USER_DATABASE) &&
                 modeOption.equals(this.getString(R.string.pref_mode_create))) {
             mMenu.findItem(R.id.action_insert_fake_data).setVisible(true);
+            mMenu.findItem(R.id.action_edit).setVisible(true);
             mButton.setVisibility(VISIBLE);
         } else {
             mMenu.findItem(R.id.action_insert_fake_data).setVisible(false);
+            mMenu.findItem(R.id.action_edit).setVisible(false);
             mButton.setVisibility(GONE);
         }
 
@@ -411,12 +413,12 @@ public class MainActivity extends AppCompatActivity implements
             mMenu.findItem(R.id.action_refresh).setVisible(false);
         }
 
-        if (databaseVisibility.equals(USER_DATABASE) &&
-                modeOption.equals(this.getString(R.string.pref_mode_create))) {
-            mMenu.findItem(R.id.action_edit).setVisible(true);
-        } else {
-            mMenu.findItem(R.id.action_edit).setVisible(false);
-        }
+//        if (databaseVisibility.equals(USER_DATABASE) &&
+//                modeOption.equals(this.getString(R.string.pref_mode_create))) {
+//            mMenu.findItem(R.id.action_edit).setVisible(true);
+//        } else {
+//            mMenu.findItem(R.id.action_edit).setVisible(false);
+//        }
 
         // Set the drawer menu icon according to views
         if (mainVisibility == VISIBLE) {

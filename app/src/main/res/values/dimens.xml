@@ -13,4 +13,8 @@
     <dimen name="lesson_part_name_text_size">16sp</dimen>
     <dimen name="part_text_size">16sp</dimen>
 
+    <dimen name="detail_title_text_size">32sp</dimen>
+    <dimen name="detail_body_text_size">16sp</dimen>
+    <item name="detail_body_line_spacing_multiplier" format="float" type="fraction">1.25</item>
+
 </resources>

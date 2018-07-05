@@ -60,5 +60,6 @@
     <string name="group_lessons">Group Lessons</string>
     <string name="part_text">Part Text</string>
     <string name="title_activity_part_detail">Part Detail Activity</string>
+    <string name="edit_part_activity_label">Edit Part Activity</string>
 
 </resources>
