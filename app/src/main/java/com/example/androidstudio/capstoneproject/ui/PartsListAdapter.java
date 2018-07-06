@@ -70,7 +70,7 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
 
     void setLessonPartsCursorData(Cursor cursor){
 
-        Log.v(TAG, "setLessonsCursorData");
+        Log.d(TAG, "setLessonsCursorData");
 
         this.partsCursor = cursor;
         notifyDataSetChanged();
@@ -97,7 +97,7 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
 
         int layoutIdForListItem = R.layout.parts_list_item;
         LayoutInflater inflater = LayoutInflater.from(context);
-        boolean shouldAttachToParentImmediately = false;
+        final boolean shouldAttachToParentImmediately = false;
 
         View view = inflater.inflate(layoutIdForListItem, viewGroup, shouldAttachToParentImmediately);
         LessonPartViewHolder viewHolder = new LessonPartViewHolder(view);
@@ -146,38 +146,7 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
             }
         }
 
-        // Retrieve the _id from the cursor and
-        //long _id = lessonsCursor.getLong(lessonsCursor.getColumnIndex(LessonsContract.MyLessonsEntry._ID));
-        // Set the tag of the itemView in the holder to the _id
-        //holder.itemView.setTag(_id);
-
-//        Log.v(TAG, "onBindViewHolder imageURL:" + imageURL);
-//
-//
-//        if (imageURL != null && !imageURL.equals("")) {
-//            /*
-//             * Use the call back of picasso to manage the error in loading poster.
-//             * On error, write the message in the text view that is together with the
-//             * image view, and make it visible.
-//             */
-//            Picasso.with(holder.context)
-//                    .load(imageURL)
-//                    .into(holder.lessonImageView, new Callback() {
-//                        @Override
-//                        public void onSuccess() {
-//                            Log.v(TAG, "Recipe image loaded.");
-//                            holder.errorTextView.setVisibility(View.INVISIBLE);
-//                        }
-//
-//                        @Override
-//                        public void onError() {
-//                            Log.e(TAG, "Error in loading recipe image.");
-//                            holder.errorTextView.setVisibility(View.VISIBLE);
-//                        }
-//                    });
-//        } else {
-//            holder.errorTextView.setVisibility(View.VISIBLE);
-//        }
+        // code for loading the image
 
     }
 
@@ -256,8 +225,6 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
             String lessonPartTitle = partsCursor.getString(partsCursor.
                     getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
 
-            //Log.v(TAG, "onClick lessonPartTitle:" + lessonPartTitle);
-
             // Calls the method implemented in the main activity
             mOnClickListener.onListItemClick(
                     view,
@@ -282,8 +249,6 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
                     getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
             String lessonPartTitle = partsCursor.getString(partsCursor.
                     getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
-
-            //Log.v(TAG, "onClick lessonPartTitle:" + lessonPartTitle);
 
             // Calls the method implemented in the main activity
             mOnClickListener.onListItemLongClick(

@@ -34,7 +34,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
 
                 //LessonsContract.MyLessonsEntry.COLUMN_LESSON_ID + " TEXT NOT NULL," +
 
-                LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE + " TEXT NOT NULL" +
+                LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE + " TEXT NOT NULL," +
 
                 /*
                  * To ensure this table can only contain one entry per ..., we declare the ...
@@ -42,7 +42,8 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
                  * We also specify "ON CONFLICT REPLACE". This tells SQLite that if we have a lesson
                  * with the same "_id" entry, we replace the old.
                  */
-                //" UNIQUE (" + LessonsContract.MyLessonsEntry._ID + ") ON CONFLICT REPLACE";
+                " UNIQUE (" + LessonsContract.MyLessonsEntry._ID + ") ON CONFLICT REPLACE" +
+
                 ");";
 
 
@@ -77,7 +78,9 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
                         // (LESSON_ID) <--> (_ID)
                         "FOREIGN KEY(" + LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + ") " +
                         "REFERENCES " + LessonsContract.MyLessonsEntry.TABLE_NAME + "(" +
-                        LessonsContract.MyLessonsEntry._ID +")" +
+                        LessonsContract.MyLessonsEntry._ID +")," +
+
+                        " UNIQUE (" + LessonsContract.MyLessonPartsEntry._ID + ") ON CONFLICT REPLACE" +
 
                         ");";
 
@@ -108,7 +111,9 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
 
                         LessonsContract.GroupLessonsEntry.COLUMN_LESSON_TIME_STAMP + " TEXT NOT NULL," +
 
-                        LessonsContract.GroupLessonsEntry.COLUMN_USER_UID + " TEXT NOT NULL" +
+                        LessonsContract.GroupLessonsEntry.COLUMN_USER_UID + " TEXT NOT NULL," +
+
+                        " UNIQUE (" + LessonsContract.GroupLessonsEntry._ID + ") ON CONFLICT REPLACE" +
 
                         ");";
 
@@ -149,7 +154,10 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
                         // (USER_ID, LESSON_ID) <--> (USER_ID, LESSON_ID)
                         "FOREIGN KEY("  + LessonsContract.GroupLessonPartsEntry.COLUMN_LESSON_ID + ") " +
                         "REFERENCES " + LessonsContract.GroupLessonsEntry.TABLE_NAME +
-                                    "(" + LessonsContract.GroupLessonsEntry._ID +")" +
+                                    "(" + LessonsContract.GroupLessonsEntry._ID +")," +
+
+                        " UNIQUE (" + LessonsContract.GroupLessonsEntry._ID + ") ON CONFLICT REPLACE" +
+
                         ");";
 
 

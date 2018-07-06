@@ -15,9 +15,8 @@ import com.example.androidstudio.capstoneproject.R;
 public class DeleteLessonCloudDialogFragment extends DialogFragment {
 
     private long lesson_id;
-
-
     private Context mContext;
+
 
     /* The activity that creates an instance of this dialog fragment must
      * implement this interface in order to receive event callbacks.

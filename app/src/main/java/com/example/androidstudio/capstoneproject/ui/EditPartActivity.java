@@ -20,13 +20,13 @@ import com.example.androidstudio.capstoneproject.data.LessonsContract;
 public class EditPartActivity extends AppCompatActivity {
 
     private static final String TAG = EditPartActivity.class.getSimpleName();
-
     private static final String SELECTED_LESSON_PART_ID = "selectedLessonPartId";
 
     private long selectedLessonPartId;
 
     private Uri updateUri;
     private EditText myEditText;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

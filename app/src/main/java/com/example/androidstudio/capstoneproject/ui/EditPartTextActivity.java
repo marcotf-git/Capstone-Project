@@ -33,20 +33,6 @@ public class EditPartTextActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_edit_part_text);
 
-        // toolbar is defined in the layout file
-//        Toolbar myToolbar = (Toolbar) findViewById(R.id.toolbar);
-//        setSupportActionBar(myToolbar);
-//        if(getSupportActionBar()!=null) {
-//            getSupportActionBar().setDisplayShowTitleEnabled(false);
-//        }
-//
-//        // Get a support ActionBar corresponding to this toolbar
-//        ActionBar actionBar = getSupportActionBar();
-//        // Enable the Up button
-//        if (null != actionBar) {
-//            actionBar.setDisplayHomeAsUpEnabled(false);
-//        }
-
         myEditText = findViewById(R.id.editTextLessonPartTitle);
 
         // Recover information from caller activity

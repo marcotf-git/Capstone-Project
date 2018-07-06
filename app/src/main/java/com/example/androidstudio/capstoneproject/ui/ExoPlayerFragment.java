@@ -109,7 +109,7 @@ public class ExoPlayerFragment extends Fragment {
             playbackPosition = savedInstanceState.getLong(PLAYBACK_POSITION);
             mediaUri = savedInstanceState.getString(MEDIA_URI);
 
-            Log.v(TAG, "onCreate playbackPosition:" + playbackPosition);
+            Log.d(TAG, "onCreate playbackPosition:" + playbackPosition);
         }
 
         // Initialize the Media Session.
@@ -135,7 +135,7 @@ public class ExoPlayerFragment extends Fragment {
         }
         else isLandscape = false;
 
-        Log.v(TAG, "onCreateView isLandscape:" + isLandscape);
+        Log.d(TAG, "onCreateView isLandscape:" + isLandscape);
 
         return rootView;
 
@@ -347,6 +347,8 @@ public class ExoPlayerFragment extends Fragment {
                 videoView.setVisibility(View.GONE);
                 errorMessageView.setVisibility(View.VISIBLE);
             }
+
+            Log.e(TAG, "onPlayerError error:" + error.getMessage());
         }
 
         @Override

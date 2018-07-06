@@ -203,7 +203,7 @@ public class PartsFragment extends Fragment implements
     public void onListItemClick(View view, int clickedItemIndex, long lesson_part_id,
                                 String lessonPartTitle) {
 
-        Log.v(TAG, "onListItemClick lessonPartTitle:" + lessonPartTitle);
+        Log.d(TAG, "onListItemClick lessonPartTitle:" + lessonPartTitle);
 
         // If the actual view or other view is selected, deselect it and return
         if (view.isSelected() || selectedLessonPart_id >=0) {
@@ -228,7 +228,7 @@ public class PartsFragment extends Fragment implements
     public void onListItemLongClick(View view, int clickedItemIndex, long lesson_part_id,
                                     String lessonPartTitle) {
 
-        Log.v(TAG, "onListItemLongClick lessonPartTitle:" + lessonPartTitle);
+        Log.d(TAG, "onListItemLongClick lessonPartTitle:" + lessonPartTitle);
 
         // If the actual view is selected, return
         if (view.isSelected()) {
@@ -336,7 +336,11 @@ public class PartsFragment extends Fragment implements
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
 
-        Log.v(TAG, "onLoadFinished cursor:" + data.toString());
+        if (data != null) {
+            Log.d(TAG, "onLoadFinished cursor:" + data.toString());
+        } else {
+            Log.e(TAG, "onLoadFinished cursor: null");
+        }
 
         // Send to the main activity the order to setting the idling resource state
         mIdlingCallback.onIdlingResource(true);
@@ -344,6 +348,10 @@ public class PartsFragment extends Fragment implements
         // Pass the data to the adapter
         setCursor(data);
         mAdapter.setSelectedItemId(selectedLessonPart_id);
+
+        if(data == null) {
+            showErrorMessage();
+        }
     }
 
     /**

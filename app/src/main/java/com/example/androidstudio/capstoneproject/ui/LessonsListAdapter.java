@@ -28,7 +28,6 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
 
     // For selecting a view
     private long selectedItemId;
-    private long deselectedItemId;
 
     /**
      * An on-click handler that we've defined to make it easy for an Activity (or Fragment) to interface with
@@ -139,7 +138,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
             holder.lessonTextView.setVisibility(View.VISIBLE);
         }
 
-        Log.v(TAG, "onBindViewHolder lessonName:" + lessonName);
+        Log.d(TAG, "onBindViewHolder lessonName:" + lessonName);
 
         // For handling the setSelectedView
         if (selectedItemId >= 0) {
@@ -148,34 +147,48 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
             }
         }
 
-        // Retrieve the _id from the cursor and
-        //long _id = lessonsCursor.getLong(lessonsCursor.getColumnIndex(LessonsContract.MyLessonsEntry._ID));
-        // Set the tag of the itemView in the holder to the _id
-        //holder.itemView.setTag(_id);
-
-//        Log.v(TAG, "onBindViewHolder imageURL:" + imageURL);
+//        Log.v(TAG, "onBindViewHolder localImageUri:" + localImageUri);
 //
-//
-//        if (imageURL != null && !imageURL.equals("")) {
+//        if (localImageUri != null && !localImageUri.equals("")) {
 //            /*
 //             * Use the call back of picasso to manage the error in loading poster.
 //             * On error, write the message in the text view that is together with the
 //             * image view, and make it visible.
 //             */
-//            Picasso.with(holder.context)
-//                    .load(imageURL)
-//                    .into(holder.lessonImageView, new Callback() {
+//            Uri uri = Uri.parse(localImageUri);
+//            // Refresh permissions
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+//                try {
+//                    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+//                    final int takeFlags = intent.getFlags()
+//                            & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+//                            | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+//                    getContentResolver().takePersistableUriPermission(uri, takeFlags);
+//                } catch (Exception e) {
+//                    Log.e(TAG, "updateView takePersistableUriPermission error:" + e.getMessage());
+//                }
+//            }
+//
+//            Picasso.get()
+//                    .load(localImageUri)
+//                    .into(imageView, new Callback() {
 //                        @Override
 //                        public void onSuccess() {
-//                            Log.v(TAG, "Recipe image loaded.");
-//                            holder.errorTextView.setVisibility(View.INVISIBLE);
+//                            Log.v(TAG, "Image loaded");
+//                            imageView.setVisibility(View.VISIBLE);
 //                        }
 //
 //                        @Override
-//                        public void onError() {
-//                            Log.e(TAG, "Error in loading recipe image.");
-//                            holder.errorTextView.setVisibility(View.VISIBLE);
+//                        public void onError(Exception e) {
+//                            Log.e(TAG, "Picasso error in loading image:" + e.getMessage());
+//                            Toast.makeText(mContext, "Error in loading image:" + e.getMessage(),
+//                                    Toast.LENGTH_LONG).show();
+//                            imageView.setVisibility(View.GONE);
+//                            if(mPlayerView.getVisibility() == View.GONE) {
+//                                errorMessageView.setVisibility(View.VISIBLE);
+//                            }
 //                        }
+//
 //                    });
 //        } else {
 //            holder.errorTextView.setVisibility(View.VISIBLE);

@@ -30,12 +30,6 @@ public class AddLessonActivity extends AppCompatActivity {
         if(getSupportActionBar()!=null) {
             getSupportActionBar().setDisplayShowTitleEnabled(false);
         }
-//        // Get a support ActionBar corresponding to this toolbar
-//        ActionBar actionBar = getSupportActionBar();
-//        // Enable the Up button
-//        if (null != actionBar) {
-//            actionBar.setDisplayHomeAsUpEnabled(true);
-//        }
 
     }
 
@@ -67,9 +61,6 @@ public class AddLessonActivity extends AppCompatActivity {
         }
 
         Log.d(TAG, "Uri of added lesson:" + uri);
-
-        //Snackbar.make(view, "Here's a Snackbar", Snackbar.LENGTH_LONG)
-        //  .setAction("Action", null).show();
 
         // Finish activity (this returns back to MainActivity)
         finish();

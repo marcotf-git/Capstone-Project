@@ -28,6 +28,7 @@ public class EditLessonActivity extends AppCompatActivity {
     private Uri updateUri;
     private EditText myEditText;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

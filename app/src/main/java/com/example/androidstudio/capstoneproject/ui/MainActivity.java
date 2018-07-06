@@ -4,9 +4,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Messenger;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -48,7 +46,6 @@ import java.util.Arrays;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
-import static java.security.AccessController.getContext;
 
 
 /**
@@ -241,13 +238,13 @@ public class MainActivity extends AppCompatActivity implements
         // Only create fragment when needed
         if (null == savedInstanceState) {
 
-            Log.v(TAG, "creating MainFragment");
+            Log.d(TAG, "creating MainFragment");
             mainFragment = new MainFragment();
             fragmentManager.beginTransaction()
                     .replace(R.id.lessons_container, mainFragment, "MainFragment")
                     .commit();
 
-            Log.v(TAG, "creating PartsFragment");
+            Log.d(TAG, "creating PartsFragment");
             partsFragment = new PartsFragment();
             fragmentManager.beginTransaction()
                     .replace(R.id.parts_container, partsFragment, "PartsFragment")
@@ -386,7 +383,7 @@ public class MainActivity extends AppCompatActivity implements
 
     // Helper method for Firebase login
     private void login() {
-        Log.v(TAG, "login");
+        Log.d(TAG, "login");
         FirebaseUser user = mFirebaseAuth.getCurrentUser();
         if (user != null){
             // user is signed in
@@ -427,7 +424,7 @@ public class MainActivity extends AppCompatActivity implements
             contextualizeMenu();
         }
 
-        Log.v(TAG, "onSignedInInitialize mUsername:" + mUsername);
+        Log.d(TAG, "onSignedInInitialize mUsername:" + mUsername);
     }
 
     // Handle cancelled sign in
@@ -445,7 +442,7 @@ public class MainActivity extends AppCompatActivity implements
 
     // Helper method for Firebase logout
     private void logout () {
-        Log.v(TAG, "logout");
+        Log.d(TAG, "logout");
         if (mUsername.equals(ANONYMOUS)) {
             Snackbar.make(lessonsContainer, "You are not signed!",
                     Snackbar.LENGTH_LONG).show();
@@ -455,7 +452,7 @@ public class MainActivity extends AppCompatActivity implements
 
     // Method for sign out for the listener
     private void onSignedOutCleanup(){
-        Log.v(TAG, "onSignedOutCleanup");
+        Log.d(TAG, "onSignedOutCleanup");
         mUsername = ANONYMOUS;
         mUserEmail = "";
         mUsernameTextView.setText(mUsername);
@@ -637,7 +634,7 @@ public class MainActivity extends AppCompatActivity implements
         String modeOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
                 this.getString(R.string.pref_mode_view));
 
-        Log.v(TAG,"contextualizeMenu modeOption:" + modeOption + " databaseVisibility:" +
+        Log.d(TAG,"contextualizeMenu modeOption:" + modeOption + " databaseVisibility:" +
                 databaseVisibility + " mUsername:" + mUsername);
 
         if (modeOption.equals(this.getString(R.string.pref_mode_create))) {
@@ -726,7 +723,7 @@ public class MainActivity extends AppCompatActivity implements
      */
     // Helper function to delete lesson data and update the view
     private void deleteLesson(long _id) {
-        Log.v(TAG, "deleteLesson _id:" + _id);
+        Log.d(TAG, "deleteLesson _id:" + _id);
         // Call the fragment for showing the delete dialog
         DialogFragment deleteLessonFragment = new DeleteLessonDialogFragment();
         // Pass the _id of the lesson
@@ -739,7 +736,7 @@ public class MainActivity extends AppCompatActivity implements
 
     // Helper function to delete lesson data from cloud (delete the lesson document)
     private void deleteLessonFromCloud(long _id) {
-        Log.v(TAG, "deleteLessonFromCloud _id:" + _id);
+        Log.d(TAG, "deleteLessonFromCloud _id:" + _id);
         // Call the fragment for showing the delete dialog
         DialogFragment deleteLessonCloudFragment = new DeleteLessonCloudDialogFragment();
         // Pass the _id of the lesson
@@ -765,7 +762,7 @@ public class MainActivity extends AppCompatActivity implements
 
     // Helper function to delete lesson part
     private void deleteLessonPart(long _id) {
-        Log.v(TAG, "deleteLessonPart _id:" + _id);
+        Log.d(TAG, "deleteLessonPart _id:" + _id);
         // Call the fragment for showing the delete dialog
         DialogFragment deleteLessonPartFragment = new DeletePartDialogFragment();
         // Pass the _id of the lesson
@@ -989,7 +986,8 @@ public class MainActivity extends AppCompatActivity implements
         mainFragment.setLoadingIndicator(false);
         Toast.makeText(mContext,
                 "Error on uploading:" + e.getMessage(), Toast.LENGTH_LONG).show();
-    }
+        Log.e(TAG, "onUploadFailure error:" + e.getMessage());
+;    }
 
     @Override
     public void onDownloadComplete() {
@@ -1003,6 +1001,7 @@ public class MainActivity extends AppCompatActivity implements
         mainFragment.setLoadingIndicator(false);
         Toast.makeText(mContext,
                 "Error on downloading:" + e.getMessage(), Toast.LENGTH_LONG).show();
+        Log.e(TAG, "onDownloadFailure error:" + e.getMessage());
     }
 
     @Override
@@ -1018,6 +1017,7 @@ public class MainActivity extends AppCompatActivity implements
     public void onDeleteFailure(@NonNull Exception e) {
         Toast.makeText(mContext,
                 "Error on deleting from Cloud:" + e.getMessage(), Toast.LENGTH_LONG).show();
+        Log.e(TAG, "onDeleteFailure error:" + e.getMessage());
     }
 
     // receive communication from DeleteLessonCloudDialogFragment instance

@@ -93,7 +93,7 @@ public class MainFragment extends Fragment implements
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
-        Log.v(TAG, "onCreateView");
+        Log.d(TAG, "onCreateView");
 
         // Inflate the Ingredients fragment layout
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
@@ -124,7 +124,7 @@ public class MainFragment extends Fragment implements
         // This is loading the saved position of the recycler view.
         // There is also a call on the post execute method in the loader, for updating the view.
         if(savedInstanceState != null) {
-            Log.v(TAG, "recovering savedInstanceState");
+            Log.d(TAG, "recovering savedInstanceState");
             recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
             mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
         } else {
@@ -184,7 +184,7 @@ public class MainFragment extends Fragment implements
      * need to check whether each view is currently visible or invisible.
      */
     private void showErrorMessage() {
-        Log.v(TAG, "showErrorMessage");
+        Log.d(TAG, "showErrorMessage");
         // First, hide the currently visible data
         mClassesList.setVisibility(View.INVISIBLE);
         // Then, show the error
@@ -202,7 +202,7 @@ public class MainFragment extends Fragment implements
     @Override
     public void onListItemClick(View view, int clickedItemIndex, long lesson_id, String lessonName) {
 
-        Log.v(TAG, "onListItemClick lessonName:" + lessonName);
+        Log.d(TAG, "onListItemClick lessonName:" + lessonName);
 
         // If the actual or other view view is selected, deselect it and return
         if (view.isSelected() || selectedLesson_id >= 0) {
@@ -228,7 +228,7 @@ public class MainFragment extends Fragment implements
     @Override
     public void onListItemLongClick(View view, int clickedItemIndex, long lesson_id, String lessonName) {
 
-        Log.v(TAG, "onListItemLongClick lessonName:" + lessonName);
+        Log.d(TAG, "onListItemLongClick lessonName:" + lessonName);
 
         // If the actual view is selected, return
         if (view.isSelected()) {
@@ -329,12 +329,22 @@ public class MainFragment extends Fragment implements
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
 
+        if (data != null) {
+            Log.d(TAG, "onLoadFinished cursor:" + data.toString());
+        } else {
+            Log.e(TAG, "onLoadFinished cursor: null");
+        }
+
         // Send to the main activity the order to setting the idling resource state
         mIdlingCallback.onIdlingResource(true);
 
         // Pass the data to the adapter
         setCursor(data);
         mAdapter.setSelectedItemId(selectedLesson_id);
+
+        if (data == null) {
+            showErrorMessage();;
+        }
 
     }
 
@@ -381,7 +391,7 @@ public class MainFragment extends Fragment implements
     public void setDatabaseVisibility(String dbVisibility) {
         databaseVisibility = dbVisibility;
 
-        Log.v(TAG,"setDatabaseVisibility databaseVisibility:" + databaseVisibility);
+        Log.d(TAG,"setDatabaseVisibility databaseVisibility:" + databaseVisibility);
 
         // Query the database and set the adapter with the cursor data
         if (null != getActivity()) {

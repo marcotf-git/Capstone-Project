@@ -10,16 +10,13 @@ import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
 
 import com.example.androidstudio.capstoneproject.R;
-import com.google.firebase.firestore.FirebaseFirestore;
 
 
 public class DeleteLessonDialogFragment extends DialogFragment {
 
-    private static final String DATABASE_VISIBILITY = "databaseVisibility";
-
     private long lesson_id;
-
     private Context mContext;
+
 
     /* The activity that creates an instance of this dialog fragment must
      * implement this interface in order to receive event callbacks.

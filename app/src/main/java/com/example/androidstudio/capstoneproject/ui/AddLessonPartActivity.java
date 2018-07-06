@@ -5,7 +5,6 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -21,7 +20,6 @@ import com.example.androidstudio.capstoneproject.data.LessonsContract;
 public class AddLessonPartActivity extends AppCompatActivity {
 
     private static final String TAG = AddLessonPartActivity.class.getSimpleName();
-
     private static final String CLICKED_LESSON_ID = "clickedLessonId";
 
     private long clickedLesson_id;
@@ -41,12 +39,6 @@ public class AddLessonPartActivity extends AppCompatActivity {
         if(getSupportActionBar()!=null) {
             getSupportActionBar().setDisplayShowTitleEnabled(false);
         }
-//        // Get a support ActionBar corresponding to this toolbar
-//        ActionBar actionBar = getSupportActionBar();
-//        // Enable the Up button
-//        if (null != actionBar) {
-//            actionBar.setDisplayHomeAsUpEnabled(true);
-//        }
 
         // Recover information from caller activity
         Intent intentThatStartedThisActivity = getIntent();
@@ -144,9 +136,6 @@ public class AddLessonPartActivity extends AppCompatActivity {
         }
 
         Log.d(TAG, "Uri of added lesson part:" + uri);
-
-//        Snackbar.make(view, "Here's a Snackbar", Snackbar.LENGTH_LONG)
-//                .setAction("Action", null).show();
 
         // Finish activity (this returns back to MainActivity)
         finish();

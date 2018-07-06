@@ -7,11 +7,9 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Messenger;
 import android.preference.PreferenceManager;
 import android.provider.DocumentsContract;
 import android.support.annotation.NonNull;
@@ -156,14 +154,6 @@ public class PartDetailActivity extends AppCompatActivity implements
             this.getSupportLoaderManager().initLoader(ID_GROUP_LESSON_PARTS_LOADER, null, this);
         }
 
-        /* Render the views with the data vars */
-
-        // Create a new StepDetailFragment instance and display it using the FragmentManager
-        // only create new fragment when there is no previously saved state
-//        if (savedInstanceState == null) {
-//            loadViews();
-//        }
-
         builder = new AlertDialog.Builder(PartDetailActivity.this);
         // Add the buttons
         builder.setTitle(R.string.pick_image_video)
@@ -201,7 +191,7 @@ public class PartDetailActivity extends AppCompatActivity implements
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Log.v(TAG, "fab onClick clickedLessonPart_id:" + clickedLessonPart_id);
+                Log.d(TAG, "fab onClick clickedLessonPart_id:" + clickedLessonPart_id);
                 dialog.show();
             }
         });
@@ -229,7 +219,6 @@ public class PartDetailActivity extends AppCompatActivity implements
             myFragmentManager.beginTransaction().remove(fragment).commit();
         }
 
-
         // Create a new PartDetailFragment instance
         PartDetailFragment partDetailFragment = new PartDetailFragment();
 
@@ -238,7 +227,7 @@ public class PartDetailActivity extends AppCompatActivity implements
 
         if (null != cursor) {
 
-            Log.v(TAG, "updateView cursor.getCount():" + cursor.getCount());
+            Log.d(TAG, "updateView cursor.getCount():" + cursor.getCount());
 
             cursor.moveToLast();
 
@@ -309,7 +298,7 @@ public class PartDetailActivity extends AppCompatActivity implements
                             | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                     getContentResolver().takePersistableUriPermission(uri, takeFlags);
                 } catch (Exception e) {
-
+                    Log.e(TAG, "updateView takePersistableUriPermission error:" + e.getMessage());
                 }
             }
 
@@ -328,7 +317,7 @@ public class PartDetailActivity extends AppCompatActivity implements
             // Try to load the image
             if (null != localImageUri && !localImageUri.equals("")) {
 
-                Log.v(TAG, "updateView loading image localImageUri:" + localImageUri);
+                Log.d(TAG, "updateView loading image localImageUri:" + localImageUri);
                 /*
                  * Use the call back of picasso to manage the error in loading thumbnail.
                  */
@@ -342,7 +331,7 @@ public class PartDetailActivity extends AppCompatActivity implements
                                 | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                         getContentResolver().takePersistableUriPermission(uri, takeFlags);
                     } catch (Exception e) {
-
+                        Log.e(TAG, "updateView takePersistableUriPermission error:" + e.getMessage());
                     }
                 }
 
@@ -357,7 +346,7 @@ public class PartDetailActivity extends AppCompatActivity implements
 
                             @Override
                             public void onError(Exception e) {
-                                Log.e(TAG, "Error in loading image:" + e.getMessage());
+                                Log.e(TAG, "Picasso error in loading image:" + e.getMessage());
                                 Toast.makeText(mContext, "Error in loading image:" + e.getMessage(),
                                         Toast.LENGTH_LONG).show();
                                 imageView.setVisibility(View.GONE);
@@ -399,8 +388,8 @@ public class PartDetailActivity extends AppCompatActivity implements
                 partUri = ContentUris.withAppendedId(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                         clickedLessonPart_id);
 
-                Log.v(TAG, "onCreateLoader partUri:" + partUri.toString());
-                Log.v(TAG, "onCreateLoader clickedLessonPart_id:" + clickedLessonPart_id);
+                Log.d(TAG, "onCreateLoader partUri:" + partUri.toString());
+                Log.d(TAG, "onCreateLoader clickedLessonPart_id:" + clickedLessonPart_id);
 
                 return new CursorLoader(mContext,
                         partUri,
@@ -415,8 +404,8 @@ public class PartDetailActivity extends AppCompatActivity implements
                 partUri = ContentUris.withAppendedId(LessonsContract.GroupLessonPartsEntry.CONTENT_URI,
                         clickedLessonPart_id);
 
-                Log.v(TAG, "onCreateLoader partUri:" + partUri.toString());
-                Log.v(TAG, "onCreateLoader clickedLessonPart_id:" + clickedLessonPart_id);
+                Log.d(TAG, "onCreateLoader partUri:" + partUri.toString());
+                Log.d(TAG, "onCreateLoader clickedLessonPart_id:" + clickedLessonPart_id);
 
                 return new CursorLoader(mContext,
                         partUri,
@@ -438,7 +427,7 @@ public class PartDetailActivity extends AppCompatActivity implements
      */
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
-        Log.v(TAG, "onLoadFinished cursor:" + data.toString());
+        Log.d(TAG, "onLoadFinished cursor:" + data.toString());
         // Pass the data to the view
         mLoadingIndicator.setVisibility(View.INVISIBLE);
         updateView(data);
@@ -549,7 +538,7 @@ public class PartDetailActivity extends AppCompatActivity implements
         String modeOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
                 this.getString(R.string.pref_mode_view));
 
-        Log.v(TAG,"contextualizeMenu modeOption:" + modeOption + " databaseVisibility:" +
+        Log.d(TAG,"contextualizeMenu modeOption:" + modeOption + " databaseVisibility:" +
                 databaseVisibility);
 
         mMenu.findItem(R.id.action_delete).setVisible(false);
@@ -593,11 +582,6 @@ public class PartDetailActivity extends AppCompatActivity implements
 
 
     private void addImage() {
-//        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
-//        intent.setType("image/jpeg");
-//        intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
-//        startActivityForResult(Intent.createChooser(intent, "Complete action using"), RC_PHOTO_PICKER);
-
         Intent intent;
         // Grant permissions
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT){
@@ -634,13 +618,13 @@ public class PartDetailActivity extends AppCompatActivity implements
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-        Log.v(TAG, "resultCode=" + resultCode);
-        Log.v(TAG, "data=" + String.valueOf(data));
+        Log.d(TAG, "resultCode=" + resultCode);
+        Log.d(TAG, "data=" + String.valueOf(data));
 
         final Uri uri = data != null ? data.getData() : null;
         if (uri != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                Log.v(TAG, "isDocumentUri=" + DocumentsContract.isDocumentUri(this, uri));
+                Log.d(TAG, "isDocumentUri=" + DocumentsContract.isDocumentUri(this, uri));
             }
         } else {
             Log.e(TAG, "missing URI?");
@@ -654,7 +638,7 @@ public class PartDetailActivity extends AppCompatActivity implements
                 ContentResolver resolver = mContext.getContentResolver();
                 resolver.takePersistableUriPermission(uri, takeFlags);
             } catch (SecurityException e) {
-                Log.e(TAG, "FAILED TO TAKE PERMISSION", e);
+                Log.e(TAG, "onActivity takePersistableUriPermission error:" + e.getMessage());
             }
         }
 
@@ -679,7 +663,11 @@ public class PartDetailActivity extends AppCompatActivity implements
 
         Uri selectedBlobUri = data.getData();
 
-        Log.v(TAG, "insertImageUriInDatabase selectedBlobUri:" + selectedBlobUri.toString());
+        if (selectedBlobUri != null) {
+            Log.d(TAG, "insertImageUriInDatabase selectedBlobUri:" + selectedBlobUri.toString());
+        } else {
+            return;
+        }
 
         // Create new empty ContentValues object
         ContentValues contentValues = new ContentValues();
