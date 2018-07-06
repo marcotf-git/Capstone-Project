@@ -19,6 +19,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import com.example.androidstudio.capstoneproject.R;
+import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.DefaultRenderersFactory;
 import com.google.android.exoplayer2.ExoPlaybackException;
@@ -27,16 +28,14 @@ import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.dash.DashMediaSource;
-import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
-import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
+import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 
 
@@ -126,6 +125,7 @@ public class ExoPlayerFragment extends Fragment {
         View rootView = inflater.inflate(R.layout.fragment_player, container, false);
 
         playerView = rootView.findViewById(R.id.video_view);
+        playerView.setResizeMode(AspectRatioFrameLayout.RESIZE_MODE_FILL);
 
         // this view is the same in both layouts, but receives this name in the landscape
         // this helps identify the device position
@@ -161,6 +161,8 @@ public class ExoPlayerFragment extends Fragment {
 
             player.seekTo(currentWindow, playbackPosition);
             player.setPlayWhenReady(playWhenReady);
+
+            player.setVideoScalingMode(C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
         }
 
         Uri uri = Uri.parse(mediaUri);
@@ -184,21 +186,9 @@ public class ExoPlayerFragment extends Fragment {
 //                new DefaultHttpDataSourceFactory(userAgent))
 //                .createMediaSource(uri);
 
-//                return new ExtractorMediaSource.Factory(
-//                new DefaultDataSourceFactory(mContext, userAgent))
-//                .createMediaSource(uri);
-
-        if (uri.getLastPathSegment().contains("mp3") || uri.getLastPathSegment().contains("mp4")) {
-            return new ExtractorMediaSource.Factory(new DefaultHttpDataSourceFactory(userAgent))
-                    .createMediaSource(uri);
-        } else if (uri.getLastPathSegment().contains("m3u8")) {
-            return new HlsMediaSource.Factory(new DefaultHttpDataSourceFactory(userAgent))
-                    .createMediaSource(uri);
-        } else {
-            return new DashMediaSource.Factory(new DefaultDashChunkSource.Factory(
-                    new DefaultHttpDataSourceFactory("ua", BANDWIDTH_METER)),
-                    new DefaultHttpDataSourceFactory(userAgent)).createMediaSource(uri);
-        }
+                return new ExtractorMediaSource.Factory(
+                new DefaultDataSourceFactory(mContext, userAgent))
+                .createMediaSource(uri);
 
     }
 
