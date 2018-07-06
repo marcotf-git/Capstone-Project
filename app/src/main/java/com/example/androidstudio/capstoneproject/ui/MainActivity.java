@@ -4,6 +4,7 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.Uri;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
@@ -78,10 +79,10 @@ public class MainActivity extends AppCompatActivity implements
         MainFragment.OnIdlingResourceListener,
         PartsFragment.OnLessonPartListener,
         PartsFragment.OnIdlingResourceListener,
-        DeleteLessonDialogFragment.DeleteLessonDialogListener,
+        DeleteLessonLocallyDialogFragment.DeleteLessonDialogListener,
         DeletePartDialogFragment.DeletePartDialogListener,
         MyFirebaseUtilities.OnCloudListener,
-        DeleteLessonCloudDialogFragment.DeleteLessonCloudDialogListener {
+        DeleteLessonOnCloudDialogFragment.DeleteLessonCloudDialogListener {
 
 
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -725,26 +726,26 @@ public class MainActivity extends AppCompatActivity implements
     private void deleteLesson(long _id) {
         Log.d(TAG, "deleteLesson _id:" + _id);
         // Call the fragment for showing the delete dialog
-        DialogFragment deleteLessonFragment = new DeleteLessonDialogFragment();
+        DialogFragment deleteLessonFragment = new DeleteLessonLocallyDialogFragment();
         // Pass the _id of the lesson
         Bundle bundle = new Bundle();
         bundle.putLong("_id", _id);
         deleteLessonFragment.setArguments(bundle);
          // Show the dialog box
-        deleteLessonFragment.show(getSupportFragmentManager(), "DeleteLessonDialogFragment");
+        deleteLessonFragment.show(getSupportFragmentManager(), "DeleteLessonLocallyDialogFragment");
     }
 
     // Helper function to delete lesson data from cloud (delete the lesson document)
     private void deleteLessonFromCloud(long _id) {
         Log.d(TAG, "deleteLessonFromCloud _id:" + _id);
         // Call the fragment for showing the delete dialog
-        DialogFragment deleteLessonCloudFragment = new DeleteLessonCloudDialogFragment();
+        DialogFragment deleteLessonCloudFragment = new DeleteLessonOnCloudDialogFragment();
         // Pass the _id of the lesson
         Bundle bundle = new Bundle();
         bundle.putLong("_id", _id);
         deleteLessonCloudFragment.setArguments(bundle);
         // Show the dialog box
-        deleteLessonCloudFragment.show(getSupportFragmentManager(), "DeleteLessonCloudDialogFragment");
+        deleteLessonCloudFragment.show(getSupportFragmentManager(), "DeleteLessonOnCloudDialogFragment");
     }
 
     // Helper function to edit lesson
@@ -866,7 +867,7 @@ public class MainActivity extends AppCompatActivity implements
 
     // Method for receiving communication from the DeleteLessonFragment
     @Override
-    public void onDialogPositiveClick(DialogFragment dialog, long _id) {
+    public void onDialogDeleteLessonLocallyPositiveClick(DialogFragment dialog, long _id) {
         ContentResolver contentResolver = mContext.getContentResolver();
         /* The delete method deletes the row by its _id */
 
@@ -879,9 +880,37 @@ public class MainActivity extends AppCompatActivity implements
                     .appendPath("" + _id + "").build();
         }
 
+        // Verify if the lesson with this _id has parts
+        // Only delete the lesson if has no parts
+
+        // Query the parts table with the same lesson_id
+        String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
+        String[] selectionArgs = {Long.toString(_id)};
+        Cursor partsCursor = contentResolver.query(
+                LessonsContract.MyLessonPartsEntry.CONTENT_URI,
+                null,
+                selection,
+                selectionArgs,
+                null);
+
+        if (partsCursor == null) {
+            Log.e(TAG, "uploadImages failed to get cursor");
+            return;
+        }
+
+        int nRows = partsCursor.getCount();
+        partsCursor.close();
+
+        if (nRows > 1) {
+            Log.d(TAG, "onDialogDeleteLessonLocallyPositiveClick number of lesson parts nRows:" + nRows);
+            Toast.makeText(this, "This lesson has " + nRows + " parts.\nPlease, delete the parts first!\n" +
+            "Action canceled!", Toast.LENGTH_LONG).show();
+        }
+
+        // Delete the lesson from local database
         int numberOfLessonsDeleted = 0;
         if (uriToDelete != null) {
-            Log.d(TAG, "onDialogPositiveClick: Uri to delete:" + uriToDelete.toString());
+            Log.d(TAG, "onDialogDeleteLessonLocallyPositiveClick: Uri to delete:" + uriToDelete.toString());
             numberOfLessonsDeleted = contentResolver.delete(uriToDelete, null, null);
         }
 
@@ -897,18 +926,29 @@ public class MainActivity extends AppCompatActivity implements
 
     // Method for receiving communication from the DeleteLessonFragment
     @Override
-    public void onDialogNegativeClick(DialogFragment dialog) {
+    public void onDialogDeleteLessonLocallyNegativeClick(DialogFragment dialog) {
+        Toast.makeText(mContext,
+                "Canceled!", Toast.LENGTH_LONG).show();
+    }
+
+
+    // receive communication from DeleteLessonOnCloudDialogFragment instance
+    @Override
+    public void onDialogDeleteLessonOnCloudPositiveClick(DialogFragment dialog, long lesson_id) {
+        MyFirebaseUtilities myFirebase;
+        myFirebase = new MyFirebaseUtilities(this, mFirestoreDatabase,
+                mFirebaseStorage, mUserUid);
+        myFirebase.deleteLessonFromCloud(selectedLesson_id);
+    }
+
+    @Override
+    public void onDialogDeleteLessonOnCloudNegativeClick(DialogFragment dialog) {
         Toast.makeText(mContext,
                 "Canceled!", Toast.LENGTH_LONG).show();
     }
 
     // Receive from the MainFragment and PartsFragment the order to setting the idling resource
-    @Override
-    public void onIdlingResource(Boolean value) {
-        if (mIdlingResource != null) {
-            mIdlingResource.setIdleState(value);
-        }
-    }
+
 
     // Receive communication from the PartsFragment
     @Override
@@ -1020,19 +1060,13 @@ public class MainActivity extends AppCompatActivity implements
         Log.e(TAG, "onDeleteFailure error:" + e.getMessage());
     }
 
-    // receive communication from DeleteLessonCloudDialogFragment instance
-    @Override
-    public void onDialogDeleteCloudPositiveClick(DialogFragment dialog, long lesson_id) {
-        MyFirebaseUtilities myFirebase;
-        myFirebase = new MyFirebaseUtilities(this, mFirestoreDatabase,
-                mFirebaseStorage, mUserUid);
-        myFirebase.deleteLessonFromCloud(selectedLesson_id);
-    }
 
     @Override
-    public void onDialogDeleteCloudNegativeClick(DialogFragment dialog) {
-        Toast.makeText(mContext,
-                "Canceled!", Toast.LENGTH_LONG).show();
+    public void onIdlingResource(Boolean value) {
+        if (mIdlingResource != null) {
+            mIdlingResource.setIdleState(value);
+        }
     }
+
 
 }

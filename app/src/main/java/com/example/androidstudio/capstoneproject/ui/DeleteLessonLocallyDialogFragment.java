@@ -12,7 +12,7 @@ import android.support.v7.app.AlertDialog;
 import com.example.androidstudio.capstoneproject.R;
 
 
-public class DeleteLessonCloudDialogFragment extends DialogFragment {
+public class DeleteLessonLocallyDialogFragment extends DialogFragment {
 
     private long lesson_id;
     private Context mContext;
@@ -21,13 +21,13 @@ public class DeleteLessonCloudDialogFragment extends DialogFragment {
     /* The activity that creates an instance of this dialog fragment must
      * implement this interface in order to receive event callbacks.
      * Each method passes the DialogFragment in case the host needs to query it. */
-    public interface DeleteLessonCloudDialogListener {
-        void onDialogDeleteCloudPositiveClick(DialogFragment dialog, long lesson_id);
-        void onDialogDeleteCloudNegativeClick(DialogFragment dialog);
+    public interface DeleteLessonDialogListener {
+        void onDialogDeleteLessonLocallyPositiveClick(DialogFragment dialog, long lesson_id);
+        void onDialogDeleteLessonLocallyNegativeClick(DialogFragment dialog);
     }
 
     // Use this instance of the interface to deliver action events
-    DeleteLessonCloudDialogListener mListener;
+    DeleteLessonDialogListener mListener;
 
     @Override
     public void onAttach(Context context) {
@@ -36,11 +36,11 @@ public class DeleteLessonCloudDialogFragment extends DialogFragment {
         // Verify that the host activity implements the callback interface
         try {
             // Instantiate the listener so we can send events to the host
-            mListener = (DeleteLessonCloudDialogListener) context;
+            mListener = (DeleteLessonDialogListener) context;
         } catch (ClassCastException e) {
             // The activity doesn't implement the interface, throw exception
             throw new ClassCastException(context.toString()
-                    + " must implement DeleteLessonCloudDialogListener");
+                    + " must implement DeleteLessonDialogListener");
         }
     }
 
@@ -59,19 +59,17 @@ public class DeleteLessonCloudDialogFragment extends DialogFragment {
         // Use the Builder class for convenient dialog construction
         AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
 
-        builder.setMessage(R.string.dialog_delete_lesson_from_cloud)
+        builder.setMessage(R.string.dialog_delete_lesson)
                 .setPositiveButton(R.string.delete, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         // User confirm the dialog
-                        mListener.onDialogDeleteCloudPositiveClick(
-                                DeleteLessonCloudDialogFragment.this, lesson_id);
+                        mListener.onDialogDeleteLessonLocallyPositiveClick(DeleteLessonLocallyDialogFragment.this, lesson_id);
                      }
                 })
                 .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         // User cancelled the dialog
-                        mListener.onDialogDeleteCloudNegativeClick(
-                                DeleteLessonCloudDialogFragment.this);
+                        mListener.onDialogDeleteLessonLocallyNegativeClick(DeleteLessonLocallyDialogFragment.this);
                     }
                 });
         // Create the AlertDialog object and return it

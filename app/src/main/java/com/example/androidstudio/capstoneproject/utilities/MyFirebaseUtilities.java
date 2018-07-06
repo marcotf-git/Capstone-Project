@@ -78,7 +78,9 @@ public class MyFirebaseUtilities {
         mContext = context;
     }
 
-    // Helper method for uploading a specific lesson to Firebase Database
+
+    // Helper method for uploading a specific lesson to Firebase database Firestore and to
+    // Firebase Storage
     public void uploadDatabase(final Long lesson_id) {
 
         ContentResolver contentResolver = mContext.getContentResolver();
@@ -219,11 +221,14 @@ public class MyFirebaseUtilities {
         // Close the cursor for prevent database problems
         lessonCursor.close();
 
+        // Upload the images
+        uploadImages(lesson_id);
+
     }
 
 
     // Helper method for uploading specific lesson parts images to Cloud Firebase Storage
-    public void uploadImages(Long lesson_id) {
+    private void uploadImages(Long lesson_id) {
 
         mImagesStorageReference = mFirebaseStorage.getReference().child("images");
 //        mVideosStorageReference = mFirebaseStorage.getReference().child("videos");
@@ -278,7 +283,6 @@ public class MyFirebaseUtilities {
         // close the table
         partsCursor.close();
 
-
         // Upload the uri's stored in the Image instances
         Log.d(TAG, "Uri's of the images stored in the Image array:" + images.toString());
 
@@ -294,62 +298,46 @@ public class MyFirebaseUtilities {
     // Do not delete if existing
     public void refreshDatabase(final String databaseVisibility) {
 
-        // Get a document by document name
-//        final String documentName = String.format( Locale.US, "%s_%02d",
-//                this.userUid, 1);
-//        Log.v(TAG, "refreshDatabase documentName:" + documentName);
-//        DocumentReference docRef = mFirebaseDatabase.collection("lessons").document(documentName);
-//        docRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
-//            @Override
-//            public void onSuccess(DocumentSnapshot documentSnapshot) {
-//                Lesson lesson = documentSnapshot.toObject(Lesson.class);
-//                String jsonString = MyFirebaseUtilities.serialize(lesson);
-//                Log.v(TAG, "refreshDatabase onSuccess lesson jsonString:" + jsonString);
-//                MyFirebaseUtilities.refreshLesson(mContext, lesson);
-//            }
-//        });
-
-
         // Get multiple documents
-
         mFirebaseDatabase.collection("lessons")
-                //.whereEqualTo("field_name", true)
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
+            //.whereEqualTo("field_name", true)
+            .get()
+            .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                @Override
+                public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                    if (task.isSuccessful()) {
 
-                            mCallback.onDownloadComplete();
+                        mCallback.onDownloadComplete();
 
-                            if (databaseVisibility.equals(USER_DATABASE)) {
+                        if (databaseVisibility.equals(USER_DATABASE)) {
 
-                                for (QueryDocumentSnapshot document : task.getResult()) {
-                                    Log.d(TAG, "refreshDatabase onComplete document.getId():" +
-                                            document.getId() + " => " + document.getData());
-                                    Lesson lesson = document.toObject(Lesson.class);
-                                    String jsonString = MyFirebaseUtilities.serialize(lesson);
-                                    Log.v(TAG, "refreshDatabase onComplete lesson jsonString:" + jsonString);
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                Log.d(TAG, "refreshDatabase onComplete document.getId():" +
+                                        document.getId() + " => " + document.getData());
+                                Lesson lesson = document.toObject(Lesson.class);
+                                String jsonString = MyFirebaseUtilities.serialize(lesson);
+                                Log.v(TAG, "refreshDatabase onComplete lesson jsonString:"
+                                        + jsonString);
 
-                                    // refresh the lessons of the local user on its separate table
-                                    // this gives consistency to the database
-                                    if (userUid.equals(lesson.getUser_uid())) {
-                                        MyFirebaseUtilities.refreshUserLesson(mContext, lesson);
-                                    }
+                                // refresh the lessons of the local user on its separate table
+                                // this gives consistency to the database
+                                if (userUid.equals(lesson.getUser_uid())) {
+                                    MyFirebaseUtilities.refreshUserLesson(mContext, lesson);
                                 }
-
-                            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
-
-                                // refresh the lessons of the group table on its separate table
-                                MyFirebaseUtilities.refreshGroupLessons(mContext, task);
                             }
 
-                        } else {
-                            Log.d(TAG, "Error getting documents: ", task.getException());
-                            mCallback.onDownloadFailure(task.getException());
+                        } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+
+                            // refresh the lessons of the group table on its separate table
+                            MyFirebaseUtilities.refreshGroupLessons(mContext, task);
                         }
+
+                    } else {
+                        Log.d(TAG, "Error getting documents: ", task.getException());
+                        mCallback.onDownloadFailure(task.getException());
                     }
-                });
+                }
+            });
 
     }
 
