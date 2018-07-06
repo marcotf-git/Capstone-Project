@@ -93,6 +93,7 @@ public class MyFirebaseUtilities {
 
         if (lessonCursor == null) {
             Log.e(TAG, "uploadDatabase failed to get cursor");
+            mCallback.onUploadFailure(new Exception("Failed to get cursor (database failure)"));
             return;
         }
 
@@ -208,7 +209,7 @@ public class MyFirebaseUtilities {
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Log.e(TAG, "Error writing document", e);
+                        Log.e(TAG, "Error writing document on Firestore", e);
                         mCallback.onUploadFailure(e);
                     }
                 });
@@ -322,7 +323,7 @@ public class MyFirebaseUtilities {
                                 // refresh the lessons of the local user on its separate table
                                 // this gives consistency to the database
                                 if (userUid.equals(lesson.getUser_uid())) {
-                                    MyFirebaseUtilities.refreshUserLesson(mContext, lesson);
+                                    refreshUserLesson(mContext, lesson);
                                 }
                             }
 
@@ -333,8 +334,14 @@ public class MyFirebaseUtilities {
                         }
 
                     } else {
-                        Log.d(TAG, "Error getting documents: ", task.getException());
-                        mCallback.onDownloadFailure(task.getException());
+                        Log.d(TAG, "Error in getting documents: ", task.getException());
+
+                        if (task.getException() != null) {
+                            mCallback.onDownloadFailure(task.getException());
+                        } else {
+                            mCallback.onDownloadFailure(new Exception("Error in getting documents from" +
+                                    " Firestore"));
+                        }
                     }
                 }
             });
@@ -342,7 +349,7 @@ public class MyFirebaseUtilities {
     }
 
 
-    static private void refreshUserLesson(Context context, Lesson lesson) {
+    private void refreshUserLesson(Context context, Lesson lesson) {
 
         if (null == lesson) {
             return;
@@ -366,6 +373,8 @@ public class MyFirebaseUtilities {
                     null);
         } else {
             Log.v(TAG, "Error: null cursor");
+            mCallback.onDownloadFailure(new Exception("Error in saving documents downloaded from" +
+                    " Firestore (null cursor)"));
             return;
         }
 
@@ -406,34 +415,44 @@ public class MyFirebaseUtilities {
 
             Uri lessonUri = contentResolver.insert(LessonsContract.MyLessonsEntry.CONTENT_URI, insertLessonValues);
 
-            Long inserted_lesson_id = null;
+            Long inserted_lesson_id;
 
-            if (lessonUri != null) {
+            if (lessonUri == null) {
+                // Returns with error if was not succeeded
+                mCallback.onDownloadFailure(new Exception("Error in saving documents downloaded from" +
+                        " Firestore.\nError in saving the lesson.\nNo part will be saved.\n" +
+                        "(no document inserted into local database)"));
+                return;
+            } else {
                 Log.v(TAG, "insert uri:" + lessonUri.toString());
                 // for inserting the parts, extract the _id of the uri!
                 inserted_lesson_id = Long.parseLong(lessonUri.getPathSegments().get(1));
             }
 
-            // insert all the parts of the lesson
-            if (null != inserted_lesson_id) {
-                ArrayList<LessonPart> lessonParts = lesson.getLesson_parts();
-                // Insert all the parts, with the lesson_id value of the last _id inserted in the local database
-                // This will give consistency and separates the local database consistency from the remote
-                if (null != lessonParts) {
-                    for (LessonPart lessonPart : lessonParts) {
-                        ContentValues insertLessonPartValues = new ContentValues();
-                        insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID,
-                                inserted_lesson_id);
-                        insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE,
+            // insert all the parts of the lesson into the database in its table
+            ArrayList<LessonPart> lessonParts = lesson.getLesson_parts();
+            // Insert all the parts, with the lesson_id value of the last _id inserted in the local database
+            // This will give consistency and separates the local database consistency from the remote
+            if (null != lessonParts) {
+                for (LessonPart lessonPart : lessonParts) {
+                    ContentValues insertLessonPartValues = new ContentValues();
+                    insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID,
+                            inserted_lesson_id);
+                    insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE,
+                            lessonPart.getTitle());
+
+                    Uri partUri = contentResolver.insert(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
+                            insertLessonPartValues);
+
+                    if (partUri == null) {
+                        Log.e(TAG, "Error on inserting part lessonPart.getTitle():" +
                                 lessonPart.getTitle());
-
-                        Uri partUri = contentResolver.insert(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
-                                insertLessonPartValues);
-
-                        Log.v(TAG, "refreshUserLesson partUri inserted:" + partUri);
                     }
+
+                    Log.v(TAG, "refreshUserLesson partUri inserted:" + partUri);
                 }
             }
+
         }
     }
 
