@@ -35,6 +35,7 @@ import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 
@@ -188,16 +189,15 @@ public class ExoPlayerFragment extends Fragment {
 //                .createMediaSource(uri);
 
         if (uri.getLastPathSegment().contains("mp3") || uri.getLastPathSegment().contains("mp4")) {
-            return ExtractorMediaSource.Factory(DefaultHttpDataSourceFactory(userAgent))
-                    .createMediaSource(uri)
+            return new ExtractorMediaSource.Factory(new DefaultHttpDataSourceFactory(userAgent))
+                    .createMediaSource(uri);
         } else if (uri.getLastPathSegment().contains("m3u8")) {
-            return HlsMediaSource.Factory(DefaultHttpDataSourceFactory(userAgent))
-                    .createMediaSource(uri)
+            return new HlsMediaSource.Factory(new DefaultHttpDataSourceFactory(userAgent))
+                    .createMediaSource(uri);
         } else {
-            val dashChunkSourceFactory = DefaultDashChunkSource.Factory(
-                    DefaultHttpDataSourceFactory("ua", BANDWIDTH_METER))
-            val manifestDataSourceFactory = DefaultHttpDataSourceFactory(userAgent)
-            return DashMediaSource.Factory(dashChunkSourceFactory, manifestDataSourceFactory).createMediaSource(uri)
+            return new DashMediaSource.Factory(new DefaultDashChunkSource.Factory(
+                    new DefaultHttpDataSourceFactory("ua", BANDWIDTH_METER)),
+                    new DefaultHttpDataSourceFactory(userAgent)).createMediaSource(uri);
         }
 
     }
