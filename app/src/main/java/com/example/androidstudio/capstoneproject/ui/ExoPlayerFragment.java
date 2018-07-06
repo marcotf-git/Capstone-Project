@@ -2,6 +2,8 @@ package com.example.androidstudio.capstoneproject.ui;
 
 
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -25,16 +27,17 @@ import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.SimpleExoPlayer;
 import com.google.android.exoplayer2.source.ExtractorMediaSource;
 import com.google.android.exoplayer2.source.MediaSource;
+import com.google.android.exoplayer2.source.dash.DashMediaSource;
+import com.google.android.exoplayer2.source.dash.DefaultDashChunkSource;
+import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.trackselection.AdaptiveTrackSelection;
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 
-import java.io.File;
 
 /**
  * This fragment will play the video with Url in mediaUrl variable, using the ExoPlayer library.
@@ -46,12 +49,18 @@ public class ExoPlayerFragment extends Fragment {
 
     private static final String TAG = ExoPlayerFragment.class.getSimpleName();
 
+    private static final String PLAY_WHEN_READY = "playWhenReady";
+    private static final String CURRENT_WINDOW = "currentWindow";
+    private static final String PLAYBACK_POSITION = "playbackPosition";
+    private static final String MEDIA_URI = "mediaUri";
+
+
     private static final DefaultBandwidthMeter BANDWIDTH_METER =
             new DefaultBandwidthMeter();
 
     private PlayerView playerView;
     private SimpleExoPlayer player;
-    private boolean playWhenReady = true;
+    private boolean playWhenReady = false;
     private int currentWindow;
     private long playbackPosition;
     private ComponentListener componentListener;
@@ -62,14 +71,22 @@ public class ExoPlayerFragment extends Fragment {
     private TextView errorMessageView;
     private FrameLayout videoView;
 
+    private Context mContext;
+
     // This variable has a setter method and it is for initializing the fragment
-    private String mediaUrl;
+    private String mediaUri;
 
 
     public ExoPlayerFragment() {
         // Required empty public constructor
     }
 
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        mContext = context;
+    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -87,10 +104,10 @@ public class ExoPlayerFragment extends Fragment {
 
         if (savedInstanceState != null) {
             // Restore last state for checked position.
-            playWhenReady = savedInstanceState.getBoolean("playWhenReady");
-            currentWindow = savedInstanceState.getInt("currentWindow");
-            playbackPosition = savedInstanceState.getLong("playbackPosition");
-            mediaUrl = savedInstanceState.getString("mediaUrl");
+            playWhenReady = savedInstanceState.getBoolean(PLAY_WHEN_READY);
+            currentWindow = savedInstanceState.getInt(CURRENT_WINDOW);
+            playbackPosition = savedInstanceState.getLong(PLAYBACK_POSITION);
+            mediaUri = savedInstanceState.getString(MEDIA_URI);
 
             Log.v(TAG, "onCreate playbackPosition:" + playbackPosition);
         }
@@ -111,7 +128,11 @@ public class ExoPlayerFragment extends Fragment {
 
         // this view is the same in both layouts, but receives this name in the landscape
         // this helps identify the device position
-        isLandscape = null != getActivity().findViewById(R.id.view_activity_part_detail_landscape);
+        if (getActivity() != null) {
+            if (null != getActivity().findViewById(R.id.view_activity_part_detail_landscape))
+                isLandscape = true;
+        }
+        else isLandscape = false;
 
         Log.v(TAG, "onCreateView isLandscape:" + isLandscape);
 
@@ -126,40 +147,58 @@ public class ExoPlayerFragment extends Fragment {
         TrackSelection.Factory adaptiveTrackSelectionFactory =
                 new AdaptiveTrackSelection.Factory(BANDWIDTH_METER);
 
-        player = ExoPlayerFactory.newSimpleInstance(
-                new DefaultRenderersFactory(getContext()),
-                new DefaultTrackSelector(adaptiveTrackSelectionFactory),
-                new DefaultLoadControl());
+        if (player == null) {
+            player = ExoPlayerFactory.newSimpleInstance(
+                    new DefaultRenderersFactory(getContext()),
+                    new DefaultTrackSelector(adaptiveTrackSelectionFactory),
+                    new DefaultLoadControl());
 
-        playerView.setPlayer(player);
+            playerView.setPlayer(player);
 
-        // Register an Player.DefaultEventListener
-        player.addListener(componentListener);
+            // Register an Player.DefaultEventListener
+            player.addListener(componentListener);
 
-        Uri uri = Uri.parse(mediaUrl);
-        //Uri uri = Uri.fromFile(new File(mediaUrl));
+            player.seekTo(currentWindow, playbackPosition);
+            player.setPlayWhenReady(playWhenReady);
+        }
+
+        Uri uri = Uri.parse(mediaUri);
         MediaSource mediaSource = buildMediaSource(uri);
+
         player.prepare(mediaSource, true, false);
-
-        player.seekTo(currentWindow, playbackPosition);
-
-        player.setPlayWhenReady(playWhenReady);
 
     }
 
 
     private MediaSource buildMediaSource(Uri uri) {
 
-        String userAgent = Util.getUserAgent(getContext(), "BakingApp");
+        ApplicationInfo applicationInfo = mContext.getApplicationInfo();
+        int stringId = applicationInfo.labelRes;
+        String appName = (stringId == 0 ?
+                applicationInfo.nonLocalizedLabel.toString() : mContext.getString(stringId));
+
+        String userAgent = Util.getUserAgent(getContext(), appName);
 
 //        return new ExtractorMediaSource.Factory(
 //                new DefaultHttpDataSourceFactory(userAgent))
 //                .createMediaSource(uri);
 
-                return new ExtractorMediaSource.Factory(
-                new DefaultDataSourceFactory(getContext(), userAgent))
-                .createMediaSource(uri);
+//                return new ExtractorMediaSource.Factory(
+//                new DefaultDataSourceFactory(mContext, userAgent))
+//                .createMediaSource(uri);
 
+        if (uri.getLastPathSegment().contains("mp3") || uri.getLastPathSegment().contains("mp4")) {
+            return ExtractorMediaSource.Factory(DefaultHttpDataSourceFactory(userAgent))
+                    .createMediaSource(uri)
+        } else if (uri.getLastPathSegment().contains("m3u8")) {
+            return HlsMediaSource.Factory(DefaultHttpDataSourceFactory(userAgent))
+                    .createMediaSource(uri)
+        } else {
+            val dashChunkSourceFactory = DefaultDashChunkSource.Factory(
+                    DefaultHttpDataSourceFactory("ua", BANDWIDTH_METER))
+            val manifestDataSourceFactory = DefaultHttpDataSourceFactory(userAgent)
+            return DashMediaSource.Factory(dashChunkSourceFactory, manifestDataSourceFactory).createMediaSource(uri)
+        }
 
     }
 
@@ -171,7 +210,7 @@ public class ExoPlayerFragment extends Fragment {
     private void initializeMediaSession() {
 
         // Create a MediaSessionCompat.
-        mMediaSession = new MediaSessionCompat(getContext(), TAG);
+        mMediaSession = new MediaSessionCompat(mContext, TAG);
 
         // Enable callbacks from MediaButtons and TransportControls.
         mMediaSession.setFlags(
@@ -301,7 +340,7 @@ public class ExoPlayerFragment extends Fragment {
             outState.putLong("playbackPosition", playbackPosition);
             outState.putInt("currentWindow", currentWindow);
             outState.putBoolean("playWhenReady", playWhenReady);
-            outState.putString("mediaUrl", mediaUrl);
+            outState.putString("mediaUri", mediaUri);
         }
 
         super.onSaveInstanceState(outState);
@@ -361,8 +400,8 @@ public class ExoPlayerFragment extends Fragment {
     }
 
 
-    public void setMediaUrl(String mediaUrl) {
-        this.mediaUrl = mediaUrl;
+    public void setMediaUri(String mediaUri) {
+        this.mediaUri = mediaUri;
     }
 
 }

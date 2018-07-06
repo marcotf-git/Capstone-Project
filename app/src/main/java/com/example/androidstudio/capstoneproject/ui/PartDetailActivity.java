@@ -36,7 +36,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.bumptech.glide.Glide;
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.google.firebase.storage.FirebaseStorage;
@@ -44,12 +43,8 @@ import com.google.firebase.storage.StorageReference;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
-import java.net.URI;
-
-import static android.app.PendingIntent.getActivity;
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
-import static java.security.AccessController.getContext;
 
 
 public class PartDetailActivity extends AppCompatActivity implements
@@ -320,7 +315,7 @@ public class PartDetailActivity extends AppCompatActivity implements
 
             ExoPlayerFragment exoPlayerFragment = new ExoPlayerFragment();
             // Set the fragment data
-            exoPlayerFragment.setMediaUrl(localVideoUri);
+            exoPlayerFragment.setMediaUri(localVideoUri);
             // Use a FragmentManager and transaction to add the fragment to the screen
             FragmentManager playerFragmentManager = getSupportFragmentManager();
             playerFragmentManager.beginTransaction()
@@ -337,9 +332,8 @@ public class PartDetailActivity extends AppCompatActivity implements
                 /*
                  * Use the call back of picasso to manage the error in loading thumbnail.
                  */
-
                 Uri uri = Uri.parse(localImageUri);
-
+                // Refresh permissions
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                     try {
                         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -373,14 +367,10 @@ public class PartDetailActivity extends AppCompatActivity implements
                             }
 
                         });
-
-
             } else {
                 errorMessageView.setVisibility(View.VISIBLE);
             }
-
         }
-
     }
 
 
@@ -609,6 +599,7 @@ public class PartDetailActivity extends AppCompatActivity implements
 //        startActivityForResult(Intent.createChooser(intent, "Complete action using"), RC_PHOTO_PICKER);
 
         Intent intent;
+        // Grant permissions
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT){
             intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
@@ -625,6 +616,7 @@ public class PartDetailActivity extends AppCompatActivity implements
 
     private void addVideo() {
         Intent intent;
+        // Grant permissions
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT){
             intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
@@ -647,12 +639,15 @@ public class PartDetailActivity extends AppCompatActivity implements
 
         final Uri uri = data != null ? data.getData() : null;
         if (uri != null) {
-            Log.v(TAG, "isDocumentUri=" + DocumentsContract.isDocumentUri(this, uri));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                Log.v(TAG, "isDocumentUri=" + DocumentsContract.isDocumentUri(this, uri));
+            }
         } else {
             Log.e(TAG, "missing URI?");
             return;
         }
 
+        // Grant permissions
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             try {
                 final int takeFlags = data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION;
