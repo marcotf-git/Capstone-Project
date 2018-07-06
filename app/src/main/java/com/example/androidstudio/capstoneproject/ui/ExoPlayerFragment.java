@@ -30,8 +30,11 @@ import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
+
+import java.io.File;
 
 /**
  * This fragment will play the video with Url in mediaUrl variable, using the ExoPlayer library.
@@ -134,6 +137,7 @@ public class ExoPlayerFragment extends Fragment {
         player.addListener(componentListener);
 
         Uri uri = Uri.parse(mediaUrl);
+        //Uri uri = Uri.fromFile(new File(mediaUrl));
         MediaSource mediaSource = buildMediaSource(uri);
         player.prepare(mediaSource, true, false);
 
@@ -148,9 +152,15 @@ public class ExoPlayerFragment extends Fragment {
 
         String userAgent = Util.getUserAgent(getContext(), "BakingApp");
 
-        return new ExtractorMediaSource.Factory(
-                new DefaultHttpDataSourceFactory(userAgent))
+//        return new ExtractorMediaSource.Factory(
+//                new DefaultHttpDataSourceFactory(userAgent))
+//                .createMediaSource(uri);
+
+                return new ExtractorMediaSource.Factory(
+                new DefaultDataSourceFactory(getContext(), userAgent))
                 .createMediaSource(uri);
+
+
     }
 
 

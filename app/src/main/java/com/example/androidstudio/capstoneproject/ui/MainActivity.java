@@ -4,7 +4,9 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Messenger;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -40,11 +42,13 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
+import com.google.firebase.storage.FirebaseStorage;
 
 import java.util.Arrays;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
+import static java.security.AccessController.getContext;
 
 
 /**
@@ -117,6 +121,7 @@ public class MainActivity extends AppCompatActivity implements
 
     // Firebase instance variables
     private FirebaseFirestore mFirestoreDatabase;
+    private FirebaseStorage mFirebaseStorage;
     private FirebaseAuth mFirebaseAuth;
     private FirebaseAuth.AuthStateListener mAuthStateListener;
 
@@ -286,6 +291,7 @@ public class MainActivity extends AppCompatActivity implements
                 .setTimestampsInSnapshotsEnabled(true)
                 .build();
         mFirestoreDatabase.setFirestoreSettings(settings);
+        mFirebaseStorage = FirebaseStorage.getInstance();
 
         // Initialize the FirebaseAuth instance and the AuthStateListener method so
         // we can track whenever the user signs in or out.
@@ -551,7 +557,8 @@ public class MainActivity extends AppCompatActivity implements
 
             case R.id.action_refresh:
                 mainFragment.setLoadingIndicator(true);
-                MyFirebaseUtilities myFirebaseUtilities = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
+                MyFirebaseUtilities myFirebaseUtilities = new MyFirebaseUtilities(this,
+                        mFirestoreDatabase, mFirebaseStorage, mUserUid);
                 myFirebaseUtilities.refreshDatabase(databaseVisibility);
                 deselectViews();
                 break;
@@ -572,7 +579,8 @@ public class MainActivity extends AppCompatActivity implements
             case R.id.action_upload:
                 mainFragment.setLoadingIndicator(true);
                 if (selectedLesson_id != -1) {
-                    myFirebaseUtilities = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
+                    myFirebaseUtilities = new MyFirebaseUtilities(this, mFirestoreDatabase,
+                            mFirebaseStorage, mUserUid);
                     myFirebaseUtilities.uploadDatabase(selectedLesson_id);
                 } else {
                     Toast.makeText(this,
@@ -1016,7 +1024,8 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onDialogDeleteCloudPositiveClick(DialogFragment dialog, long lesson_id) {
         MyFirebaseUtilities myFirebase;
-        myFirebase = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
+        myFirebase = new MyFirebaseUtilities(this, mFirestoreDatabase,
+                mFirebaseStorage, mUserUid);
         myFirebase.deleteLessonFromCloud(selectedLesson_id);
     }
 

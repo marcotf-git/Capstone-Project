@@ -10,7 +10,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "lessons.db";
 
     // If you change the database schema, you must increment the database version
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 4;
 
     // Constructor
     public LessonsDbHelper(Context context) {
@@ -65,13 +65,13 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
 
                         LessonsContract.MyLessonPartsEntry.COLUMN_PART_TEXT + " TEXT," +
 
-                        LessonsContract.MyLessonPartsEntry.COLUMN_VIDEO + " BLOB," +
+                        LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI + " TEXT," +
 
-                        LessonsContract.MyLessonPartsEntry.COLUMN_VIDEO_URL + " TEXT," +
+                        LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI + " TEXT," +
 
-                        LessonsContract.MyLessonPartsEntry.COLUMN_IMAGE + " BLOB," +
+                        LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI + " TEXT," +
 
-                        LessonsContract.MyLessonPartsEntry.COLUMN_IMAGE_URL + " TEXT," +
+                        LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI + " TEXT," +
 
                         // Now, the consistency is with the _ID of the table lessons
                         // (LESSON_ID) <--> (_ID)
@@ -133,15 +133,15 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
 
                         LessonsContract.GroupLessonPartsEntry.COLUMN_PART_TITLE + " TEXT NOT NULL," +
 
-                        LessonsContract.MyLessonPartsEntry.COLUMN_PART_TEXT + " TEXT," +
+                        LessonsContract.GroupLessonPartsEntry.COLUMN_PART_TEXT + " TEXT," +
 
-                        LessonsContract.MyLessonPartsEntry.COLUMN_VIDEO + " BLOB," +
+                        LessonsContract.GroupLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI + " TEXT," +
 
-                        LessonsContract.MyLessonPartsEntry.COLUMN_VIDEO_URL + " TEXT," +
+                        LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI + " TEXT," +
 
-                        LessonsContract.MyLessonPartsEntry.COLUMN_IMAGE + " BLOB," +
+                        LessonsContract.GroupLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI + " BLOB," +
 
-                        LessonsContract.MyLessonPartsEntry.COLUMN_IMAGE_URL + " TEXT," +
+                        LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI + " TEXT," +
 
                         LessonsContract.GroupLessonPartsEntry.COLUMN_USER_UID + " TEXT NOT NULL," +
 

@@ -1,12 +1,19 @@
 package com.example.androidstudio.capstoneproject.ui;
 
+import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Messenger;
 import android.preference.PreferenceManager;
+import android.provider.DocumentsContract;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
@@ -15,6 +22,7 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -28,15 +36,24 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.Picasso;
 
+import java.net.URI;
+
+import static android.app.PendingIntent.getActivity;
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
+import static java.security.AccessController.getContext;
 
 
 public class PartDetailActivity extends AppCompatActivity implements
-            LoaderManager.LoaderCallbacks<Cursor>{
+            LoaderManager.LoaderCallbacks<Cursor> {
 
     private static final String TAG = PartDetailActivity.class.getSimpleName();
 
@@ -50,6 +67,9 @@ public class PartDetailActivity extends AppCompatActivity implements
     private static final int ID_LESSON_PARTS_LOADER = 2;
     private static final int ID_GROUP_LESSON_PARTS_LOADER = 20;
 
+    private static final int RC_PHOTO_PICKER =  2;
+    private static final int RC_VIDEO_PICKER =  3;
+
     // state vars
     private static long clickedLessonPart_id;
     private static String databaseVisibility;
@@ -58,8 +78,10 @@ public class PartDetailActivity extends AppCompatActivity implements
     private static int  errorMessageViewVisibility;
 
     private String partText;
-    private String videoURL;
-    private String imageURL;
+    private String localVideoUri;
+    private String cloudVideoUri;
+    private String localImageUri;
+    private String cloudImageUri;
 
     // Menus and buttons
     private Menu mMenu;
@@ -73,7 +95,15 @@ public class PartDetailActivity extends AppCompatActivity implements
     private ProgressBar mLoadingIndicator;
     private TextView errorMessageView;
 
+    private AlertDialog.Builder builder;
+    private AlertDialog dialog;
+
+    private FirebaseStorage mFirebaseStorage;
+    private StorageReference mImagesStorageReference;
+    private StorageReference mVideosStorageReference;
+
     private Context mContext;
+
 
 
     @Override
@@ -82,6 +112,11 @@ public class PartDetailActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_part_detail);
 
         mContext = this;
+
+        mFirebaseStorage = FirebaseStorage.getInstance();
+        mImagesStorageReference = mFirebaseStorage.getReference().child("images");
+        mVideosStorageReference = mFirebaseStorage.getReference().child("videos");
+
 
         // Add the toolbar as the default app bar
         mToolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -92,19 +127,6 @@ public class PartDetailActivity extends AppCompatActivity implements
             // Enable the Up button (icon will be set in onPrepareMenu
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
-
-        /*
-         Set the Floating Action Button (FAB) to its corresponding View.
-         Attach an OnClickListener to it, so that when it's clicked, a new intent will be created
-         to launch the AddLessonActivity.
-         */
-        mButton = findViewById(R.id.fab_add);
-        mButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Toast.makeText(mContext,"FAB clicked!", Toast.LENGTH_LONG).show();
-            }
-        });
 
         // The views variables
         mPlayerView =  (View) findViewById(R.id.player_container);
@@ -147,10 +169,54 @@ public class PartDetailActivity extends AppCompatActivity implements
 //            loadViews();
 //        }
 
+        builder = new AlertDialog.Builder(PartDetailActivity.this);
+        // Add the buttons
+        builder.setTitle(R.string.pick_image_video)
+                .setItems(R.array.illustrations_array, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int which) {
+                        // The 'which' argument contains the index position
+                        // of the selected item
+                        Log.v(TAG, "onClick which:" + which);
+                        switch (which) {
+                                case 0:
+                                    addImage();
+                                    break;
+                                case 1:
+                                    addVideo();
+                                    break;
+                                default:
+                                    break;
+                        }
+                    }
+                })
+                .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                    }
+                });
+
+        dialog = builder.create();
+
+        /*
+         Set the Floating Action Button (FAB) to its corresponding View.
+         Attach an OnClickListener to it, so that when it's clicked, a new intent will be created
+         to pick photo or video.
+         */
+        mButton = findViewById(R.id.fab_add);
+        mButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.v(TAG, "fab onClick clickedLessonPart_id:" + clickedLessonPart_id);
+                dialog.show();
+            }
+        });
+
     }
 
 
     private void updateView(Cursor cursor) {
+
+        Log.v(TAG, "updateView");
 
         // Set initial state of the player and thumbnail views (this method is only called in two pane)
         errorMessageView.setVisibility(View.GONE);
@@ -168,13 +234,12 @@ public class PartDetailActivity extends AppCompatActivity implements
             myFragmentManager.beginTransaction().remove(fragment).commit();
         }
 
-        Log.v(TAG, "loadViews videoURL:" + videoURL);
 
         // Create a new PartDetailFragment instance
         PartDetailFragment partDetailFragment = new PartDetailFragment();
 
         partText = null;
-        imageURL = null;
+        localImageUri = null;
 
         if (null != cursor) {
 
@@ -184,18 +249,39 @@ public class PartDetailActivity extends AppCompatActivity implements
 
             // load the vars data to display
             if (databaseVisibility.equals(USER_DATABASE)) {
-                if (!cursor.isNull(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TEXT))) {
-                    partText = cursor.getString(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TEXT));
+
+                if (!cursor.isNull(cursor.getColumnIndex(
+                        LessonsContract.MyLessonPartsEntry.COLUMN_PART_TEXT))) {
+                    partText = cursor.getString(cursor.getColumnIndex(
+                            LessonsContract.MyLessonPartsEntry.COLUMN_PART_TEXT));
                 }
-                if (!cursor.isNull(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_IMAGE_URL))) {
-                    imageURL = cursor.getString(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_IMAGE_URL));
+                if (!cursor.isNull(cursor.getColumnIndex(
+                        LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI))) {
+                    localImageUri = cursor.getString(cursor.getColumnIndex(
+                            LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
                 }
+                if (!cursor.isNull(cursor.getColumnIndex(
+                        LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI))) {
+                    localVideoUri = cursor.getString(cursor.getColumnIndex(
+                            LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
+                }
+
             } else if (databaseVisibility.equals(GROUP_DATABASE)) {
-                if (!cursor.isNull(cursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_PART_TEXT))) {
-                    partText = cursor.getString(cursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_PART_TEXT));
+
+                if (!cursor.isNull(cursor.getColumnIndex(
+                        LessonsContract.GroupLessonPartsEntry.COLUMN_PART_TEXT))) {
+                    partText = cursor.getString(cursor.getColumnIndex(
+                            LessonsContract.GroupLessonPartsEntry.COLUMN_PART_TEXT));
                 }
-                if (!cursor.isNull(cursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_IMAGE_URL))) {
-                    imageURL = cursor.getString(cursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_IMAGE_URL));
+                if (!cursor.isNull(cursor.getColumnIndex(
+                        LessonsContract.GroupLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI))) {
+                    localImageUri = cursor.getString(cursor.getColumnIndex(
+                            LessonsContract.GroupLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
+                }
+                if (!cursor.isNull(cursor.getColumnIndex(
+                        LessonsContract.GroupLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI))) {
+                    localVideoUri = cursor.getString(cursor.getColumnIndex(
+                            LessonsContract.GroupLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
                 }
             }
 
@@ -216,11 +302,25 @@ public class PartDetailActivity extends AppCompatActivity implements
 
         // Create a new ExoPlayerFragment instance and display it using FragmentManager
         // or try to load and show the Thumbnail
-        if (null != videoURL && !videoURL.equals("")) {
+        if (null != localVideoUri && !localVideoUri.equals("")) {
+
+            Uri uri = Uri.parse(localVideoUri);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    final int takeFlags = intent.getFlags()
+                            & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    getContentResolver().takePersistableUriPermission(uri, takeFlags);
+                } catch (Exception e) {
+
+                }
+            }
 
             ExoPlayerFragment exoPlayerFragment = new ExoPlayerFragment();
             // Set the fragment data
-            //exoPlayerFragment.setMediaUrl(videoURL);
+            exoPlayerFragment.setMediaUrl(localVideoUri);
             // Use a FragmentManager and transaction to add the fragment to the screen
             FragmentManager playerFragmentManager = getSupportFragmentManager();
             playerFragmentManager.beginTransaction()
@@ -230,31 +330,51 @@ public class PartDetailActivity extends AppCompatActivity implements
 
         } else {
 
-            // Try to load the Thumbnail
-            if (null != imageURL && !imageURL.equals("")) {
+            // Try to load the image
+            if (null != localImageUri && !localImageUri.equals("")) {
 
-                Log.v(TAG, "updateView loading image imageURL:" + imageURL);
+                Log.v(TAG, "updateView loading image localImageUri:" + localImageUri);
                 /*
                  * Use the call back of picasso to manage the error in loading thumbnail.
                  */
-//                Picasso.with(this)
-//                        .load(thumbnailURL)
-//                        .into(thumbnailView, new Callback() {
-//                            @Override
-//                            public void onSuccess() {
-//                                Log.v(TAG, "Thumbnail loaded");
-//                                thumbnailView.setVisibility(View.VISIBLE);
-//                            }
-//
-//                            @Override
-//                            public void onError() {
-//                                Log.e(TAG, "Error in loading thumbnail");
-//                                thumbnailView.setVisibility(View.GONE);
-//                                if(mPlayerView.getVisibility() == View.GONE) {
-//                                    errorMessageView.setVisibility(View.VISIBLE);
-//                                }
-//                            }
-//                        });
+
+                Uri uri = Uri.parse(localImageUri);
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                        final int takeFlags = intent.getFlags()
+                                & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                                | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                        getContentResolver().takePersistableUriPermission(uri, takeFlags);
+                    } catch (Exception e) {
+
+                    }
+                }
+
+                Picasso.get()
+                        .load(localImageUri)
+                        .into(imageView, new Callback() {
+                            @Override
+                            public void onSuccess() {
+                                Log.v(TAG, "Image loaded");
+                                imageView.setVisibility(View.VISIBLE);
+                            }
+
+                            @Override
+                            public void onError(Exception e) {
+                                Log.e(TAG, "Error in loading image:" + e.getMessage());
+                                Toast.makeText(mContext, "Error in loading image:" + e.getMessage(),
+                                        Toast.LENGTH_LONG).show();
+                                imageView.setVisibility(View.GONE);
+                                if(mPlayerView.getVisibility() == View.GONE) {
+                                    errorMessageView.setVisibility(View.VISIBLE);
+                                }
+                            }
+
+                        });
+
+
             } else {
                 errorMessageView.setVisibility(View.VISIBLE);
             }
@@ -394,13 +514,6 @@ public class PartDetailActivity extends AppCompatActivity implements
 
             case android.R.id.home:
                 Log.d(TAG, "onOptionsItemSelected");
-                // Set the action according to the views visibility
-//                if (mainVisibility == VISIBLE) {
-//                    mDrawerLayout.openDrawer(GravityCompat.START);
-//                    return true;
-//                } else if (mainVisibility == GONE && partsVisibility == VISIBLE){
-//                    closePartsFragment();
-//                }
                 break;
 
             case R.id.select_view:
@@ -410,11 +523,6 @@ public class PartDetailActivity extends AppCompatActivity implements
                                 this.getString(R.string.pref_mode_view)).apply();
                 // Set visibility of action icons
                 contextualizeMenu();
-//                // Deselect the last view selected
-//                mainFragment.deselectViews();
-//                partsFragment.deselectViews();
-//                selectedLesson_id = -1;
-//                selectedLessonPart_id = -1;
                 Log.d(TAG, "View mode selected");
                 break;
 
@@ -428,68 +536,10 @@ public class PartDetailActivity extends AppCompatActivity implements
                 Log.v(TAG, "Create mode selected");
                 break;
 
-            case R.id.action_refresh:
-//                mainFragment.setLoadingIndicator(true);
-//                MyFirebaseUtilities myFirebaseUtilities = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
-//                myFirebaseUtilities.refreshDatabase(databaseVisibility);
-//                deselectViews();
-                break;
-
             case R.id.action_edit:
                 Log.d(TAG, "Deletion action selected");
                 editLessonPartText(clickedLessonPart_id);
-                // Try to action first on the more specific item
-//                if (selectedLessonPart_id != -1) {
-//                    editLessonPart(selectedLessonPart_id);
-//                } else if (selectedLesson_id != -1) {
-//                    editLesson(selectedLesson_id);
-//                } else {
-//                    Toast.makeText(this,
-//                            "Please, select an item to delete!", Toast.LENGTH_LONG).show();
-//                }
-                break;
-
-            case R.id.action_upload:
-//                mainFragment.setLoadingIndicator(true);
-//                if (selectedLesson_id != -1) {
-//                    myFirebaseUtilities = new MyFirebaseUtilities(this, mFirestoreDatabase, mUserUid);
-//                    myFirebaseUtilities.uploadDatabase(selectedLesson_id);
-//                } else {
-//                    Toast.makeText(this,
-//                            "Please, select a lesson to upload!", Toast.LENGTH_LONG).show();
-//                }
-                break;
-
-            case R.id.action_delete:
-                Log.d(TAG, "Deletion action selected");
-//                // Try to action first on the more specific item
-//                if (selectedLessonPart_id != -1) {
-//                    deleteLessonPart(selectedLessonPart_id);
-//                } else if (selectedLesson_id != -1) {
-//                    deleteLesson(selectedLesson_id);
-//                } else {
-//                    Toast.makeText(this,
-//                            "Please, select an item to delete!", Toast.LENGTH_LONG).show();
-//                }
-                break;
-
-            case R.id.action_delete_from_cloud:
-                Log.d(TAG, "Delete from Cloud action selected");
-//                // Try to action first on the more specific item
-//                if  (selectedLesson_id != -1) {
-//                    deleteLessonFromCloud(selectedLesson_id);
-//                } else {
-//                    Toast.makeText(this,
-//                            "Please, select a lesson to delete from Cloud!", Toast.LENGTH_LONG).show();
-//                }
-                break;
-
-            case R.id.action_insert_fake_data:
-//                Log.d(TAG, "Insert fake data action selected");
-//                TestUtil.insertFakeData(this);
-//                Toast.makeText(this,
-//                        "Fake data inserted!", Toast.LENGTH_LONG).show();
-                break;
+                 break;
 
             case R.id.action_cancel:
                 break;
@@ -512,51 +562,20 @@ public class PartDetailActivity extends AppCompatActivity implements
         Log.v(TAG,"contextualizeMenu modeOption:" + modeOption + " databaseVisibility:" +
                 databaseVisibility);
 
-//        if (modeOption.equals(this.getString(R.string.pref_mode_create))) {
-//            mMenu.findItem(R.id.action_delete).setVisible(true);
-//        } else {
-            mMenu.findItem(R.id.action_delete).setVisible(false);
-//        }
-
-
+        mMenu.findItem(R.id.action_delete).setVisible(false);
 
         if (databaseVisibility.equals(USER_DATABASE) &&
                 modeOption.equals(this.getString(R.string.pref_mode_create))) {
-            //mMenu.findItem(R.id.action_insert_fake_data).setVisible(true);
             mMenu.findItem(R.id.action_edit).setVisible(true);
             mButton.setVisibility(VISIBLE);
         } else {
-            //mMenu.findItem(R.id.action_insert_fake_data).setVisible(false);
             mMenu.findItem(R.id.action_edit).setVisible(false);
             mButton.setVisibility(GONE);
         }
 
-//        if (databaseVisibility.equals(USER_DATABASE) &&
-//                modeOption.equals(this.getString(R.string.pref_mode_create)) &&
-//                !mUsername.equals(ANONYMOUS)) {
-//            mMenu.findItem(R.id.action_delete_from_cloud).setVisible(true);
-//            mMenu.findItem(R.id.action_upload).setVisible(true);
-//        } else {
-            mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
-            mMenu.findItem(R.id.action_upload).setVisible(false);
-//        }
-
-
-
-//        if (!mUsername.equals(ANONYMOUS)) {
-//            mMenu.findItem(R.id.action_refresh).setVisible(true);
-//        } else {
-            mMenu.findItem(R.id.action_refresh).setVisible(false);
-//        }
-
-
-        // Set the drawer menu icon according to views
-//        if (mainVisibility == VISIBLE) {
-//            actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
-//        } else {
-//            actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
-//        }
-
+        mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
+        mMenu.findItem(R.id.action_upload).setVisible(false);
+        mMenu.findItem(R.id.action_refresh).setVisible(false);
         mMenu.findItem(R.id.action_insert_fake_data).setVisible(false);
 
         if (databaseVisibility.equals(GROUP_DATABASE)) {
@@ -583,6 +602,117 @@ public class PartDetailActivity extends AppCompatActivity implements
     }
 
 
+    private void addImage() {
+//        Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+//        intent.setType("image/jpeg");
+//        intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+//        startActivityForResult(Intent.createChooser(intent, "Complete action using"), RC_PHOTO_PICKER);
+
+        Intent intent;
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT){
+            intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        }else{
+            intent = new Intent(Intent.ACTION_GET_CONTENT);
+        }
+        intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.setType("image/*");
+        startActivityForResult(Intent.createChooser(intent, getResources()
+                .getString(R.string.form_pick_image)), RC_PHOTO_PICKER);
+    }
+
+
+    private void addVideo() {
+        Intent intent;
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT){
+            intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+            intent.addFlags(Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        }else{
+            intent = new Intent(Intent.ACTION_GET_CONTENT);
+        }
+        intent.putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.setType("video/*");
+        startActivityForResult(Intent.createChooser(intent, getResources()
+                .getString(R.string.form_pick_video)), RC_VIDEO_PICKER);
+    }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+        Log.v(TAG, "resultCode=" + resultCode);
+        Log.v(TAG, "data=" + String.valueOf(data));
+
+        final Uri uri = data != null ? data.getData() : null;
+        if (uri != null) {
+            Log.v(TAG, "isDocumentUri=" + DocumentsContract.isDocumentUri(this, uri));
+        } else {
+            Log.e(TAG, "missing URI?");
+            return;
+        }
+
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            try {
+                final int takeFlags = data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION;
+                ContentResolver resolver = mContext.getContentResolver();
+                resolver.takePersistableUriPermission(uri, takeFlags);
+            } catch (SecurityException e) {
+                Log.e(TAG, "FAILED TO TAKE PERMISSION", e);
+            }
+        }
+
+        if (resultCode == RESULT_OK) {
+            if (requestCode == RC_PHOTO_PICKER) {
+                Toast.makeText(this, "Picked an image!", Toast.LENGTH_LONG).show();
+                insertBlobUriInDatabase(data, "image");
+            } else if (requestCode == RC_VIDEO_PICKER) {
+                Toast.makeText(this, "Picked a video!", Toast.LENGTH_LONG).show();
+                insertBlobUriInDatabase(data, "video");
+            }
+        } else if (resultCode == RESULT_CANCELED) {
+            Toast.makeText(this, "Canceled!", Toast.LENGTH_LONG).show();
+        }
+
+        super.onActivityResult(requestCode, resultCode, data);
+
+    }
+
+
+    private void insertBlobUriInDatabase(Intent data, String type) {
+
+        Uri selectedBlobUri = data.getData();
+
+        Log.v(TAG, "insertImageUriInDatabase selectedBlobUri:" + selectedBlobUri.toString());
+
+        // Create new empty ContentValues object
+        ContentValues contentValues = new ContentValues();
+
+        if (type.equals("image")) {
+            contentValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI,
+                    selectedBlobUri.toString());
+        } else if (type.equals("video")) {
+            contentValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI,
+                    selectedBlobUri.toString());
+        }
+
+        Uri updateUri = ContentUris.withAppendedId(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
+                clickedLessonPart_id);
+
+        int numberOfImagesUpdated = getContentResolver().update(updateUri,
+                contentValues, null, null);
+
+        if (numberOfImagesUpdated > 0) {
+            Log.d(TAG, "Local Uri of added " + type + ":" + selectedBlobUri.toString());
+        } else {
+            Log.e(TAG, "Error on saving uri to local database");
+            Toast.makeText(this,
+                    "Error on saving uri to local database", Toast.LENGTH_LONG).show();
+        }
+
+    }
+
 
     // This is for saving the step that is being viewed when the device is rotated
     @Override
@@ -599,4 +729,6 @@ public class PartDetailActivity extends AppCompatActivity implements
     protected void onDestroy() {
         super.onDestroy();
     }
+
+
 }

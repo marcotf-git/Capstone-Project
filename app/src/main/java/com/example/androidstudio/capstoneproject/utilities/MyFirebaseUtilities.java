@@ -8,10 +8,12 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.example.androidstudio.capstoneproject.data.Lesson;
 import com.example.androidstudio.capstoneproject.data.LessonPart;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
+import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -19,9 +21,13 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -38,7 +44,11 @@ public class MyFirebaseUtilities {
     private static final String USER_DATABASE = "userDatabase";
     private static final String GROUP_DATABASE = "groupDatabase";
 
-    private FirebaseFirestore cloudFirestore;
+    private FirebaseFirestore mFirebaseDatabase;
+    private FirebaseStorage mFirebaseStorage;
+    private StorageReference mImagesStorageReference;
+    private StorageReference mVideosStorageReference;
+
     private String userUid;
 
     private Context mContext;
@@ -57,8 +67,11 @@ public class MyFirebaseUtilities {
     }
 
     // Constructor
-    public MyFirebaseUtilities(Context context, FirebaseFirestore firestoreDatabase, String userUid) {
-        this.cloudFirestore = firestoreDatabase;
+    public MyFirebaseUtilities(Context context, FirebaseFirestore firestoreDatabase,
+                               FirebaseStorage firebaseStorage, String userUid) {
+
+        this.mFirebaseDatabase = firestoreDatabase;
+        this.mFirebaseStorage = firebaseStorage;
         this.userUid = userUid;
         mCallback = (OnCloudListener) context;
         mContext = context;
@@ -66,6 +79,9 @@ public class MyFirebaseUtilities {
 
     // Helper method for uploading a specific lesson to Cloud Firestore
     public void uploadDatabase(Long lesson_id) {
+
+        mImagesStorageReference = mFirebaseStorage.getReference().child("images");
+        mVideosStorageReference = mFirebaseStorage.getReference().child("videos");
 
         ContentResolver contentResolver = mContext.getContentResolver();
         Uri lessonUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, lesson_id);
@@ -128,15 +144,42 @@ public class MyFirebaseUtilities {
                 int nPartsRows = partsCursor.getCount();
                 for (int j = 0; j < nPartsRows; j++) {
 
-                    String lessonPartTitle = partsCursor.getString(partsCursor.
-                            getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
                     Long item_id = partsCursor.getLong(partsCursor.
                             getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
+                    // lesson_id is already loaded! (don't need to load, is the lesson_id parameter)
+                    String lessonPartTitle = partsCursor.getString(partsCursor.
+                            getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
+                    String lessonPartText = partsCursor.getString(partsCursor.
+                            getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TEXT));
+                    String localImageUri = partsCursor.getString(partsCursor.
+                            getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
+
+                    String cloudImageUri = uploadImageToFirestore(localImageUri);
+
+//                    String cloudImageUri = partsCursor.getString(partsCursor.
+//                            getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
+
+//                    String localVideoUri = partsCursor.getString(partsCursor.
+//                            getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
+
+                    //String cloudVideoUri = uploadVideoToFirestore(localVideoUri);
+
+//                    String cloudVideoUri = partsCursor.getString(partsCursor.
+//                            getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
 
                     LessonPart lessonPart = new LessonPart();
                     lessonPart.setPart_id(item_id);
                     lessonPart.setLesson_id(lesson_id);
                     lessonPart.setTitle(lessonPartTitle);
+                    lessonPart.setText(lessonPartText);
+
+                    //lessonPart.setLocal_image_uri(localImageUri);
+
+                    lessonPart.setCloud_image_uri(cloudImageUri);
+
+                    //lessonPart.setLocal_video_uri(localVideoUri);
+
+                    //lessonPart.setCloud_video_uri(cloudVideoUri);
 
                     Log.v(TAG, "lessonPart:" + lessonPart.toString());
 
@@ -156,7 +199,7 @@ public class MyFirebaseUtilities {
             Log.v(TAG, "uploadDatabase documentName:" + documentName);
 
 
-            cloudFirestore.collection("lessons").document(documentName)
+            mFirebaseDatabase.collection("lessons").document(documentName)
                     .set(lesson)
                     .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
@@ -187,6 +230,75 @@ public class MyFirebaseUtilities {
     }
 
 
+    // upload to Firestore and return the uri
+    private String uploadImageToFirestore(String localUri) {
+
+        Uri.Builder builder = new Uri.Builder();
+
+        Uri uri = builder.appendPath(localUri).build();
+
+        // Get a reference to store file at chat_photos/<FILENAME>
+        // Example: content://local_images/foo/4 -> the file name that we're saving our stored
+        // image at would be 4 because it's the last part of the path segment.
+        final StorageReference imageRef =
+                mImagesStorageReference.child(uri.getLastPathSegment());
+
+        // Upload file to Firebase Storage
+        UploadTask uploadTask = imageRef.putFile(uri);
+
+        Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
+            @Override
+            public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                if (!task.isSuccessful()) {
+                    throw task.getException();
+                }
+
+                // Continue with the task to get the download URL
+                return imageRef.getDownloadUrl();
+            }
+        }).addOnCompleteListener(new OnCompleteListener<Uri>() {
+            @Override
+            public void onComplete(@NonNull Task<Uri> task) {
+                if (task.isSuccessful()) {
+
+                    Uri downloadUri = task.getResult();
+
+                    Log.d(TAG, "Cloud Uri of added image:" + downloadUri);
+
+                } else {
+                    // Handle failures
+                    // ...
+                    if (task.getException()!= null) {
+
+                        Log.e(TAG, task.getException().toString());
+
+                        Toast.makeText(mContext, "Error in uploading to cloud! " +
+                                task.getException().toString(), Toast.LENGTH_LONG).show();
+                    }
+                }
+            }
+        });
+
+
+        Uri cloudUri = urlTask.getResult();
+
+        Log.v(TAG, "uploadImageToFirestore cloudUri:" + cloudUri);
+
+        return cloudUri.toString();
+
+
+    }
+
+
+//    private String uploadVideoToFirestore(String localUri) {
+//
+//
+//
+//    }
+
+
+
+
     // Helper method for refreshing the database from Cloud Firestore
     // Do not delete if existing
     public void refreshDatabase(final String databaseVisibility) {
@@ -195,7 +307,7 @@ public class MyFirebaseUtilities {
 //        final String documentName = String.format( Locale.US, "%s_%02d",
 //                this.userUid, 1);
 //        Log.v(TAG, "refreshDatabase documentName:" + documentName);
-//        DocumentReference docRef = cloudFirestore.collection("lessons").document(documentName);
+//        DocumentReference docRef = mFirebaseDatabase.collection("lessons").document(documentName);
 //        docRef.get().addOnSuccessListener(new OnSuccessListener<DocumentSnapshot>() {
 //            @Override
 //            public void onSuccess(DocumentSnapshot documentSnapshot) {
@@ -209,7 +321,7 @@ public class MyFirebaseUtilities {
 
         // Get multiple documents
 
-        cloudFirestore.collection("lessons")
+        mFirebaseDatabase.collection("lessons")
                 //.whereEqualTo("field_name", true)
                 .get()
                 .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
@@ -435,7 +547,7 @@ public class MyFirebaseUtilities {
 
         Log.v(TAG, "deleteLessonFromCloud documentName:" + documentName);
 
-        cloudFirestore.collection("lessons").document(documentName)
+        mFirebaseDatabase.collection("lessons").document(documentName)
                 .delete()
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override

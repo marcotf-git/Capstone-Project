@@ -60,10 +60,10 @@ public class LessonsContract {
         public static final String COLUMN_LESSON_ID = "lesson_id";
         public static final String COLUMN_PART_TITLE = "title";
         public static final String COLUMN_PART_TEXT = "text";
-        public static final String COLUMN_VIDEO = "video";
-        public static final String COLUMN_VIDEO_URL = "video_url";
-        public static final String COLUMN_IMAGE = "image";
-        public static final String COLUMN_IMAGE_URL = "image_url";
+        public static final String COLUMN_LOCAL_VIDEO_URI = "local_video_uri";
+        public static final String COLUMN_CLOUD_VIDEO_URI = "cloud_video_uri";
+        public static final String COLUMN_LOCAL_IMAGE_URI = "local_image_uri";
+        public static final String COLUMN_CLOUD_IMAGE_URI = "cloud_image_uri";
     }
 
     public static class GroupLessonsEntry implements BaseColumns {
@@ -77,7 +77,7 @@ public class LessonsContract {
         /* Since MyContentEntry implements the interface "BaseColumns", it has an automatically produced
          * "_id" column.
          */
-        public static final String COLUMN_LESSON_ID = "lesson_id";
+        public static final String COLUMN_LESSON_ID = "lesson_id"; // in the cloud ( _id in local is implicit)
         public static final String COLUMN_LESSON_TITLE = "title";
         public static final String COLUMN_LESSON_TIME_STAMP = "time_stamp";
         public static final String COLUMN_USER_UID = "user_uid";
@@ -95,14 +95,14 @@ public class LessonsContract {
         /* Since MyContentEntry implements the interface "BaseColumns", it has an automatically produced
          * "_id" column.
          */
-        public static final String COLUMN_PART_ID = "part_id";
-        public static final String COLUMN_LESSON_ID = "lesson_id";
+        public static final String COLUMN_PART_ID = "part_id"; // in the cloud ( _id in local is implicit)
+        public static final String COLUMN_LESSON_ID = "lesson_id"; // in the cloud
         public static final String COLUMN_PART_TITLE = "title";
         public static final String COLUMN_PART_TEXT = "text";
-        public static final String COLUMN_VIDEO = "video";
-        public static final String COLUMN_VIDEO_URL = "video_url";
-        public static final String COLUMN_IMAGE = "image";
-        public static final String COLUMN_IMAGE_URL = "image_url";
+        public static final String COLUMN_LOCAL_VIDEO_URI = "local_video_uri";
+        public static final String COLUMN_CLOUD_VIDEO_URI = "cloud_video_uri";
+        public static final String COLUMN_LOCAL_IMAGE_URI = "local_image_uri";
+        public static final String COLUMN_CLOUD_IMAGE_URI = "cloud_image_uri";
         public static final String COLUMN_USER_UID = "user_uid";
 
     }

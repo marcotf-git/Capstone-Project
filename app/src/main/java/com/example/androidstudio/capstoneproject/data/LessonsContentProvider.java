@@ -22,10 +22,10 @@ public class LessonsContentProvider extends ContentProvider {
     public static final int MY_LESSON_PARTS = 200;
     public static final int MY_LESSON_PART_WITH_ID = 201;
     public static final int MY_LESSON_PARTS_BY_LESSON_ID = 202;
-    public static final int GROUP_LESSONS = 1000;
-    public static final int GROUP_LESSON_WITH_ID = 1001;
-    public static final int GROUP_LESSON_PARTS = 2000;
-    public static final int GROUP_LESSON_PART_WITH_ID = 2001;
+    public static final int GROUP_LESSONS = 300;
+    public static final int GROUP_LESSON_WITH_ID = 301;
+    public static final int GROUP_LESSON_PARTS = 400;
+    public static final int GROUP_LESSON_PART_WITH_ID = 401;
 
     // Declare a static variable for the Uri matcher
     private static final UriMatcher sUriMatcher = buildUriMatcher();
@@ -45,16 +45,21 @@ public class LessonsContentProvider extends ContentProvider {
           The two calls below add matches for the my_lessons directory and a single item by ID.
          */
         uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSONS, MY_LESSONS);
-        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSONS + "/#", MY_LESSON_WITH_ID);
-        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSON_PARTS, MY_LESSON_PARTS);
-        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSON_PARTS + "/#", MY_LESSON_PART_WITH_ID);
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSONS + "/#",
+                MY_LESSON_WITH_ID);
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSON_PARTS,
+                MY_LESSON_PARTS);
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LESSON_PARTS + "/#",
+                MY_LESSON_PART_WITH_ID);
         uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.MY_LESSON_PARTS_BY_LESSON_ID +
                 "/#", MY_LESSON_PARTS_BY_LESSON_ID);
-
         uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_GROUP_LESSONS, GROUP_LESSONS);
-        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_GROUP_LESSONS + "/#", GROUP_LESSON_WITH_ID);
-        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_GROUP_LESSON_PARTS, GROUP_LESSON_PARTS);
-        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_GROUP_LESSON_PARTS + "/#", GROUP_LESSON_PART_WITH_ID);
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_GROUP_LESSONS + "/#",
+                GROUP_LESSON_WITH_ID);
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_GROUP_LESSON_PARTS,
+                GROUP_LESSON_PARTS);
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_GROUP_LESSON_PARTS + "/#",
+                GROUP_LESSON_PART_WITH_ID);
 
         return uriMatcher;
 
