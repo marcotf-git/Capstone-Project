@@ -53,7 +53,7 @@
         android:layout_marginLeft="16dp"
         android:layout_marginRight="16dp"
         android:layout_marginStart="16dp"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/toolbar_container">
@@ -63,13 +63,15 @@
             android:id="@+id/iv_image"
             android:layout_width="match_parent"
             android:layout_height="200dp"
+            android:scaleType="centerCrop"
             android:contentDescription="@string/part_image"
             app:srcCompat="@mipmap/ic_launcher" />
 
         <!-- The container for the player -->
-        <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        <FrameLayout
+            xmlns:android="http://schemas.android.com/apk/res/android"
             android:id="@+id/player_container"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="200dp"
             android:background="#000000" />
 
@@ -120,7 +122,6 @@
         android:layout_margin="@dimen/fab_margin"
         android:layout_marginBottom="16dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginRight="16dp"
         android:contentDescription="@string/action_add"
         android:src="@drawable/ic_action_add"
         app:elevation="@dimen/fab_elevation"
