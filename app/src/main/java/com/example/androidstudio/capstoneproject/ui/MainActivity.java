@@ -34,8 +34,8 @@ import android.widget.Toast;
 import com.example.androidstudio.capstoneproject.IdlingResource.SimpleIdlingResource;
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
+import com.example.androidstudio.capstoneproject.utilities.MyFirebaseFragment;
 import com.example.androidstudio.capstoneproject.utilities.TestUtil;
-import com.example.androidstudio.capstoneproject.utilities.MyFirebaseUtilities;
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -81,7 +81,7 @@ public class MainActivity extends AppCompatActivity implements
         PartsFragment.OnIdlingResourceListener,
         DeleteLessonLocallyDialogFragment.DeleteLessonDialogListener,
         DeletePartDialogFragment.DeletePartDialogListener,
-        MyFirebaseUtilities.OnCloudListener,
+        MyFirebaseFragment.OnCloudListener,
         DeleteLessonOnCloudDialogFragment.DeleteLessonCloudDialogListener {
 
 
@@ -118,7 +118,7 @@ public class MainActivity extends AppCompatActivity implements
     private String mUserEmail;
 
     // Firebase instance variables
-    private FirebaseFirestore mFirestoreDatabase;
+    private FirebaseFirestore mFirebaseDatabase;
     private FirebaseStorage mFirebaseStorage;
     private FirebaseAuth mFirebaseAuth;
     private FirebaseAuth.AuthStateListener mAuthStateListener;
@@ -144,6 +144,7 @@ public class MainActivity extends AppCompatActivity implements
     // Fragments
     private MainFragment mainFragment;
     private PartsFragment partsFragment;
+    private MyFirebaseFragment firebaseFragment;
 
     // The Idling Resource which will be null in production.
     @Nullable
@@ -251,9 +252,16 @@ public class MainActivity extends AppCompatActivity implements
                     .replace(R.id.parts_container, partsFragment, "PartsFragment")
                     .commit();
 
+            Log.d(TAG, "creating firebaseFragment");
+            firebaseFragment = new MyFirebaseFragment();
+            fragmentManager.beginTransaction()
+                    .add(firebaseFragment, "MyFirebaseFragment")
+                    .commit();
+
         } else {
             mainFragment = (MainFragment) fragmentManager.findFragmentByTag("MainFragment");
             partsFragment = (PartsFragment) fragmentManager.findFragmentByTag("PartsFragment");
+            firebaseFragment = (MyFirebaseFragment) fragmentManager.findFragmentByTag("MyFirebaseFragment");
         }
 
         // Set fragments database visibility
@@ -284,11 +292,11 @@ public class MainActivity extends AppCompatActivity implements
 
 
         // Initialize Firebase components
-        mFirestoreDatabase = FirebaseFirestore.getInstance();
+        mFirebaseDatabase = FirebaseFirestore.getInstance();
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
                 .setTimestampsInSnapshotsEnabled(true)
                 .build();
-        mFirestoreDatabase.setFirestoreSettings(settings);
+        mFirebaseDatabase.setFirestoreSettings(settings);
         mFirebaseStorage = FirebaseStorage.getInstance();
 
         // Initialize the FirebaseAuth instance and the AuthStateListener method so
@@ -380,8 +388,6 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
-
-
     // Helper method for Firebase login
     private void login() {
         Log.d(TAG, "login");
@@ -424,6 +430,9 @@ public class MainActivity extends AppCompatActivity implements
         if (null != mMenu) {
             contextualizeMenu();
         }
+
+        // Set the firebaseFragment
+        firebaseFragment.setFirebase(mFirebaseDatabase, mFirebaseStorage, mUserUid);
 
         Log.d(TAG, "onSignedInInitialize mUsername:" + mUsername);
     }
@@ -554,11 +563,7 @@ public class MainActivity extends AppCompatActivity implements
                 break;
 
             case R.id.action_refresh:
-                mainFragment.setLoadingIndicator(true);
-                MyFirebaseUtilities myFirebaseUtilities = new MyFirebaseUtilities(this,
-                        mFirestoreDatabase, mFirebaseStorage, mUserUid);
-                myFirebaseUtilities.refreshDatabase(databaseVisibility);
-                deselectViews();
+                refreshDatabase();
                 break;
 
             case R.id.action_edit:
@@ -575,15 +580,7 @@ public class MainActivity extends AppCompatActivity implements
                 break;
 
             case R.id.action_upload:
-                mainFragment.setLoadingIndicator(true);
-                if (selectedLesson_id != -1) {
-                    myFirebaseUtilities = new MyFirebaseUtilities(this, mFirestoreDatabase,
-                            mFirebaseStorage, mUserUid);
-                    myFirebaseUtilities.uploadDatabase(selectedLesson_id);
-                } else {
-                    Toast.makeText(this,
-                            "Please, select a lesson to upload!", Toast.LENGTH_LONG).show();
-                }
+                uploadDatabase();
                 break;
 
             case R.id.action_delete:
@@ -718,6 +715,28 @@ public class MainActivity extends AppCompatActivity implements
         selectedLessonPart_id = -1;
     }
 
+
+    /**
+     * Other helper methods. Handle for refreshing/uploading.
+     */
+    private void refreshDatabase() {
+        mainFragment.setLoadingIndicator(true);
+        // Calls the refresh method
+        firebaseFragment.refreshDatabase(databaseVisibility);
+        deselectViews();
+    }
+
+    private void uploadDatabase() {
+        mainFragment.setLoadingIndicator(true);
+        // Verify if there is a lesson selected
+        if (selectedLesson_id != -1) {
+            // calls the upload method
+            firebaseFragment.uploadDatabase(selectedLesson_id);
+        } else {
+            Toast.makeText(this,
+                    "Please, select a lesson to upload!", Toast.LENGTH_LONG).show();
+        }
+    }
 
     /**
      * Other helper methods. Handle for editing/deleting.
@@ -935,10 +954,9 @@ public class MainActivity extends AppCompatActivity implements
     // receive communication from DeleteLessonOnCloudDialogFragment instance
     @Override
     public void onDialogDeleteLessonOnCloudPositiveClick(DialogFragment dialog, long lesson_id) {
-        MyFirebaseUtilities myFirebase;
-        myFirebase = new MyFirebaseUtilities(this, mFirestoreDatabase,
-                mFirebaseStorage, mUserUid);
-        myFirebase.deleteLessonFromCloud(selectedLesson_id);
+
+        firebaseFragment.deleteLessonFromCloud(selectedLesson_id);
+
     }
 
     @Override
@@ -1010,7 +1028,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
-    // Receive communication form MyFirebaseUtilities instance
+    // Receive communication form MyFirebaseFragment instance
     @Override
     public void onUploadSuccess() {
         mainFragment.setLoadingIndicator(false);

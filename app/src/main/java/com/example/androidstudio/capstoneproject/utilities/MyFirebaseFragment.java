@@ -6,15 +6,20 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
 import android.util.Log;
-import android.widget.Toast;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 
 import com.example.androidstudio.capstoneproject.data.Image;
 import com.example.androidstudio.capstoneproject.data.Lesson;
 import com.example.androidstudio.capstoneproject.data.LessonPart;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
-import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -24,7 +29,6 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
-import com.google.firebase.storage.UploadTask;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -37,13 +41,14 @@ import java.util.Locale;
 import static com.google.common.net.HostSpecifier.isValid;
 
 
-public class MyFirebaseUtilities {
+public class MyFirebaseFragment extends Fragment {
 
 
-    private static final String TAG = MyFirebaseUtilities.class.getSimpleName();
+    private static final String TAG = MyFirebaseFragment.class.getSimpleName();
 
     private static final String USER_DATABASE = "userDatabase";
     private static final String GROUP_DATABASE = "groupDatabase";
+    private static final String USER_UID = "userUid";
 
     private FirebaseFirestore mFirebaseDatabase;
     private FirebaseStorage mFirebaseStorage;
@@ -68,14 +73,64 @@ public class MyFirebaseUtilities {
     }
 
     // Constructor
-    public MyFirebaseUtilities(Context context, FirebaseFirestore firebaseDatabase,
-                               FirebaseStorage firebaseStorage, String userUid) {
+    public MyFirebaseFragment() {
+    }
 
+    // Get the context and save it in mContext
+    // Get the callback (activity that will send the data)
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+
+        mContext = context;
+
+        try {
+            mCallback = (OnCloudListener) context;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(context.toString()
+                    + " must implement OnCloudListener");
+        }
+
+    }
+
+    // Get the values for Firebase variables
+    public void setFirebase(FirebaseFirestore firebaseDatabase,
+            FirebaseStorage firebaseStorage, String userUid) {
         this.mFirebaseDatabase = firebaseDatabase;
         this.mFirebaseStorage = firebaseStorage;
         this.userUid = userUid;
-        mCallback = (OnCloudListener) context;
-        mContext = context;
+    }
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        if(savedInstanceState != null) {
+            Log.d(TAG, "onCreate: recovering instance state");
+            this.userUid  = savedInstanceState.getString(USER_UID);
+        }
+
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+        return super.onCreateView(inflater, container, savedInstanceState);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
+
+        Log.d(TAG, "onSaveInstanceState: saving instance state");
+        savedInstanceState.putString(USER_UID, this.userUid);
+
+        super.onSaveInstanceState(savedInstanceState);
     }
 
 
@@ -263,8 +318,10 @@ public class MyFirebaseUtilities {
         int nRows = partsCursor.getCount();
 
         if (nRows == 0) {
-            Log.d(TAG, "uploadImages: no images found on local database for the lesson _id:"
+            Log.d(TAG, "uploadImages: no parts found in local database for the lesson _id:"
                     + mLessonId);
+            partsCursor.close();
+            return;
         }
 
         partsCursor.moveToFirst();
@@ -288,24 +345,24 @@ public class MyFirebaseUtilities {
             // Store the instance in the array
             images.add(image);
 
+            // get the next part
             partsCursor.moveToNext();
         }
 
         // close the table
         partsCursor.close();
 
-        // Upload the uri's stored in the Image instances
-        Log.d(TAG, "uploadImages: uri's of the images stored in the Image array:" + images.toString());
-
-        if (image == null) {
-            Log.e(TAG, "uploadImages: Failed to set Image instance");
-            mCallback.onUploadFailure(new Exception("uploadImages: Failed to set Image instance"));
+       // Verify the images array
+        if (images.size() == 0) {
+            Log.d(TAG, "uploadImages: no images in the database");
             return;
+        } else {
+            Log.d(TAG, "uploadImages: uri's of the images stored in the Image array:" + images.toString());
         }
 
-        // Upload the Lesson instance to Firebase Database
-        final String documentName = String.format( Locale.US, "%s_%03d_%03d",
-                mUserUid, mLessonId, image.getPart_id());
+        // Upload the uri's stored in the images array
+        final String documentName = String.format( Locale.US, "%s_%03d",
+                mUserUid, mLessonId);
 
 
     }
@@ -335,7 +392,7 @@ public class MyFirebaseUtilities {
                                 Log.d(TAG, "refreshDatabase onComplete document.getId():" +
                                         document.getId() + " => " + document.getData());
                                 Lesson lesson = document.toObject(Lesson.class);
-                                String jsonString = MyFirebaseUtilities.serialize(lesson);
+                                String jsonString = MyFirebaseFragment.serialize(lesson);
                                 Log.v(TAG, "refreshDatabase onComplete lesson jsonString:"
                                         + jsonString);
 
@@ -349,7 +406,7 @@ public class MyFirebaseUtilities {
                         } else if (databaseVisibility.equals(GROUP_DATABASE)) {
 
                             // refresh the lessons of the group table on its separate table
-                            MyFirebaseUtilities.refreshGroupLessons(mContext, task);
+                            MyFirebaseFragment.refreshGroupLessons(mContext, task);
                         }
 
                     } else {
@@ -504,7 +561,7 @@ public class MyFirebaseUtilities {
                     document.getId() + " => " + document.getData());
 
             Lesson lesson = document.toObject(Lesson.class);
-            String jsonString = MyFirebaseUtilities.serialize(lesson);
+            String jsonString = MyFirebaseFragment.serialize(lesson);
             Log.v(TAG, "refreshGroupLessons onComplete lesson jsonString:" + jsonString);
 
             // insert the data in the clean table
@@ -613,6 +670,8 @@ public class MyFirebaseUtilities {
         Gson gson = new GsonBuilder().create();
         return gson.fromJson(jsonString, tClass);
     }
+
+
 
 }
 
