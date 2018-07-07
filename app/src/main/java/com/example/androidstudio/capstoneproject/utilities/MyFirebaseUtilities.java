@@ -112,7 +112,7 @@ public class MyFirebaseUtilities {
         String lesson_title;
         String time_stamp;
 
-        Lesson lesson;
+        Lesson lesson = null;
 
         // This will save all the same rows in the cloud, even if there are more than one with
         // the same _id
@@ -223,13 +223,21 @@ public class MyFirebaseUtilities {
         lessonCursor.close();
 
         // Upload the images
-        uploadImages(lesson_id);
+        uploadImages(lesson);
 
     }
 
 
     // Helper method for uploading specific lesson parts images to Cloud Firebase Storage
-    private void uploadImages(Long lesson_id) {
+    private void uploadImages(Lesson lesson) {
+
+        if (lesson == null) {
+            mCallback.onUploadFailure(new Exception("Failed to upload image: no Lesson instance"));
+            return;
+        }
+
+        long mLessonId = lesson.getLesson_id();
+        String mUserUid = lesson.getUser_uid();
 
         mImagesStorageReference = mFirebaseStorage.getReference().child("images");
 //        mVideosStorageReference = mFirebaseStorage.getReference().child("videos");
@@ -238,7 +246,7 @@ public class MyFirebaseUtilities {
 
         // Query the parts table with the same lesson_id
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
-        String[] selectionArgs = {Long.toString(lesson_id)};
+        String[] selectionArgs = {Long.toString(mLessonId)};
         Cursor partsCursor = contentResolver.query(
                 LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                 null,
@@ -247,21 +255,23 @@ public class MyFirebaseUtilities {
                 null);
 
         if (partsCursor == null) {
-            Log.e(TAG, "uploadImages failed to get cursor");
+            Log.e(TAG, "uploadImages: failed to get parts cursor (database error)");
+            mCallback.onUploadFailure(new Exception("Failed to get parts cursor (database failure)"));
             return;
         }
 
         int nRows = partsCursor.getCount();
 
         if (nRows == 0) {
-            Log.d(TAG, "uploadImages no images found on local database for the lesson _id:"
-                    + lesson_id);
+            Log.d(TAG, "uploadImages: no images found on local database for the lesson _id:"
+                    + mLessonId);
         }
 
         partsCursor.moveToFirst();
 
         // Store all image uri in an array of Image instances
         List<Image> images = new ArrayList<Image>();
+        Image image = null;
 
         for (int i = 0; i < nRows; i++) {
 
@@ -271,7 +281,7 @@ public class MyFirebaseUtilities {
                     getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
 
             // Set the values in the Image instance
-            Image image = new Image();
+            image = new Image();
             image.setPart_id(item_id);
             image.setCloud_uri(localImageUri);
 
@@ -285,8 +295,17 @@ public class MyFirebaseUtilities {
         partsCursor.close();
 
         // Upload the uri's stored in the Image instances
-        Log.d(TAG, "Uri's of the images stored in the Image array:" + images.toString());
+        Log.d(TAG, "uploadImages: uri's of the images stored in the Image array:" + images.toString());
 
+        if (image == null) {
+            Log.e(TAG, "uploadImages: Failed to set Image instance");
+            mCallback.onUploadFailure(new Exception("uploadImages: Failed to set Image instance"));
+            return;
+        }
+
+        // Upload the Lesson instance to Firebase Database
+        final String documentName = String.format( Locale.US, "%s_%03d_%03d",
+                mUserUid, mLessonId, image.getPart_id());
 
 
     }

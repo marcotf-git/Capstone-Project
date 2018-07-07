@@ -10,7 +10,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "lessons.db";
 
     // If you change the database schema, you must increment the database version
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 10;
 
     // Constructor
     public LessonsDbHelper(Context context) {
@@ -34,15 +34,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
 
                 //LessonsContract.MyLessonsEntry.COLUMN_LESSON_ID + " TEXT NOT NULL," +
 
-                LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE + " TEXT NOT NULL," +
-
-                /*
-                 * To ensure this table can only contain one entry per ..., we declare the ...
-                 * column to be unique.
-                 * We also specify "ON CONFLICT REPLACE". This tells SQLite that if we have a lesson
-                 * with the same "_id" entry, we replace the old.
-                 */
-                " UNIQUE (" + LessonsContract.MyLessonsEntry._ID + ") ON CONFLICT REPLACE" +
+                LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE + " TEXT NOT NULL" +
 
                 ");";
 
@@ -78,19 +70,10 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
                         // (LESSON_ID) <--> (_ID)
                         "FOREIGN KEY(" + LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + ") " +
                         "REFERENCES " + LessonsContract.MyLessonsEntry.TABLE_NAME + "(" +
-                        LessonsContract.MyLessonsEntry._ID +")," +
-
-                        " UNIQUE (" + LessonsContract.MyLessonPartsEntry._ID + ") ON CONFLICT REPLACE" +
+                        LessonsContract.MyLessonsEntry._ID +")" +
 
                         ");";
 
-                        /*
-                         * To ensure this table can only contain one entry per ..., we declare the ...
-                         * column to be unique.
-                         * We also specify "ON CONFLICT REPLACE". This tells SQLite that if we have a lesson
-                         * with the same ... entry, we replace the old.
-                         */
-                        //" UNIQUE (" + LessonsContract.MyLessonPartsEntry._ID + ") ON CONFLICT REPLACE);";
 
         // Create a table to hold the lesson data of the group
         final String SQL_CREATE_GROUP_LESSONS_TABLE =
@@ -111,9 +94,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
 
                         LessonsContract.GroupLessonsEntry.COLUMN_LESSON_TIME_STAMP + " TEXT NOT NULL," +
 
-                        LessonsContract.GroupLessonsEntry.COLUMN_USER_UID + " TEXT NOT NULL," +
-
-                        " UNIQUE (" + LessonsContract.GroupLessonsEntry._ID + ") ON CONFLICT REPLACE" +
+                        LessonsContract.GroupLessonsEntry.COLUMN_USER_UID + " TEXT NOT NULL" +
 
                         ");";
 
@@ -154,10 +135,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
                         // (USER_ID, LESSON_ID) <--> (USER_ID, LESSON_ID)
                         "FOREIGN KEY("  + LessonsContract.GroupLessonPartsEntry.COLUMN_LESSON_ID + ") " +
                         "REFERENCES " + LessonsContract.GroupLessonsEntry.TABLE_NAME +
-                                    "(" + LessonsContract.GroupLessonsEntry._ID +")," +
-
-                        " UNIQUE (" + LessonsContract.GroupLessonsEntry._ID + ") ON CONFLICT REPLACE" +
-
+                                    "(" + LessonsContract.GroupLessonsEntry._ID +")" +
                         ");";
 
 
