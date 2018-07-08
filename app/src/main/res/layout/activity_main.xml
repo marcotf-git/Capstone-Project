@@ -34,26 +34,41 @@
         </android.support.design.widget.AppBarLayout>
 
 
-        <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        <LinearLayout
+            xmlns:android="http://schemas.android.com/apk/res/android"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginTop="?attr/actionBarSize"
             android:orientation="horizontal"
-            android:padding="0dp">
+            android:padding="0dp"
+            android:layout_marginTop="?actionBarSize">
+
+            <!--app:layout_behavior="@string/appbar_scrolling_view_behavior"-->
+
+            <FrameLayout
+                android:id="@+id/log_container"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_margin="0dp"
+                android:padding="0dp">
+            </FrameLayout>
 
             <FrameLayout
                 android:id="@+id/lessons_container"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="0dp"
-                android:padding="0dp"/>
+                android:padding="0dp">
+
+            </FrameLayout>
 
             <FrameLayout
                 android:id="@+id/parts_container"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="0dp"
-                android:padding="0dp"/>
+                android:padding="0dp">
+
+            </FrameLayout>
 
         </LinearLayout>
 

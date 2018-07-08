@@ -40,7 +40,7 @@ public class PartDetailFragment extends Fragment {
             partText = savedInstanceState.getString(PART_TEXT);
         }
 
-        // Inflate the Steps fragment layout
+        // Inflate the fragment view
         View rootView = inflater.inflate(R.layout.fragment_part_detail, container, false);
 
         mTextView = rootView.findViewById(R.id.tv_part_text);

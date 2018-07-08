@@ -10,7 +10,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "lessons.db";
 
     // If you change the database schema, you must increment the database version
-    private static final int DATABASE_VERSION = 10;
+    private static final int DATABASE_VERSION = 12;
 
     // Constructor
     public LessonsDbHelper(Context context) {
@@ -139,11 +139,27 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
                         ");";
 
 
+        // Create a table to hold the log data
+        final String SQL_CREATE_MY_LOG_TABLE =
+
+                "CREATE TABLE " +  LessonsContract.MyLogEntry.TABLE_NAME + " (" +
+                        /*
+                         * MyLogEntry did not explicitly declare a column called "_id". However,
+                         * MyLogEntry implements the interface, "BaseColumns", which does have a field
+                         * named "_id". We use that here to designate our table's primary key.
+                         */
+                        LessonsContract.MyLogEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT," +
+
+                        LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT + " TEXT NOT NULL" +
+
+                        ");";
+
         // Create the database
         sqLiteDatabase.execSQL(SQL_CREATE_MY_LESSONS_TABLE);
         sqLiteDatabase.execSQL(SQL_CREATE_MY_LESSON_PARTS_TABLE);
         sqLiteDatabase.execSQL(SQL_CREATE_GROUP_LESSONS_TABLE);
         sqLiteDatabase.execSQL(SQL_CREATE_GROUP_LESSON_PARTS_TABLE);
+        sqLiteDatabase.execSQL(SQL_CREATE_MY_LOG_TABLE);
 
     }
 
@@ -157,6 +173,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
         sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + LessonsContract.MyLessonsEntry.TABLE_NAME);
         sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + LessonsContract.GroupLessonPartsEntry.TABLE_NAME);
         sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + LessonsContract.GroupLessonsEntry.TABLE_NAME);
+        sqLiteDatabase.execSQL("DROP TABLE IF EXISTS " + LessonsContract.MyLogEntry.TABLE_NAME);
         onCreate(sqLiteDatabase);
     }
 }

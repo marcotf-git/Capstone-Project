@@ -26,6 +26,8 @@ public class LessonsContentProvider extends ContentProvider {
     public static final int GROUP_LESSON_WITH_ID = 301;
     public static final int GROUP_LESSON_PARTS = 400;
     public static final int GROUP_LESSON_PART_WITH_ID = 401;
+    public static final int MY_LOG = 500;
+    public static final int MY_LOG_WITH_ID = 501;
 
     // Declare a static variable for the Uri matcher
     private static final UriMatcher sUriMatcher = buildUriMatcher();
@@ -60,6 +62,8 @@ public class LessonsContentProvider extends ContentProvider {
                 GROUP_LESSON_PARTS);
         uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_GROUP_LESSON_PARTS + "/#",
                 GROUP_LESSON_PART_WITH_ID);
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LOG,
+                MY_LOG);
 
         return uriMatcher;
 
@@ -134,6 +138,15 @@ public class LessonsContentProvider extends ContentProvider {
                 }
                 break;
 
+            case MY_LOG:
+                long log_id = db.insert(LessonsContract.MyLogEntry.TABLE_NAME, null, values);
+                if ( log_id > 0 ) {
+                    returnUri = ContentUris.withAppendedId(LessonsContract.MyLogEntry.CONTENT_URI, log_id);
+                } else {
+                    throw new SQLException("Failed to insert row into " + uri);
+                }
+                break;
+
             // Set the value for the returnedUri and write the default case for unknown URI's
             // Default case throws an UnsupportedOperationException
             default:
@@ -141,7 +154,9 @@ public class LessonsContentProvider extends ContentProvider {
         }
 
         // Notify the resolver if the uri has been changed, and return the newly inserted URI
-        getContext().getContentResolver().notifyChange(uri, null);
+        if (getContext() != null) {
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
 
         // Close database
         db.close();
@@ -269,6 +284,16 @@ public class LessonsContentProvider extends ContentProvider {
                         null);
                 break;
 
+            case MY_LOG:
+                retCursor =  db.query(LessonsContract.MyLogEntry.TABLE_NAME,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null,
+                        null,
+                        sortOrder);
+                break;
+
             // Default exception
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
@@ -349,6 +374,14 @@ public class LessonsContentProvider extends ContentProvider {
                 // Use selections/selectionArgs to filter for this "_id"
                 rowsDeleted = db.delete(LessonsContract.GroupLessonPartsEntry.TABLE_NAME,
                         "_id=?", new String[]{group_lesson_part_id});
+                break;
+
+            case MY_LOG_WITH_ID:
+                // Get the lesson "_id" from the URI path
+                String log_id = uri.getPathSegments().get(1);
+                // Use selections/selectionArgs to filter for this "_id"
+                rowsDeleted = db.delete(LessonsContract.MyLogEntry.TABLE_NAME,
+                        "_id=?", new String[]{log_id});
                 break;
 
             default:

@@ -18,4 +18,8 @@
             android:title="@string/group_lessons" />
     </group>
 
+    <item
+        android:id="@+id/nav_log"
+        android:title="@string/log"/>
+
 </menu>

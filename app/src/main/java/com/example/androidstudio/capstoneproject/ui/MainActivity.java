@@ -96,6 +96,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final String SELECTED_LESSON_PART_ID = "selectedLessonPartId";
     private static final String MAIN_VISIBILITY = "mainVisibility";
     private static final String PARTS_VISIBILITY = "partsVisibility";
+    private static final String LOG_VISIBILITY = "logVisibility";
     private static final String DATABASE_VISIBILITY = "databaseVisibility";
     private static final String LOCAL_USER_UID = "localUserUid";
 
@@ -111,6 +112,7 @@ public class MainActivity extends AppCompatActivity implements
     private long selectedLessonPart_id;
     private int mainVisibility;
     private int partsVisibility;
+    private int logVisibility;
     private String databaseVisibility;
     private String mUserUid; // The user's ID, unique to the Firebase project.
 
@@ -135,6 +137,7 @@ public class MainActivity extends AppCompatActivity implements
     // Views
     private FrameLayout lessonsContainer;
     private FrameLayout partsContainer;
+    private FrameLayout logContainer;
     private TextView mUsernameTextView;
     private TextView mUserEmailTextView;
 
@@ -173,6 +176,7 @@ public class MainActivity extends AppCompatActivity implements
             selectedLessonPart_id = savedInstanceState.getLong(SELECTED_LESSON_PART_ID);
             mainVisibility = savedInstanceState.getInt(MAIN_VISIBILITY);
             partsVisibility = savedInstanceState.getInt(PARTS_VISIBILITY);
+            logVisibility =  savedInstanceState.getInt(LOG_VISIBILITY);
             databaseVisibility = savedInstanceState.getString(DATABASE_VISIBILITY);
             mUserUid = savedInstanceState.getString(LOCAL_USER_UID);
 
@@ -185,6 +189,7 @@ public class MainActivity extends AppCompatActivity implements
             // Phone visibility
             mainVisibility = VISIBLE;
             partsVisibility = GONE;
+            logVisibility = GONE;
             // Recover the local user uid for handling the database global consistency
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
             mUserUid = sharedPreferences.getString(LOCAL_USER_UID,"");
@@ -205,7 +210,7 @@ public class MainActivity extends AppCompatActivity implements
         // Get a support ActionBar corresponding to this toolbar
         actionBar = getSupportActionBar();
         if (null != actionBar) {
-            // Enable the Up button (icon will be set in onPrepareMenu
+            // Enable the Up button (icon will be set in onPrepareMenu)
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
 
@@ -243,6 +248,7 @@ public class MainActivity extends AppCompatActivity implements
         // Initialize the containers for fragments
         lessonsContainer = findViewById(R.id.lessons_container);
         partsContainer = findViewById(R.id.parts_container);
+        logContainer = findViewById(R.id.log_container);
 
         // Initialize the fragments
         FragmentManager fragmentManager = getSupportFragmentManager();
@@ -264,7 +270,7 @@ public class MainActivity extends AppCompatActivity implements
             Log.d(TAG, "creating firebaseFragment");
             firebaseFragment = new MyFirebaseFragment();
             fragmentManager.beginTransaction()
-                    .add(firebaseFragment, "MyFirebaseFragment")
+                    .add(R.id.log_container, firebaseFragment, "MyFirebaseFragment")
                     .commit();
 
         } else {
@@ -280,9 +286,11 @@ public class MainActivity extends AppCompatActivity implements
         // Set the fragment views visibility
         lessonsContainer.setVisibility(mainVisibility);
         partsContainer.setVisibility(partsVisibility);
+        logContainer.setVisibility(logVisibility);
 
         Log.d(TAG, "lessonsContainer visibility:" + lessonsContainer.getVisibility());
         Log.d(TAG, "partsContainer visibility:" + partsContainer.getVisibility());
+        Log.d(TAG, "logContainer visibility:" + logContainer.getVisibility());
 
         // Get the IdlingResource instance for testing
         getIdlingResource();
@@ -372,6 +380,16 @@ public class MainActivity extends AppCompatActivity implements
                             // Set fragments database visibility
                             mainFragment.setDatabaseVisibility(databaseVisibility);
                             partsFragment.setDatabaseVisibility(databaseVisibility);
+                            break;
+
+                        case R.id.nav_log:
+                            mainVisibility = GONE;
+                            lessonsContainer.setVisibility(mainVisibility);
+                            partsVisibility = GONE;
+                            partsContainer.setVisibility(partsVisibility);
+                            logVisibility = VISIBLE;
+                            logContainer.setVisibility(logVisibility);
+                            actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
                             break;
 
                         default:
@@ -543,6 +561,13 @@ public class MainActivity extends AppCompatActivity implements
                     return true;
                 } else if (mainVisibility == GONE && partsVisibility == VISIBLE){
                     closePartsFragment();
+                } else if (logVisibility == VISIBLE) {
+                    logVisibility = GONE;
+                    logContainer.setVisibility(logVisibility);
+                    mainVisibility = VISIBLE;
+                    lessonsContainer.setVisibility(mainVisibility);
+                    actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
+                    contextualizeMenu();
                 }
                 break;
 
@@ -694,6 +719,19 @@ public class MainActivity extends AppCompatActivity implements
             actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
         }
 
+        if(logVisibility == VISIBLE) {
+            mMenu.findItem(R.id.select_view).setVisible(false);
+            mMenu.findItem(R.id.select_create).setVisible(false);
+            mMenu.findItem(R.id.action_refresh).setVisible(false);
+            mMenu.findItem(R.id.action_edit).setVisible(false);
+            mMenu.findItem(R.id.action_upload).setVisible(false);
+            mMenu.findItem(R.id.action_delete).setVisible(false);
+            mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
+            mMenu.findItem(R.id.action_insert_fake_data).setVisible(false);
+            mMenu.findItem(R.id.action_cancel).setVisible(false);
+            mButton.setVisibility(GONE);
+        }
+
     }
 
 
@@ -708,10 +746,10 @@ public class MainActivity extends AppCompatActivity implements
         // clear the reference var
         selectedLessonPart_id = -1;
         // Change the views
-        partsContainer.setVisibility(GONE);
         partsVisibility = GONE;
-        lessonsContainer.setVisibility(VISIBLE);
+        partsContainer.setVisibility(partsVisibility);
         mainVisibility = VISIBLE;
+        lessonsContainer.setVisibility(mainVisibility);
         // Set the drawer menu icon according to views
         actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
     }
@@ -736,10 +774,11 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void uploadDatabase() {
-        mainFragment.setLoadingIndicator(true);
+
         // Verify if there is a lesson selected
         if (selectedLesson_id != -1) {
             // calls the upload method
+            mainFragment.setLoadingIndicator(true);
             firebaseFragment.uploadDatabase(selectedLesson_id);
         } else {
             Toast.makeText(this,
@@ -858,6 +897,7 @@ public class MainActivity extends AppCompatActivity implements
 
         mainVisibility = lessonsContainer.getVisibility();
         partsVisibility = partsContainer.getVisibility();
+        logVisibility = logContainer.getVisibility();
 
         outState.putLong(CLICKED_LESSON_ID, clickedLesson_id);
         outState.putLong(SELECTED_LESSON_ID, selectedLesson_id);
@@ -866,6 +906,7 @@ public class MainActivity extends AppCompatActivity implements
 
         outState.putInt(MAIN_VISIBILITY, mainVisibility);
         outState.putInt(PARTS_VISIBILITY, partsVisibility);
+        outState.putInt(LOG_VISIBILITY, logVisibility);
 
         outState.putString(DATABASE_VISIBILITY, databaseVisibility);
         outState.putString(LOCAL_USER_UID, mUserUid);
@@ -890,10 +931,10 @@ public class MainActivity extends AppCompatActivity implements
         Log.d(TAG, "onLessonClicked _id:" + _id);
         clickedLesson_id = _id;
         // Show the lesson parts fragment
-        lessonsContainer.setVisibility(GONE);
         mainVisibility = GONE;
-        partsContainer.setVisibility(VISIBLE);
+        lessonsContainer.setVisibility(mainVisibility);
         partsVisibility = VISIBLE;
+        partsContainer.setVisibility(partsVisibility);
         // Set the drawer menu icon according to views
         if (mainVisibility == VISIBLE) {
             actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);

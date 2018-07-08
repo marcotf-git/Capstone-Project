@@ -136,7 +136,7 @@ public class PartsFragment extends Fragment implements
 
         Log.v(TAG, "onCreateView");
 
-        // Inflate the Ingredients fragment layout
+        // Inflate the fragment view
         View rootView = inflater.inflate(R.layout.fragment_parts, container, false);
 
         mErrorMessageDisplay = rootView.findViewById(R.id.tv_error_message_display);
@@ -366,9 +366,12 @@ public class PartsFragment extends Fragment implements
         setCursor(data);
         mAdapter.setSelectedItemId(selectedLessonPart_id);
 
-        if(data == null) {
+        if (data == null) {
             showErrorMessage();
+        } else {
+            showPartsDataView();
         }
+
     }
 
     /**
@@ -403,7 +406,6 @@ public class PartsFragment extends Fragment implements
 
         mLoadingIndicator.setVisibility(View.INVISIBLE);
         mAdapter.setLessonPartsCursorData(cursor);
-        showPartsDataView();
 
     }
 

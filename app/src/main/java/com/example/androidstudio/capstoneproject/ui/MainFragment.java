@@ -119,7 +119,7 @@ public class MainFragment extends Fragment implements
 
         Log.d(TAG, "onCreateView");
 
-        // Inflate the Ingredients fragment layout
+        // Inflate the fragment view
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
         mErrorMessageDisplay = rootView.findViewById(R.id.tv_error_message_display);
@@ -359,6 +359,8 @@ public class MainFragment extends Fragment implements
 
         if (data == null) {
             showErrorMessage();
+        } else {
+            showLessonsDataView();
         }
 
     }
@@ -398,7 +400,6 @@ public class MainFragment extends Fragment implements
         // Saves a reference to the cursor
         // Set the data for the adapter
         mAdapter.setLessonsCursorData(cursor);
-        showLessonsDataView();
 
     }
 

@@ -7,18 +7,28 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
+import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.Image;
 import com.example.androidstudio.capstoneproject.data.Lesson;
 import com.example.androidstudio.capstoneproject.data.LessonPart;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
+import com.example.androidstudio.capstoneproject.ui.LogListAdapter;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -40,11 +50,14 @@ import java.util.Locale;
 import static com.google.common.net.HostSpecifier.isValid;
 
 
-public class MyFirebaseFragment extends Fragment {
+public class MyFirebaseFragment extends Fragment implements
+        LogListAdapter.ListItemClickListener,
+        LoaderManager.LoaderCallbacks<Cursor>{
 
 
     private static final String TAG = MyFirebaseFragment.class.getSimpleName();
 
+    private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
     private static final String USER_DATABASE = "userDatabase";
     private static final String GROUP_DATABASE = "groupDatabase";
     private static final String USER_UID = "userUid";
@@ -54,11 +67,23 @@ public class MyFirebaseFragment extends Fragment {
     private StorageReference mImagesStorageReference;
     private StorageReference mVideosStorageReference;
 
+    // Loader id
+    private static final int ID_LOG_LOADER = 30;
+
     private String userUid;
 
     private Context mContext;
 
+    // Views
+    private TextView mErrorMessageDisplay;
+    private ProgressBar mLoadingIndicator;
+    private RecyclerView mRecyclerView;
+
+    private LogListAdapter mAdapter;
+
     private OnCloudListener mCallback;
+
+
 
 
     // Listener for sending information to the Activity
@@ -109,16 +134,163 @@ public class MyFirebaseFragment extends Fragment {
             this.userUid  = savedInstanceState.getString(USER_UID);
         }
 
+        // Query the database and set the adapter with the cursor data for the log
+        if (null != getActivity()) {
+            // Get the support loader manager to init a new loader for this fragment, according to
+            // the table being queried
+            getActivity().getSupportLoaderManager().initLoader(ID_LOG_LOADER, null,
+                    this);
+        }
+
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        return super.onCreateView(inflater, container, savedInstanceState);
+
+        // Inflate the Ingredients fragment layout
+        View rootView = inflater.inflate(R.layout.fragment_my_firebase, container, false);
+
+        mErrorMessageDisplay = rootView.findViewById(R.id.tv_error_message_display);
+        mLoadingIndicator = rootView.findViewById(R.id.pb_loading_indicator);
+        mLoadingIndicator.setVisibility(View.VISIBLE);
+
+        mRecyclerView = rootView.findViewById(R.id.rv_log);
+        mRecyclerView.setHasFixedSize(true);
+
+        // Set the layout of the recycler view
+        LinearLayoutManager layoutManager = new LinearLayoutManager(mContext);
+        mRecyclerView.setLayoutManager(layoutManager);
+
+        // Set the adapter
+        mAdapter = new LogListAdapter(this);
+        mRecyclerView.setAdapter(mAdapter);
+
+        // This is loading the saved position of the recycler view.
+        // There is also a call on the post execute method in the loader, for updating the view.
+        if(savedInstanceState != null) {
+            Log.d(TAG, "recovering savedInstanceState");
+            Parcelable recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
+            mRecyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+        }
+
+        return rootView;
+    }
+
+    /**
+     * Called by the {@link android.support.v4.app.LoaderManagerImpl} when a new Loader needs to be
+     * created. This Activity only uses one loader, so we don't necessarily NEED to check the
+     * loaderId, but this is certainly best practice.
+     *
+     * @param loaderId The loader ID for which we need to create a loader
+     * @param bundle   Any arguments supplied by the caller
+     * @return A new Loader instance that is ready to start loading.
+     */
+    @NonNull
+    @Override
+    public Loader<Cursor> onCreateLoader(int loaderId, Bundle bundle) {
+
+        Log.d(TAG, "onCreateLoader loaderId:" + loaderId);
+
+        switch (loaderId) {
+
+            case ID_LOG_LOADER:
+                /* URI for all rows of lessons data in our "my_lessons" table */
+                Uri logQueryUri = LessonsContract.MyLogEntry.CONTENT_URI;
+
+                return new CursorLoader(mContext,
+                        logQueryUri,
+                        null,
+                        null,
+                        null,
+                        null);
+
+            default:
+                throw new RuntimeException("Loader Not Implemented: " + loaderId);
+        }
+    }
+
+    /**
+     * Called when a Loader has finished loading its data.
+     *
+     * @param loader The Loader that has finished.
+     * @param data   The data generated by the Loader.
+     */
+    @Override
+    public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
+
+        if (data != null) {
+            Log.d(TAG, "onLoadFinished cursor:" + data.toString());
+        } else {
+            Log.e(TAG, "onLoadFinished cursor: null");
+        }
+
+        // Pass the data to the adapter
+        setCursor(data);
+
+        if (data == null) {
+            showErrorMessage();
+        } else {
+            showLogDataView();
+        }
+
+    }
+
+    /**
+     * Called when a previously created loader is being reset, and thus making its data unavailable.
+     * The application should at this point remove any references it has to the Loader's data.
+     *
+     * @param loader The Loader that is being reset.
+     */
+    @Override
+    public void onLoaderReset(@NonNull Loader<Cursor> loader) {
+        /*
+         * Since this Loader's data is now invalid, we need to clear the Adapter that is
+         * displaying the data.
+         */
+        setCursor(null);
+    }
+
+    // Functions for receiving the data from main activity
+    // Receives the data from the main activity
+    public void setCursor(Cursor cursor) {
+
+        mLoadingIndicator.setVisibility(View.INVISIBLE);
+
+        // Saves a reference to the cursor
+        // Set the data for the adapter
+        mAdapter.setLogCursorData(cursor);
+
     }
 
 
+    /**
+     * This method will make the View for data visible and hide the error message.
+     * <p>
+     * Since it is okay to redundantly set the visibility of a View, we don't
+     * need to check whether each view is currently visible or invisible.
+     */
+    private void showLogDataView() {
+        // First, make sure the error is invisible
+        mErrorMessageDisplay.setVisibility(View.GONE);
+        // Then, make sure the JSON data is visible
+        mRecyclerView.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * This method will make the error message visible and hide data View.
+     *
+     * Since it is okay to redundantly set the visibility of a View, we don't
+     * need to check whether each view is currently visible or invisible.
+     */
+    private void showErrorMessage() {
+        Log.d(TAG, "showErrorMessage");
+        // First, hide the currently visible data
+        mRecyclerView.setVisibility(View.INVISIBLE);
+        // Then, show the error
+        mErrorMessageDisplay.setVisibility(View.VISIBLE);
+    }
 
 
     // Helper method for uploading a specific lesson to Firebase database Firestore and to
@@ -241,19 +413,29 @@ public class MyFirebaseFragment extends Fragment {
 
             Log.d(TAG, "uploadDatabase documentName:" + documentName);
 
+            final String logText = lesson.getLesson_title();
             mFirebaseDatabase.collection("lessons").document(documentName)
                     .set(lesson)
                     .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
                         Log.d(TAG, "DocumentSnapshot successfully written with name:" + documentName);
+                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                                .format(new Date());
+                        addToLog(time_stamp + ":\nLesson " + logText +
+                                        "\nDocumentSnapshot successfully written with name:" + documentName);
                         mCallback.onUploadSuccess();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Log.e(TAG, "Error writing document on Firestore", e);
+                        Log.e(TAG, "Error writing document on Firebase:", e);
+                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                                .format(new Date());
+                        addToLog(time_stamp + ":\nLesson " + logText +
+                                "\nError writing document on Firebase!" +
+                                 "\nDocument name:" + documentName +"\n" + e.getMessage());
                         mCallback.onUploadFailure(e);
                     }
                 });
@@ -636,10 +818,43 @@ public class MyFirebaseFragment extends Fragment {
     }
 
 
+    private void addToLog(String logText) {
+
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT, logText);
+        // Insert the content values via a ContentResolver
+        Uri uri = mContext.getContentResolver().insert(LessonsContract.MyLogEntry.CONTENT_URI, contentValues);
+
+        if (uri != null) {
+            Log.d(TAG, "addToLog uri:" + uri.toString());
+        } else {
+            Log.e(TAG, "addToLog: error in inserting item on log",
+                    new Exception("addToLog: error in inserting item on log"));
+        }
+
+    }
+
+
+    @Override
+    public void onListItemClick(View view, int clickedItemIndex, long log_id) {
+
+    }
+
+    @Override
+    public void onListItemLongClick(View view, int clickedItemIndex, long log_id) {
+
+    }
+
+
+
     @Override
     public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
 
         Log.d(TAG, "onSaveInstanceState: saving instance state");
+
+        Parcelable recyclerViewState = mRecyclerView.getLayoutManager().onSaveInstanceState();
+        savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
+
         savedInstanceState.putString(USER_UID, this.userUid);
 
         super.onSaveInstanceState(savedInstanceState);

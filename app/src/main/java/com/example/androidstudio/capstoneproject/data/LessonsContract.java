@@ -25,6 +25,8 @@ public class LessonsContract {
     public static final String PATH_GROUP_LESSONS = "group_lessons";
     // This is the path for the "group_lesson_parts" directory
     public static final String PATH_GROUP_LESSON_PARTS = "group_lesson_parts";
+    // This is the path for the my_log" directory
+    public static final String PATH_MY_LOG = "my_log";
 
     // Empty constructor
     private LessonsContract() {}
@@ -107,5 +109,18 @@ public class LessonsContract {
 
     }
 
+    public static class MyLogEntry implements BaseColumns {
 
+        // my_lessons table entry content URI = base content URI + path
+        public static final Uri CONTENT_URI =
+                BASE_CONTENT_URI.buildUpon().appendPath(PATH_MY_LOG).build();
+
+        // table and column names
+        public static final String TABLE_NAME = "my_log_items";
+        /* Since MyContentEntry implements the interface "BaseColumns", it has an automatically produced
+         * "_id" column in addition to the column "id" below.
+         */
+        public static final String COLUMN_LOG_ITEM_TEXT = "log_item_text";
+
+    }
 }
