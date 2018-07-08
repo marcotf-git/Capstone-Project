@@ -35,7 +35,6 @@ import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
 import com.google.android.exoplayer2.ui.PlayerView;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
-import com.google.android.exoplayer2.upstream.DefaultHttpDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 
 
@@ -53,7 +52,6 @@ public class ExoPlayerFragment extends Fragment {
     private static final String CURRENT_WINDOW = "currentWindow";
     private static final String PLAYBACK_POSITION = "playbackPosition";
     private static final String MEDIA_URI = "mediaUri";
-
 
     private static final DefaultBandwidthMeter BANDWIDTH_METER =
             new DefaultBandwidthMeter();
@@ -154,21 +152,24 @@ public class ExoPlayerFragment extends Fragment {
                     new DefaultTrackSelector(adaptiveTrackSelectionFactory),
                     new DefaultLoadControl());
 
+            player.setVideoScalingMode(C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
+
             playerView.setPlayer(player);
 
             // Register an Player.DefaultEventListener
             player.addListener(componentListener);
 
-            player.seekTo(currentWindow, playbackPosition);
-            player.setPlayWhenReady(playWhenReady);
-
-            player.setVideoScalingMode(C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
         }
 
-        Uri uri = Uri.parse(mediaUri);
-        MediaSource mediaSource = buildMediaSource(uri);
+        if (mediaUri != null) {
+            Uri uri = Uri.parse(mediaUri);
+            MediaSource mediaSource = buildMediaSource(uri);
+            player.prepare(mediaSource, true, false);
+        }
 
-        player.prepare(mediaSource, true, false);
+        player.seekTo(currentWindow, playbackPosition);
+
+        player.setPlayWhenReady(playWhenReady);
 
     }
 
@@ -186,9 +187,9 @@ public class ExoPlayerFragment extends Fragment {
 //                new DefaultHttpDataSourceFactory(userAgent))
 //                .createMediaSource(uri);
 
-                return new ExtractorMediaSource.Factory(
-                new DefaultDataSourceFactory(mContext, userAgent))
-                .createMediaSource(uri);
+        return new ExtractorMediaSource.Factory(
+        new DefaultDataSourceFactory(mContext, userAgent))
+        .createMediaSource(uri);
 
     }
 
@@ -327,10 +328,10 @@ public class ExoPlayerFragment extends Fragment {
             currentWindow = player.getCurrentWindowIndex();
             playWhenReady = player.getPlayWhenReady();
 
-            outState.putLong("playbackPosition", playbackPosition);
-            outState.putInt("currentWindow", currentWindow);
-            outState.putBoolean("playWhenReady", playWhenReady);
-            outState.putString("mediaUri", mediaUri);
+            outState.putLong(PLAYBACK_POSITION, playbackPosition);
+            outState.putInt(CURRENT_WINDOW, currentWindow);
+            outState.putBoolean(PLAY_WHEN_READY, playWhenReady);
+            outState.putString(MEDIA_URI, mediaUri);
         }
 
         super.onSaveInstanceState(outState);
@@ -393,7 +394,11 @@ public class ExoPlayerFragment extends Fragment {
 
 
     public void setMediaUri(String mediaUri) {
+
         this.mediaUri = mediaUri;
+
+        initializePlayer();
+
     }
 
 }

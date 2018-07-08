@@ -8,7 +8,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.androidstudio.capstoneproject.R;
@@ -98,7 +97,7 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
 
         int layoutIdForListItem = R.layout.lessons_list_item;
         LayoutInflater inflater = LayoutInflater.from(context);
-        boolean shouldAttachToParentImmediately = false;
+        final boolean shouldAttachToParentImmediately = false;
 
         View view = inflater.inflate(layoutIdForListItem, viewGroup, shouldAttachToParentImmediately);
         LessonViewHolder viewHolder = new LessonViewHolder(view);
@@ -220,9 +219,9 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
     class LessonViewHolder extends RecyclerView.ViewHolder
             implements View.OnClickListener, View.OnLongClickListener {
 
-        private ImageView lessonImageView;
+        //private ImageView lessonImageView;
         private TextView lessonTextView;
-        private TextView errorTextView;
+        //private TextView errorTextView;
         private View parentView;
 
         final Context context;
@@ -240,9 +239,9 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
 
             context = itemView.getContext();
 
-            lessonImageView =  itemView.findViewById(R.id.iv_main_lesson_image);
+            //lessonImageView =  itemView.findViewById(R.id.iv_main_lesson_image);
             lessonTextView = itemView.findViewById(R.id.tv_main_lesson_name);
-            errorTextView = itemView.findViewById(R.id.tv_lesson_image_error_message_label);
+            //errorTextView = itemView.findViewById(R.id.tv_lesson_image_error_message_label);
             parentView = itemView;
 
             // Call setOnClickListener on the View passed into the constructor

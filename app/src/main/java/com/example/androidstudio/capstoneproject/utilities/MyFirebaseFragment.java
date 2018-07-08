@@ -7,7 +7,6 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -119,19 +118,7 @@ public class MyFirebaseFragment extends Fragment {
         return super.onCreateView(inflater, container, savedInstanceState);
     }
 
-    @Override
-    public void onPause() {
-        super.onPause();
-    }
 
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
-
-        Log.d(TAG, "onSaveInstanceState: saving instance state");
-        savedInstanceState.putString(USER_UID, this.userUid);
-
-        super.onSaveInstanceState(savedInstanceState);
-    }
 
 
     // Helper method for uploading a specific lesson to Firebase database Firestore and to
@@ -201,7 +188,7 @@ public class MyFirebaseFragment extends Fragment {
                     selectionArgs,
                     null);
 
-            ArrayList<LessonPart> lessonParts = new ArrayList<LessonPart>();
+            ArrayList<LessonPart> lessonParts = new ArrayList<>();
 
             if (null != partsCursor) {
                 partsCursor.moveToFirst();
@@ -239,6 +226,8 @@ public class MyFirebaseFragment extends Fragment {
                     lessonParts.add(lessonPart);
                     partsCursor.moveToNext();
                 }
+
+                partsCursor.close();
             }
 
             // set the lesson instance with the values read from the local database
@@ -286,6 +275,8 @@ public class MyFirebaseFragment extends Fragment {
     // Helper method for uploading specific lesson parts images to Cloud Firebase Storage
     private void uploadImages(Lesson lesson) {
 
+        Log.d(TAG, "uploadImages");
+
         if (lesson == null) {
             mCallback.onUploadFailure(new Exception("Failed to upload image: no Lesson instance"));
             return;
@@ -293,6 +284,9 @@ public class MyFirebaseFragment extends Fragment {
 
         long mLessonId = lesson.getLesson_id();
         String mUserUid = lesson.getUser_uid();
+
+        Log.d(TAG, "uploadImages mLessonId:" + mLessonId);
+        Log.d(TAG, "uploadImages lesson.getLesson_title():" + lesson.getLesson_title());
 
         mImagesStorageReference = mFirebaseStorage.getReference().child("images");
 //        mVideosStorageReference = mFirebaseStorage.getReference().child("videos");
@@ -324,11 +318,12 @@ public class MyFirebaseFragment extends Fragment {
             return;
         }
 
+        // Moves to the first part of that lesson
         partsCursor.moveToFirst();
 
-        // Store all image uri in an array of Image instances
-        List<Image> images = new ArrayList<Image>();
-        Image image = null;
+        // Get all the parts and sore all image uri's in an array of Image instances
+        List<Image> images = new ArrayList<>();
+        Image image;
 
         for (int i = 0; i < nRows; i++) {
 
@@ -638,6 +633,16 @@ public class MyFirebaseFragment extends Fragment {
                     }
                 });
 
+    }
+
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
+
+        Log.d(TAG, "onSaveInstanceState: saving instance state");
+        savedInstanceState.putString(USER_UID, this.userUid);
+
+        super.onSaveInstanceState(savedInstanceState);
     }
 
 

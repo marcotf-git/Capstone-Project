@@ -2,7 +2,6 @@ package com.example.androidstudio.capstoneproject.ui;
 
 import android.content.ContentValues;
 import android.net.Uri;
-import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -25,7 +24,7 @@ public class AddLessonActivity extends AppCompatActivity {
         setContentView(R.layout.activity_add_lesson);
 
         // toolbar is defined in the layout file
-        Toolbar myToolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar myToolbar = findViewById(R.id.toolbar);
         setSupportActionBar(myToolbar);
         if(getSupportActionBar()!=null) {
             getSupportActionBar().setDisplayShowTitleEnabled(false);

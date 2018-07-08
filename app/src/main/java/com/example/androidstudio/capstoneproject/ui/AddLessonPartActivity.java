@@ -17,15 +17,13 @@ import android.widget.Toast;
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 
+
 public class AddLessonPartActivity extends AppCompatActivity {
 
     private static final String TAG = AddLessonPartActivity.class.getSimpleName();
     private static final String CLICKED_LESSON_ID = "clickedLessonId";
 
     private long clickedLesson_id;
-
-    private Uri queryUri;
-    private TextView myLessonTitleText;
 
 
     @Override
@@ -34,7 +32,7 @@ public class AddLessonPartActivity extends AppCompatActivity {
         setContentView(R.layout.activity_add_lesson_part);
 
         // toolbar is defined in the layout file
-        Toolbar myToolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar myToolbar = findViewById(R.id.toolbar);
         setSupportActionBar(myToolbar);
         if(getSupportActionBar()!=null) {
             getSupportActionBar().setDisplayShowTitleEnabled(false);
@@ -48,7 +46,7 @@ public class AddLessonPartActivity extends AppCompatActivity {
             clickedLesson_id = -1;
         }
 
-        myLessonTitleText = (TextView) findViewById(R.id.textLessonTitleView);
+        TextView myLessonTitleText = findViewById(R.id.textLessonTitleView);
 
         // Copy the data from the database to the text view
         if (!(clickedLesson_id >= 0)) {
@@ -56,7 +54,7 @@ public class AddLessonPartActivity extends AppCompatActivity {
             finish();
         }
 
-        queryUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, clickedLesson_id);
+        Uri queryUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, clickedLesson_id);
 
         Log.d(TAG, "onCreate queryUri:" + queryUri);
 

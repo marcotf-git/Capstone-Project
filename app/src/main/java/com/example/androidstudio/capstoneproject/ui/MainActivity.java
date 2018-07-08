@@ -13,7 +13,6 @@ import android.support.annotation.VisibleForTesting;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
-import android.support.test.espresso.IdlingResource;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.view.GravityCompat;
@@ -87,8 +86,6 @@ public class MainActivity extends AppCompatActivity implements
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
-    public static final String ANONYMOUS = "anonymous";
-
     // Firebase auth: choose an arbitrary request code value
     private static final int RC_SIGN_IN = 1;
 
@@ -97,21 +94,25 @@ public class MainActivity extends AppCompatActivity implements
     private static final String SELECTED_LESSON_ID = "selectedLessonId";
     private static final String CLICKED_LESSON_PART_ID = "clickedLessonPartId";
     private static final String SELECTED_LESSON_PART_ID = "selectedLessonPartId";
+    private static final String MAIN_VISIBILITY = "mainVisibility";
+    private static final String PARTS_VISIBILITY = "partsVisibility";
+    private static final String DATABASE_VISIBILITY = "databaseVisibility";
     private static final String LOCAL_USER_UID = "localUserUid";
+
+    // Final strings
     private static final String USER_DATABASE = "userDatabase";
     private static final String GROUP_DATABASE = "groupDatabase";
-    private static final String DATABASE_VISIBILITY = "databaseVisibility";
+    public static final String ANONYMOUS = "anonymous";
 
     // App state information variables
-    private static long clickedLesson_id;
-    private static long selectedLesson_id;
-    private static long clickedLessonPart_id;
-    private static long selectedLessonPart_id;
-    private static int mainVisibility;
-    private static int partsVisibility;
-    private static String databaseVisibility;
-    // The user's ID, unique to the Firebase project.
-    private static String mUserUid;
+    private long clickedLesson_id;
+    private long selectedLesson_id;
+    private long clickedLessonPart_id;
+    private long selectedLessonPart_id;
+    private int mainVisibility;
+    private int partsVisibility;
+    private String databaseVisibility;
+    private String mUserUid; // The user's ID, unique to the Firebase project.
 
     // User data variables
     private String mUsername;
@@ -125,15 +126,11 @@ public class MainActivity extends AppCompatActivity implements
 
     // Menus and buttons
     private Menu mMenu;
-    private Toolbar mToolbar;
     private ActionBar actionBar;
     private FloatingActionButton mButton;
 
     // Drawer menu variables
     private DrawerLayout mDrawerLayout;
-    private NavigationView navigationView;
-
-    private Context mContext;
 
     // Views
     private FrameLayout lessonsContainer;
@@ -146,6 +143,9 @@ public class MainActivity extends AppCompatActivity implements
     private PartsFragment partsFragment;
     private MyFirebaseFragment firebaseFragment;
 
+    // Context
+    private Context mContext;
+
     // The Idling Resource which will be null in production.
     @Nullable
     private SimpleIdlingResource mIdlingResource;
@@ -155,32 +155,52 @@ public class MainActivity extends AppCompatActivity implements
      * Only called from test, creates and returns a new {@link SimpleIdlingResource}.
      */
     @VisibleForTesting
-    @NonNull
-    public IdlingResource getIdlingResource() {
+    public void getIdlingResource() {
         if (mIdlingResource == null) {
             mIdlingResource = new SimpleIdlingResource();
         }
-        return mIdlingResource;
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
+
+        // recovering the instance state
+        if (savedInstanceState != null) {
+            clickedLesson_id = savedInstanceState.getLong(CLICKED_LESSON_ID);
+            selectedLesson_id = savedInstanceState.getLong(SELECTED_LESSON_ID);
+            clickedLessonPart_id = savedInstanceState.getLong(CLICKED_LESSON_PART_ID);
+            selectedLessonPart_id = savedInstanceState.getLong(SELECTED_LESSON_PART_ID);
+            mainVisibility = savedInstanceState.getInt(MAIN_VISIBILITY);
+            partsVisibility = savedInstanceState.getInt(PARTS_VISIBILITY);
+            databaseVisibility = savedInstanceState.getString(DATABASE_VISIBILITY);
+            mUserUid = savedInstanceState.getString(LOCAL_USER_UID);
+
+        } else {
+            // Initialize the state vars
+            clickedLesson_id = -1;
+            selectedLesson_id = -1;
+            clickedLessonPart_id = -1;
+            selectedLessonPart_id = -1;
+            // Phone visibility
+            mainVisibility = VISIBLE;
+            partsVisibility = GONE;
+            // Recover the local user uid for handling the database global consistency
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+            mUserUid = sharedPreferences.getString(LOCAL_USER_UID,"");
+            databaseVisibility = sharedPreferences.getString(DATABASE_VISIBILITY, USER_DATABASE);
+        }
+
+        // Init the main view
         setContentView(R.layout.activity_main);
 
+        // Init another member variables
         mContext = this;
-
         mUsername = ANONYMOUS;
         mUserEmail = "";
 
-        // Recover the local user uid for handling the database global consistency
-        final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        mUserUid = sharedPreferences.getString(LOCAL_USER_UID,"");
-        databaseVisibility = sharedPreferences.getString(DATABASE_VISIBILITY, USER_DATABASE);
-
         // Add the toolbar as the default app bar
-        mToolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar mToolbar = findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
         // Get a support ActionBar corresponding to this toolbar
         actionBar = getSupportActionBar();
@@ -223,17 +243,6 @@ public class MainActivity extends AppCompatActivity implements
         // Initialize the containers for fragments
         lessonsContainer = findViewById(R.id.lessons_container);
         partsContainer = findViewById(R.id.parts_container);
-
-        // Initialize the state vars
-        if (null == savedInstanceState) {
-            clickedLesson_id = -1;
-            selectedLesson_id = -1;
-            clickedLessonPart_id = -1;
-            selectedLessonPart_id = -1;
-            // Phone visibility
-            mainVisibility = VISIBLE;
-            partsVisibility = GONE;
-        }
 
         // Initialize the fragments
         FragmentManager fragmentManager = getSupportFragmentManager();
@@ -323,11 +332,11 @@ public class MainActivity extends AppCompatActivity implements
 
         // Set the drawer menu
         mDrawerLayout = findViewById(R.id.drawer_layout);
-        navigationView = findViewById(R.id.nav_view);
+        NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(
             new NavigationView.OnNavigationItemSelectedListener() {
                 @Override
-                public boolean onNavigationItemSelected(MenuItem menuItem) {
+                public boolean onNavigationItemSelected(@NonNull MenuItem menuItem) {
 
                     SharedPreferences sharedPreferences = PreferenceManager
                             .getDefaultSharedPreferences(mContext);
@@ -375,8 +384,8 @@ public class MainActivity extends AppCompatActivity implements
 
         // Set the username int the drawer
         View headerView = navigationView.getHeaderView(0);
-        mUsernameTextView = (TextView) headerView.findViewById(R.id.tv_user_name);
-        mUserEmailTextView = (TextView) headerView.findViewById(R.id.tv_user_email);
+        mUsernameTextView = headerView.findViewById(R.id.tv_user_name);
+        mUserEmailTextView = headerView.findViewById(R.id.tv_user_email);
         mUsernameTextView.setText(mUsername);
         mUserEmailTextView.setText(mUserEmail);
 
@@ -845,12 +854,23 @@ public class MainActivity extends AppCompatActivity implements
 
     // This method is saving the visibility of the fragments in static vars
     @Override
-    public void onSaveInstanceState(Bundle savedInstanceState) {
+    public void onSaveInstanceState(Bundle outState) {
 
         mainVisibility = lessonsContainer.getVisibility();
         partsVisibility = partsContainer.getVisibility();
 
-        super.onSaveInstanceState(savedInstanceState);
+        outState.putLong(CLICKED_LESSON_ID, clickedLesson_id);
+        outState.putLong(SELECTED_LESSON_ID, selectedLesson_id);
+        outState.putLong(CLICKED_LESSON_PART_ID, clickedLessonPart_id);
+        outState.putLong(SELECTED_LESSON_PART_ID, selectedLessonPart_id);
+
+        outState.putInt(MAIN_VISIBILITY, mainVisibility);
+        outState.putInt(PARTS_VISIBILITY, partsVisibility);
+
+        outState.putString(DATABASE_VISIBILITY, databaseVisibility);
+        outState.putString(LOCAL_USER_UID, mUserUid);
+
+        super.onSaveInstanceState(outState);
     }
 
 
@@ -1045,7 +1065,7 @@ public class MainActivity extends AppCompatActivity implements
         Toast.makeText(mContext,
                 "Error on uploading:" + e.getMessage(), Toast.LENGTH_LONG).show();
         Log.e(TAG, "onUploadFailure error:" + e.getMessage());
-;    }
+    }
 
     @Override
     public void onDownloadComplete() {

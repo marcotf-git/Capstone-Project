@@ -38,26 +38,26 @@ public class PartsFragment extends Fragment implements
     private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
     private static final String USER_DATABASE = "userDatabase";
     private static final String GROUP_DATABASE = "groupDatabase";
-    private static final String DATABASE_VISIBILITY = "databaseVisibility";
 
-    private Parcelable recyclerViewState;
+    private static final String REFERENCE_LESSON_ID = "referenceLesson_id";
+    private static final String SELECTED_LESSON_PART_ID = "selectedLessonPartId";
+    private static final String DATABASE_VISIBILITY = "databaseVisibility";
 
     // Loader id
     private static final int ID_LESSON_PARTS_LOADER = 2;
     private static final int ID_GROUP_LESSON_PARTS_LOADER = 20;
 
-    // PartsFragment state vars
-    private View mSelectedView;
-    private static long referenceLesson_id;
-    private static long selectedLessonPart_id;
-    private static String databaseVisibility;
+    // State vars
+    private View mSelectedView; // not saved
+    private long referenceLesson_id;
+    private long selectedLessonPart_id;
+    private String databaseVisibility;
 
     // Views
     private TextView mErrorMessageDisplay;
     private ProgressBar mLoadingIndicator;
     private RecyclerView mPartsList;
 
-    private GridLayoutManager layoutManager;
     private PartsListAdapter mAdapter;
     private Context mContext;
 
@@ -70,24 +70,65 @@ public class PartsFragment extends Fragment implements
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-
         mContext = context;
-
         try {
             mIdlingCallback = (OnIdlingResourceListener) context;
         } catch (ClassCastException e) {
             throw new ClassCastException(context.toString()
                     + " must implement OnIdlingResourceListener");
         }
-
         try {
             mPartCallback = (OnLessonPartListener) context;
         } catch (ClassCastException e) {
             throw new ClassCastException(context.toString()
-                    + " must implement OnLessonListener");
+                    + " must implement OnLessonPartListener");
+        }
+    }
+
+
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        // recovering the instance state
+        if (savedInstanceState != null) {
+            selectedLessonPart_id = savedInstanceState.getLong(SELECTED_LESSON_PART_ID);
+            databaseVisibility = savedInstanceState.getString(DATABASE_VISIBILITY);
+            referenceLesson_id = savedInstanceState.getLong(REFERENCE_LESSON_ID);
+        } else {
+            // Initialize the state vars
+            selectedLessonPart_id = -1;
+            // Recover the local user uid for handling the database global consistency
+            SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+            databaseVisibility = sharedPreferences.getString(DATABASE_VISIBILITY, USER_DATABASE);
         }
 
+        // Init the loader
+        if (null != getActivity()) {
+            if (databaseVisibility.equals(USER_DATABASE)) {
+                getActivity().getSupportLoaderManager().initLoader(ID_LESSON_PARTS_LOADER, null,
+                        this);
+            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+                getActivity().getSupportLoaderManager().initLoader(ID_GROUP_LESSON_PARTS_LOADER,
+                        null, this);
+            }
+        }
     }
+
+
+//    @Override
+//    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+//        super.onActivityCreated(savedInstanceState);
+//
+//        // Query the database and set the adapter with the cursor data
+//        if (null != getActivity()) {
+//            if (databaseVisibility.equals(USER_DATABASE)) {
+//                getActivity().getSupportLoaderManager().initLoader(ID_LESSON_PARTS_LOADER, null, this);
+//            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+//                getActivity().getSupportLoaderManager().initLoader(ID_GROUP_LESSON_PARTS_LOADER, null, this);
+//            }
+//        }
+//    }
 
     @Nullable
     @Override
@@ -98,28 +139,18 @@ public class PartsFragment extends Fragment implements
         // Inflate the Ingredients fragment layout
         View rootView = inflater.inflate(R.layout.fragment_parts, container, false);
 
-        //mContext = getContext();
-
         mErrorMessageDisplay = rootView.findViewById(R.id.tv_error_message_display);
         mLoadingIndicator = rootView.findViewById(R.id.pb_loading_indicator);
         mPartsList = rootView.findViewById(R.id.rv_parts);
 
         mLoadingIndicator.setVisibility(View.VISIBLE);
 
-        // Set the layout manager
+        // Set the layout of the recycler view
         int nColumns = numberOfColumns();
-        layoutManager = new GridLayoutManager(mContext, nColumns);
+        GridLayoutManager layoutManager = new GridLayoutManager(mContext, nColumns);
         mPartsList.setLayoutManager(layoutManager);
-
-        /*
-         * Use this setting to improve performance if you know that changes in content do not
-         * change the child layout size in the RecyclerView
-         */
         mPartsList.setHasFixedSize(true);
-
-        /*
-         * The Adapter is responsible for displaying each item in the list.
-         */
+        // Set the adapter
         mAdapter = new PartsListAdapter(this);
         mPartsList.setAdapter(mAdapter);
 
@@ -127,38 +158,24 @@ public class PartsFragment extends Fragment implements
         // There is also a call on the post execute method in the loader, for updating the view.
         if(savedInstanceState != null) {
             Log.v(TAG, "recovering savedInstanceState");
-            recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
+            Parcelable recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
             mPartsList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
-        } else {
-            selectedLessonPart_id = -1;
         }
-
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-        databaseVisibility = sharedPreferences.getString(DATABASE_VISIBILITY, USER_DATABASE);
 
         // Return root view
         return rootView;
     }
 
-    @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-
-        // Query the database and set the adapter with the cursor data
-        if (null != getActivity()) {
-            if (databaseVisibility.equals(USER_DATABASE)) {
-                getActivity().getSupportLoaderManager().initLoader(ID_LESSON_PARTS_LOADER, null, this);
-            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
-                getActivity().getSupportLoaderManager().initLoader(ID_GROUP_LESSON_PARTS_LOADER, null, this);
-            }
-        }
-    }
 
     // This method is saving the position of the recycler view
     @Override
     public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
         Parcelable recyclerViewState = mPartsList.getLayoutManager().onSaveInstanceState();
         savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
+
+        savedInstanceState.putLong(SELECTED_LESSON_PART_ID, selectedLessonPart_id);
+        savedInstanceState.putLong(REFERENCE_LESSON_ID, referenceLesson_id);
+        savedInstanceState.putString(DATABASE_VISIBILITY, databaseVisibility);
 
         super.onSaveInstanceState(savedInstanceState);
     }

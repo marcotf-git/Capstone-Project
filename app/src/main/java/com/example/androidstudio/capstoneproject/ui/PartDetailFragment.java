@@ -21,9 +21,8 @@ public class PartDetailFragment extends Fragment {
 
     // Variables to store resources that this fragment displays
     private String partText;
-
-    // References to the view
     private TextView mTextView;
+
 
     // Mandatory constructor for instantiating the fragment
     public PartDetailFragment() {
@@ -52,7 +51,9 @@ public class PartDetailFragment extends Fragment {
     }
 
     public void setPartText(String partText) {
+
         this.partText = partText;
+        mTextView.setText(partText);
     }
 
     @Override

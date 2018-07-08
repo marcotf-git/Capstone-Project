@@ -34,7 +34,7 @@ public class EditPartActivity extends AppCompatActivity {
         setContentView(R.layout.activity_edit_part);
 
         // toolbar is defined in the layout file
-        Toolbar myToolbar = (Toolbar) findViewById(R.id.toolbar);
+        Toolbar myToolbar = findViewById(R.id.toolbar);
         setSupportActionBar(myToolbar);
         if(getSupportActionBar()!=null) {
             getSupportActionBar().setDisplayShowTitleEnabled(false);

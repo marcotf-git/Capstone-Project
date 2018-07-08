@@ -8,7 +8,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.androidstudio.capstoneproject.R;
@@ -174,9 +173,9 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
     class LessonPartViewHolder extends RecyclerView.ViewHolder
             implements View.OnClickListener, View.OnLongClickListener {
 
-        private ImageView partImageView;
+        //private ImageView partImageView;
         private TextView partTextView;
-        private TextView errorTextView;
+        //private TextView errorTextView;
         private View parentView;
 
         final Context context;
@@ -194,9 +193,9 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
 
             context = itemView.getContext();
 
-            partImageView =  itemView.findViewById(R.id.iv_main_part_image);
+            //partImageView =  itemView.findViewById(R.id.iv_main_part_image);
             partTextView = itemView.findViewById(R.id.tv_main_lesson_part_name);
-            errorTextView = itemView.findViewById(R.id.tv_lesson_part_image_error_message_label);
+            //errorTextView = itemView.findViewById(R.id.tv_lesson_part_image_error_message_label);
             parentView = itemView;
 
             // Call setOnClickListener on the View passed into the constructor

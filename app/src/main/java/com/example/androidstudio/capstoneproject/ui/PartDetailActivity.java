@@ -14,7 +14,6 @@ import android.preference.PreferenceManager;
 import android.provider.DocumentsContract;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
@@ -36,8 +35,6 @@ import android.widget.Toast;
 
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
@@ -52,34 +49,30 @@ public class PartDetailActivity extends AppCompatActivity implements
 
     private static final String CLICKED_LESSON_PART_ID = "clickedLessonPartId";
     private static final String DATABASE_VISIBILITY = "databaseVisibility";
+    private static final String PLAYER_VIEW_VISIBILITY = "playerViewVisibility";
+    private static final String IMAGE_VIEW_VISIBILITY = "imageViewVisibility";
+    private static final String ERROR_MESSAGE_VIEW_VISIBILITY = "errorMessageViewVisibility";
 
     private static final String USER_DATABASE = "userDatabase";
     private static final String GROUP_DATABASE = "groupDatabase";
 
-    // Loader id
+    // Loader ids
     private static final int ID_LESSON_PARTS_LOADER = 2;
     private static final int ID_GROUP_LESSON_PARTS_LOADER = 20;
 
+    // Activity request codes
     private static final int RC_PHOTO_PICKER =  2;
     private static final int RC_VIDEO_PICKER =  3;
 
     // state vars
-    private static long clickedLessonPart_id;
-    private static String databaseVisibility;
-    private static int mPlayerViewVisibility;
-    private static int imageViewVisibility;
-    private static int  errorMessageViewVisibility;
-
-    private String partText;
-    private String localVideoUri;
-    private String cloudVideoUri;
-    private String localImageUri;
-    private String cloudImageUri;
+    private long clickedLessonPart_id;
+    private String databaseVisibility;
+    private int mPlayerViewVisibility;
+    private int imageViewVisibility;
+    private int errorMessageViewVisibility;
 
     // Menus and buttons
     private Menu mMenu;
-    private Toolbar mToolbar;
-    private ActionBar actionBar;
     private FloatingActionButton mButton;
 
     // The views variables
@@ -87,65 +80,70 @@ public class PartDetailActivity extends AppCompatActivity implements
     private ImageView imageView;
     private ProgressBar mLoadingIndicator;
     private TextView errorMessageView;
-
-    private AlertDialog.Builder builder;
     private AlertDialog dialog;
 
-    private FirebaseStorage mFirebaseStorage;
-    private StorageReference mImagesStorageReference;
-    private StorageReference mVideosStorageReference;
+    private PartDetailFragment partDetailFragment;
+    private ExoPlayerFragment exoPlayerFragment;
 
     private Context mContext;
-
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // recovering the instance state
+        if (savedInstanceState != null) {
+            clickedLessonPart_id = savedInstanceState.getLong(CLICKED_LESSON_PART_ID);
+            databaseVisibility = savedInstanceState.getString(DATABASE_VISIBILITY);
+        } else {
+            // Initialize the state vars
+            // Recover information from caller activity
+            Intent intentThatStartedThisActivity = getIntent();
+            if (intentThatStartedThisActivity.hasExtra(CLICKED_LESSON_PART_ID)) {
+                clickedLessonPart_id = intentThatStartedThisActivity.getLongExtra(CLICKED_LESSON_PART_ID, -1);
+            }
+
+            if (intentThatStartedThisActivity.hasExtra(DATABASE_VISIBILITY)) {
+                databaseVisibility = intentThatStartedThisActivity.getStringExtra(DATABASE_VISIBILITY);
+            }
+        }
+
+        // Set the main view
         setContentView(R.layout.activity_part_detail);
 
         mContext = this;
 
-        mFirebaseStorage = FirebaseStorage.getInstance();
-        mImagesStorageReference = mFirebaseStorage.getReference().child("images");
-        mVideosStorageReference = mFirebaseStorage.getReference().child("videos");
-
-
-        // Add the toolbar as the default app bar
-        mToolbar = (Toolbar) findViewById(R.id.toolbar);
+         // Add the toolbar as the default app bar
+        Toolbar mToolbar = findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
         // Get a support ActionBar corresponding to this toolbar
-        actionBar = getSupportActionBar();
+        ActionBar actionBar = getSupportActionBar();
         if (null != actionBar) {
             // Enable the Up button (icon will be set in onPrepareMenu
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
 
         // The views variables
-        mPlayerView =  (View) findViewById(R.id.player_container);
-        imageView = (ImageView) findViewById(R.id.iv_image);
-        mLoadingIndicator = (ProgressBar) findViewById(R.id.pb_loading_indicator);
-        errorMessageView = (TextView) findViewById(R.id.tv_illustration_not_available_label);
+        mPlayerView =  findViewById(R.id.player_container);
+        imageView = findViewById(R.id.iv_image);
+        mLoadingIndicator = findViewById(R.id.pb_loading_indicator);
+        errorMessageView = findViewById(R.id.tv_illustration_not_available_label);
+
+        // Loading indicator (informing that the data is being loaded)
+        mLoadingIndicator.setVisibility(View.VISIBLE);
 
         // Recover the views state in case of device rotating
         if (savedInstanceState != null) {
+            // recover the variables saved
+            mPlayerViewVisibility = savedInstanceState.getInt(PLAYER_VIEW_VISIBILITY);
+            imageViewVisibility = savedInstanceState.getInt(IMAGE_VIEW_VISIBILITY);
+            errorMessageViewVisibility = savedInstanceState.getInt(ERROR_MESSAGE_VIEW_VISIBILITY);
+            // set the views
             mPlayerView.setVisibility(mPlayerViewVisibility);
             imageView.setVisibility(imageViewVisibility);
             errorMessageView.setVisibility(errorMessageViewVisibility);
         }
-
-        /* Initialize the data vars for this class */
-        // Recover information from caller activity
-        Intent intentThatStartedThisActivity = getIntent();
-        if (intentThatStartedThisActivity.hasExtra(CLICKED_LESSON_PART_ID)) {
-            clickedLessonPart_id = intentThatStartedThisActivity.getLongExtra(CLICKED_LESSON_PART_ID, -1);
-        }
-
-        if (intentThatStartedThisActivity.hasExtra(DATABASE_VISIBILITY)) {
-            databaseVisibility = intentThatStartedThisActivity.getStringExtra(DATABASE_VISIBILITY);
-        }
-
-        mLoadingIndicator.setVisibility(View.VISIBLE);
 
         // Query the database and set the view with the cursor data
         if (databaseVisibility.equals(USER_DATABASE)) {
@@ -154,7 +152,8 @@ public class PartDetailActivity extends AppCompatActivity implements
             this.getSupportLoaderManager().initLoader(ID_GROUP_LESSON_PARTS_LOADER, null, this);
         }
 
-        builder = new AlertDialog.Builder(PartDetailActivity.this);
+        // Init a dialog menu for user to choose a file
+        AlertDialog.Builder builder = new AlertDialog.Builder(PartDetailActivity.this);
         // Add the buttons
         builder.setTitle(R.string.pick_image_video)
                 .setItems(R.array.illustrations_array, new DialogInterface.OnClickListener() {
@@ -196,9 +195,33 @@ public class PartDetailActivity extends AppCompatActivity implements
             }
         });
 
+
+        // Initialize the fragments
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        // Only create fragment when needed
+        if (null == savedInstanceState) {
+
+            Log.d(TAG, "creating PartDetailFragment");
+            partDetailFragment = new PartDetailFragment();
+            fragmentManager.beginTransaction()
+                    .replace(R.id.part_detail_container, partDetailFragment, "PartDetailFragment")
+                    .commit();
+
+            Log.d(TAG, "creating ExoPlayerFragment");
+            exoPlayerFragment = new ExoPlayerFragment();
+            fragmentManager.beginTransaction()
+                    .replace(R.id.player_container, exoPlayerFragment, "ExoPlayerFragment")
+                    .commit();
+
+        } else {
+            partDetailFragment = (PartDetailFragment) fragmentManager.findFragmentByTag("PartDetailFragment");
+            exoPlayerFragment = (ExoPlayerFragment) fragmentManager.findFragmentByTag("ExoPlayerFragment");
+        }
+
     }
 
 
+    // Helper function for updating the view, called by the loader when finishes
     private void updateView(Cursor cursor) {
 
         Log.v(TAG, "updateView");
@@ -208,22 +231,9 @@ public class PartDetailActivity extends AppCompatActivity implements
         mPlayerView.setVisibility(View.GONE);
         imageView.setVisibility(View.GONE);
 
-        // Remove previously loaded fragments
-        FragmentManager myFragmentManager = getSupportFragmentManager();
-        Fragment fragment = myFragmentManager.findFragmentById(R.id.part_detail_container);
-        if (null != fragment) {
-            myFragmentManager.beginTransaction().remove(fragment).commit();
-        }
-        fragment = myFragmentManager.findFragmentById(R.id.player_container);
-        if (null != fragment) {
-            myFragmentManager.beginTransaction().remove(fragment).commit();
-        }
-
-        // Create a new PartDetailFragment instance
-        PartDetailFragment partDetailFragment = new PartDetailFragment();
-
-        partText = null;
-        localImageUri = null;
+        String partText = null;
+        String localImageUri = null;
+        String localVideoUri = null;
 
         if (null != cursor) {
 
@@ -268,7 +278,6 @@ public class PartDetailActivity extends AppCompatActivity implements
                             LessonsContract.GroupLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
                 }
             }
-
         }
 
         // Send the data to the fragment data
@@ -278,18 +287,11 @@ public class PartDetailActivity extends AppCompatActivity implements
             partDetailFragment.setPartText("No text available.");
         }
 
-        // Use a FragmentManager and transaction to add the fragment to the screen
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        fragmentManager.beginTransaction()
-                .add(R.id.part_detail_container, partDetailFragment)
-                .commit();
-
-        // Create a new ExoPlayerFragment instance and display it using FragmentManager
-        // or try to load and show the Thumbnail
+        // Set the ExoPlayerFragment data
         if (null != localVideoUri && !localVideoUri.equals("")) {
 
             Uri uri = Uri.parse(localVideoUri);
-
+            // // Refresh permissions (player will load a local file)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 try {
                     Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -302,14 +304,8 @@ public class PartDetailActivity extends AppCompatActivity implements
                 }
             }
 
-            ExoPlayerFragment exoPlayerFragment = new ExoPlayerFragment();
             // Set the fragment data
             exoPlayerFragment.setMediaUri(localVideoUri);
-            // Use a FragmentManager and transaction to add the fragment to the screen
-            FragmentManager playerFragmentManager = getSupportFragmentManager();
-            playerFragmentManager.beginTransaction()
-                    .add(R.id.player_container, exoPlayerFragment)
-                    .commit();
             mPlayerView.setVisibility(View.VISIBLE);
 
         } else {
@@ -318,9 +314,7 @@ public class PartDetailActivity extends AppCompatActivity implements
             if (null != localImageUri && !localImageUri.equals("")) {
 
                 Log.d(TAG, "updateView loading image localImageUri:" + localImageUri);
-                /*
-                 * Use the call back of picasso to manage the error in loading thumbnail.
-                 */
+
                 Uri uri = Uri.parse(localImageUri);
                 // Refresh permissions
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
@@ -335,6 +329,9 @@ public class PartDetailActivity extends AppCompatActivity implements
                     }
                 }
 
+                /*
+                 * Use the call back of picasso to manage the error in loading image.
+                 */
                 Picasso.get()
                         .load(localImageUri)
                         .into(imageView, new Callback() {
@@ -490,7 +487,6 @@ public class PartDetailActivity extends AppCompatActivity implements
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         switch (itemThatWasClickedId) {
-
             case android.R.id.home:
                 Log.d(TAG, "onOptionsItemSelected");
                 break;
@@ -664,7 +660,7 @@ public class PartDetailActivity extends AppCompatActivity implements
         Uri selectedBlobUri = data.getData();
 
         if (selectedBlobUri != null) {
-            Log.d(TAG, "insertImageUriInDatabase selectedBlobUri:" + selectedBlobUri.toString());
+            Log.d(TAG, "insertBlobUriInDatabase selectedBlobUri:" + selectedBlobUri.toString());
         } else {
             return;
         }
@@ -701,16 +697,13 @@ public class PartDetailActivity extends AppCompatActivity implements
     @Override
     public void onSaveInstanceState(Bundle outState) {
 
-        mPlayerViewVisibility =  mPlayerView.getVisibility();
-        imageViewVisibility = imageView.getVisibility();
-        errorMessageViewVisibility = errorMessageView.getVisibility();
+        outState.putLong(CLICKED_LESSON_PART_ID, clickedLessonPart_id);
+        outState.putString(DATABASE_VISIBILITY, databaseVisibility);
+        outState.putInt(PLAYER_VIEW_VISIBILITY, mPlayerViewVisibility);
+        outState.putInt(IMAGE_VIEW_VISIBILITY, imageViewVisibility);
+        outState.putInt(ERROR_MESSAGE_VIEW_VISIBILITY, errorMessageViewVisibility);
 
         super.onSaveInstanceState(outState);
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
     }
 
 
