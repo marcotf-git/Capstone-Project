@@ -4,8 +4,10 @@ import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.annotation.NonNull;
@@ -29,6 +31,7 @@ import com.example.androidstudio.capstoneproject.data.Lesson;
 import com.example.androidstudio.capstoneproject.data.LessonPart;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.example.androidstudio.capstoneproject.ui.LogListAdapter;
+import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -38,6 +41,7 @@ import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -455,7 +459,7 @@ public class MyFirebaseFragment extends Fragment implements
 
 
     // Helper method for uploading specific lesson parts images to Cloud Firebase Storage
-    private void uploadImages(Lesson lesson) {
+    private void uploadImages(final Lesson lesson) {
 
         Log.d(TAG, "uploadImages");
 
@@ -517,7 +521,7 @@ public class MyFirebaseFragment extends Fragment implements
             // Set the values in the Image instance
             image = new Image();
             image.setPart_id(item_id);
-            image.setCloud_uri(localImageUri);
+            image.setLocal_uri(localImageUri);
 
             // Store the instance in the array
             images.add(image);
@@ -537,9 +541,99 @@ public class MyFirebaseFragment extends Fragment implements
             Log.d(TAG, "uploadImages: uri's of the images stored in the Image array:" + images.toString());
         }
 
-        // Upload the uri's stored in the images array
         final String documentName = String.format( Locale.US, "%s_%03d",
                 mUserUid, mLessonId);
+
+        // Upload the uri's stored in the images array
+        for (final Image imageToUpload: images) {
+
+            Uri.Builder builder = new Uri.Builder();
+            builder.path(imageToUpload.getLocal_uri());
+            Uri selectedImageUri = builder.build();
+
+            Log.d(TAG, "selectedImageUri:" + selectedImageUri.toString());
+
+//            final StorageReference imageRef =
+//                    mImagesStorageReference.child(documentName + "/" + selectedImageUri.getLastPathSegment());
+
+            final StorageReference imageRef =
+                    mImagesStorageReference;
+
+            // // Refresh permissions (player will load a local file)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+                    final int takeFlags = intent.getFlags()
+                            & (Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    contentResolver.takePersistableUriPermission(selectedImageUri, takeFlags);
+                } catch (Exception e) {
+                    Log.e(TAG, "uploadImages takePersistableUriPermission error:" + e.getMessage());
+                }
+            }
+
+            // Upload file to Firebase Storage
+            UploadTask uploadTask = imageRef.putFile(selectedImageUri);
+
+            Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
+                @Override
+                public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                    if (!task.isSuccessful()) {
+                        throw task.getException();
+                    }
+
+                    // Continue with the task to get the download URL
+                    return imageRef.getDownloadUrl();
+                }
+            }).addOnCompleteListener(new OnCompleteListener<Uri>() {
+                @Override
+                public void onComplete(@NonNull Task<Uri> task) {
+                    if (task.isSuccessful()) {
+
+                        Log.d(TAG, "uploadTask complete. Uploaded image id:" +
+                                imageToUpload.getPart_id() + " of lesson " + lesson.getLesson_title());
+
+                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                                .format(new Date());
+                        addToLog(time_stamp + ":\nLesson " + lesson.getLesson_title() +
+                                "\nUploaded image id::" + imageToUpload.getPart_id());
+
+                        Uri downloadUri = task.getResult();
+                        // Save the photoUrl in the database
+                        ContentValues contentValues = new ContentValues();
+                        // Put the lesson title into the ContentValues
+                        contentValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI,
+                                downloadUri.toString());
+
+                        // Insert the content values via a ContentResolver
+                        ContentResolver contentResolver = mContext.getContentResolver();
+                        Uri updateUri = ContentUris.withAppendedId(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
+                                imageToUpload.getPart_id());
+
+                        int numberOfImagesUpdated = contentResolver.update(updateUri,
+                                contentValues, null, null);
+
+                        Log.d(TAG, "Updated " + numberOfImagesUpdated + " in the database");
+
+                        time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                                .format(new Date());
+                        addToLog(time_stamp + ":\nLesson " + lesson.getLesson_title() +
+                                "Updated " + numberOfImagesUpdated + " in the database");
+
+                    } else {
+
+                        Log.e(TAG, "uploadTask ERROR. Image id:" +
+                                imageToUpload.getPart_id() + " of lesson " + lesson.getLesson_title());
+
+                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                                .format(new Date());
+                        addToLog(time_stamp + ":\nLesson " + lesson.getLesson_title() +
+                                "\nUPLOAD ERROR. Image id:" + imageToUpload.getPart_id());
+                    }
+                }
+            });
+
+        }
 
 
     }

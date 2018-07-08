@@ -779,6 +779,7 @@ public class MainActivity extends AppCompatActivity implements
         if (selectedLesson_id != -1) {
             // calls the upload method
             mainFragment.setLoadingIndicator(true);
+            firebaseFragment.setFirebase(mFirebaseDatabase, mFirebaseStorage, mUserUid);
             firebaseFragment.uploadDatabase(selectedLesson_id);
         } else {
             Toast.makeText(this,
