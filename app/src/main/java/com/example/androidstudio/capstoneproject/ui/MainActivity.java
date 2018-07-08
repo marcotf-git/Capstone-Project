@@ -933,7 +933,10 @@ public class MainActivity extends AppCompatActivity implements
                 null);
 
         if (partsCursor == null) {
-            Log.e(TAG, "uploadImages failed to get cursor");
+            Log.e(TAG, "Failed to get cursor",
+                    new Exception("onDialogDeleteLessonLocallyPositiveClick: Failed to get cursor."));
+            Toast.makeText(this, "The application has found an error!\n" +
+                    "Action canceled!", Toast.LENGTH_LONG).show();
             return;
         }
 
@@ -942,8 +945,11 @@ public class MainActivity extends AppCompatActivity implements
 
         if (nRows > 1) {
             Log.d(TAG, "onDialogDeleteLessonLocallyPositiveClick number of lesson parts nRows:" + nRows);
-            Toast.makeText(this, "This lesson has " + nRows + " parts.\nPlease, delete the parts first!\n" +
-            "Action canceled!", Toast.LENGTH_LONG).show();
+
+            Snackbar.make(lessonsContainer,"This lesson has " + nRows + " parts.\nPlease, delete the parts first!\n" +
+                    "Action canceled!", Snackbar.LENGTH_INDEFINITE).show();
+
+            return;
         }
 
         // Delete the lesson from local database
@@ -1010,7 +1016,7 @@ public class MainActivity extends AppCompatActivity implements
 
     // Receive communication form DeleteDialogPartFragment
     @Override
-    public void onDialogPartPositiveClick(DialogFragment dialog, long _id) {
+    public void onDialogDeletePartPositiveClick(DialogFragment dialog, long _id) {
         ContentResolver contentResolver = mContext.getContentResolver();
         /* The delete method deletes the row by its _id */
 
@@ -1027,7 +1033,7 @@ public class MainActivity extends AppCompatActivity implements
         int numberOfPartsDeleted = 0;
 
         if (uriToDelete != null) {
-            Log.d(TAG, "onDialogPartPositiveClick: Uri to delete:" + uriToDelete.toString());
+            Log.d(TAG, "onDialogDeletePartPositiveClick: Uri to delete:" + uriToDelete.toString());
             numberOfPartsDeleted = contentResolver.delete(uriToDelete, null, null);
         }
 
@@ -1042,7 +1048,7 @@ public class MainActivity extends AppCompatActivity implements
 
     // Receive communication form DeleteDialogPartFragment
     @Override
-    public void onDialogPartNegativeClick(DialogFragment dialog) {
+    public void onDialogDeletePartNegativeClick(DialogFragment dialog) {
         Toast.makeText(mContext,
                 "Canceled!", Toast.LENGTH_LONG).show();
     }

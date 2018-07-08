@@ -67,9 +67,10 @@
 
     <string name="image">Image</string>
     <string name="video">Video</string>
-    <string name="ok">Ok!</string>
+    <string name="ok">OK!</string>
     <string name="form_pick_photos">Complete action using</string>
     <string name="form_pick_image">Select an image</string>
     <string name="form_pick_video">Select a video</string>
+    <string name="dialog_delete_lesson_part">Delete the lesson part?</string>
 
 </resources>

@@ -21,8 +21,8 @@ public class DeletePartDialogFragment extends DialogFragment {
      * implement this interface in order to receive event callbacks.
      * Each method passes the DialogFragment in case the host needs to query it. */
     public interface DeletePartDialogListener {
-        void onDialogPartPositiveClick(DialogFragment dialog, long lesson_part_id);
-        void onDialogPartNegativeClick(DialogFragment dialog);
+        void onDialogDeletePartPositiveClick(DialogFragment dialog, long lesson_part_id);
+        void onDialogDeletePartNegativeClick(DialogFragment dialog);
     }
 
     // Use this instance of the interface to deliver action events
@@ -57,17 +57,17 @@ public class DeletePartDialogFragment extends DialogFragment {
         // Use the Builder class for convenient dialog construction
         AlertDialog.Builder builder = new AlertDialog.Builder(mContext);
 
-        builder.setMessage(R.string.dialog_delete_lesson)
+        builder.setMessage(R.string.dialog_delete_lesson_part)
                 .setPositiveButton(R.string.delete, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         // User confirm the dialog
-                        mListener.onDialogPartPositiveClick(DeletePartDialogFragment.this, lesson_part_id);
+                        mListener.onDialogDeletePartPositiveClick(DeletePartDialogFragment.this, lesson_part_id);
                     }
                 })
                 .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         // User cancelled the dialog
-                        mListener.onDialogPartNegativeClick(DeletePartDialogFragment.this);
+                        mListener.onDialogDeletePartNegativeClick(DeletePartDialogFragment.this);
                     }
                 });
         // Create the AlertDialog object and return it
