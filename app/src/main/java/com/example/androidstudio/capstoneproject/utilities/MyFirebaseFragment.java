@@ -65,6 +65,8 @@ public class MyFirebaseFragment extends Fragment implements
     private static final String USER_DATABASE = "userDatabase";
     private static final String GROUP_DATABASE = "groupDatabase";
     private static final String USER_UID = "userUid";
+    private static final String VIDEO = "video";
+    private static final String IMAGE = "image";
 
     private FirebaseFirestore mFirebaseDatabase;
     private FirebaseStorage mFirebaseStorage;
@@ -202,13 +204,13 @@ public class MyFirebaseFragment extends Fragment implements
             case ID_LOG_LOADER:
                 /* URI for all rows of lessons data in our "my_lessons" table */
                 Uri logQueryUri = LessonsContract.MyLogEntry.CONTENT_URI;
-
+                String sortOrder = LessonsContract.MyLogEntry._ID + " DESC";
                 return new CursorLoader(mContext,
                         logQueryUri,
                         null,
                         null,
                         null,
-                        null);
+                        sortOrder);
 
             default:
                 throw new RuntimeException("Loader Not Implemented: " + loaderId);
@@ -301,181 +303,26 @@ public class MyFirebaseFragment extends Fragment implements
     // Firebase Storage
     public void uploadDatabase(final Long lesson_id) {
 
-        ContentResolver contentResolver = mContext.getContentResolver();
-        Uri lessonUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, lesson_id);
-        Cursor lessonCursor = contentResolver.query(lessonUri,
-                null,
-                null,
-                null,
-                null);
+        // First, upload the images
+        uploadImages(lesson_id);
 
-        if (lessonCursor == null) {
-            Log.e(TAG, "uploadDatabase failed to get cursor");
-            mCallback.onUploadFailure(new Exception("Failed to get cursor (database failure)"));
-            return;
-        }
-
-        int nRows = lessonCursor.getCount();
-
-        if (nRows > 1) {
-            Log.e(TAG, "uploadDatabase local database inconsistency nRows:"
-                    + nRows + " with the _id:" + lesson_id);
-        }
-
-        lessonCursor.moveToFirst();
-
-        // Pass the data cursor to Lesson instance
-        // lesson_id is parameter from method
-        String user_uid;
-        String lesson_title;
-        String time_stamp;
-
-        Lesson lesson = null;
-
-        // This will save all the same rows in the cloud, even if there are more than one with
-        // the same _id
-        for (int i = 0; i < nRows; i++) {
-
-            user_uid = userUid;
-            lesson_title = lessonCursor.
-                    getString(lessonCursor.getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
-
-            time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
-                    .format(new Date());
-
-            // Construct a Lesson instance and set with the data from database
-            lesson = new Lesson();
-            lesson.setLesson_id(lesson_id);
-            lesson.setUser_uid(user_uid);
-            lesson.setLesson_title(lesson_title);
-            lesson.setTime_stamp(time_stamp);
-
-            String jsonString = serialize(lesson);
-
-            Log.d(TAG, "uploadDatabase lesson jsonString:" + jsonString);
-
-            // Load lesson parts from local database into the Lesson instance
-            String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
-            String[] selectionArgs = {Long.toString(lesson_id)};
-            Cursor partsCursor = contentResolver.query(
-                    LessonsContract.MyLessonPartsEntry.CONTENT_URI,
-                    null,
-                    selection,
-                    selectionArgs,
-                    null);
-
-            ArrayList<LessonPart> lessonParts = new ArrayList<>();
-
-            if (null != partsCursor) {
-                partsCursor.moveToFirst();
-                int nPartsRows = partsCursor.getCount();
-                for (int j = 0; j < nPartsRows; j++) {
-
-                    Long item_id = partsCursor.getLong(partsCursor.
-                            getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
-                    // lesson_id is already loaded! (don't need to load, is the lesson_id parameter)
-                    String lessonPartTitle = partsCursor.getString(partsCursor.
-                            getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
-                    String lessonPartText = partsCursor.getString(partsCursor.
-                            getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TEXT));
-                    String localImageUri = partsCursor.getString(partsCursor.
-                            getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
-                    String cloudImageUri = partsCursor.getString(partsCursor.
-                            getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
-                    String localVideoUri = partsCursor.getString(partsCursor.
-                            getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
-                    String cloudVideoUri = partsCursor.getString(partsCursor.
-                            getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
-
-                    LessonPart lessonPart = new LessonPart();
-                    lessonPart.setPart_id(item_id);
-                    lessonPart.setLesson_id(lesson_id);
-                    lessonPart.setTitle(lessonPartTitle);
-                    lessonPart.setText(lessonPartText);
-                    lessonPart.setLocal_image_uri(localImageUri);
-                    lessonPart.setCloud_image_uri(cloudImageUri);
-                    lessonPart.setLocal_video_uri(localVideoUri);
-                    lessonPart.setCloud_video_uri(cloudVideoUri);
-
-                    Log.v(TAG, "lessonPart:" + lessonPart.toString());
-
-                    lessonParts.add(lessonPart);
-                    partsCursor.moveToNext();
-                }
-
-                partsCursor.close();
-            }
-
-            // set the lesson instance with the values read from the local database
-            lesson.setLesson_parts(lessonParts);
-
-            Log.v(TAG, "uploadDatabase lesson:" + lesson.toString());
-
-            // Upload the Lesson instance to Firebase Database
-            final String documentName = String.format( Locale.US, "%s_%03d",
-                    lesson.getUser_uid(), lesson.getLesson_id());
-
-            Log.d(TAG, "uploadDatabase documentName:" + documentName);
-
-            final String logText = lesson.getLesson_title();
-            mFirebaseDatabase.collection("lessons").document(documentName)
-                    .set(lesson)
-                    .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
-                        Log.d(TAG, "DocumentSnapshot successfully written with name:" + documentName);
-                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
-                                .format(new Date());
-                        addToLog(time_stamp + ":\nLesson " + logText +
-                                        "\nDocumentSnapshot successfully written with name:" + documentName);
-                        mCallback.onUploadSuccess();
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.e(TAG, "Error writing document on Firebase:", e);
-                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
-                                .format(new Date());
-                        addToLog(time_stamp + ":\nLesson " + logText +
-                                "\nError writing document on Firebase!" +
-                                 "\nDocument name:" + documentName +"\n" + e.getMessage());
-                        mCallback.onUploadFailure(e);
-                    }
-                });
-
-            if (!lessonCursor.moveToNext()){
-                break;
-            }
-        }
-
-        // Close the cursor for prevent database problems
-        lessonCursor.close();
-
-        // Upload the images
-        uploadImages(lesson);
-
+        // At the end, the uploadImages will call the uploadLesson
     }
 
 
     // Helper method for uploading specific lesson parts images to Cloud Firebase Storage
-    private void uploadImages(final Lesson lesson) {
+    private void uploadImages(final Long lesson_id) {
 
         Log.d(TAG, "uploadImages");
 
-        if (lesson == null) {
-            mCallback.onUploadFailure(new Exception("Failed to upload image: no Lesson instance"));
-            return;
-        }
-
-        long mLessonId = lesson.getLesson_id();
-        String mUserUid = lesson.getUser_uid();
+        long mLessonId =lesson_id;
+        String mUserUid = userUid;
 
         Log.d(TAG, "uploadImages mLessonId:" + mLessonId);
-        Log.d(TAG, "uploadImages lesson.getLesson_title():" + lesson.getLesson_title());
+        //Log.d(TAG, "uploadImages lesson.getLesson_title():" + lesson.getLesson_title());
 
         mImagesStorageReference = mFirebaseStorage.getReference().child("images");
-//        mVideosStorageReference = mFirebaseStorage.getReference().child("videos");
+        mVideosStorageReference = mFirebaseStorage.getReference().child("videos");
 
         ContentResolver contentResolver = mContext.getContentResolver();
 
@@ -517,11 +364,25 @@ public class MyFirebaseFragment extends Fragment implements
                     getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
             String localImageUri = partsCursor.getString(partsCursor.
                     getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
+            String localVideoUri = partsCursor.getString(partsCursor.
+                    getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
+
+            if (localImageUri == null && localVideoUri == null) {
+                partsCursor.moveToNext();
+                continue;
+            }
 
             // Set the values in the Image instance
             image = new Image();
             image.setPart_id(item_id);
-            image.setLocal_uri(localImageUri);
+            // The priority is the video
+            if (localVideoUri != null) {
+                image.setLocal_uri(localVideoUri);
+                image.setImageType(VIDEO);
+            } else {
+                image.setLocal_uri(localImageUri);
+                image.setImageType(IMAGE);
+            }
 
             // Store the instance in the array
             images.add(image);
@@ -536,28 +397,44 @@ public class MyFirebaseFragment extends Fragment implements
        // Verify the images array
         if (images.size() == 0) {
             Log.d(TAG, "uploadImages: no images in the database");
+            // Go directly to upload the lesson
+            uploadLesson(lesson_id);
             return;
         } else {
             Log.d(TAG, "uploadImages: uri's of the images stored in the Image array:" + images.toString());
         }
 
-        final String documentName = String.format( Locale.US, "%s_%03d",
-                mUserUid, mLessonId);
 
-        // Upload the uri's stored in the images array
-        for (final Image imageToUpload: images) {
+        // Upload the uri's stored in the images array, and after upload the lesson
 
-            Uri.Builder builder = new Uri.Builder();
-            builder.path(imageToUpload.getLocal_uri());
-            Uri selectedImageUri = builder.build();
+        final String documentName = String.format( Locale.US, "%s_%03d", mUserUid, mLessonId);
 
-            Log.d(TAG, "selectedImageUri:" + selectedImageUri.toString());
+        for (int imgIndex = 0; imgIndex < images.size(); imgIndex++) {
 
-//            final StorageReference imageRef =
-//                    mImagesStorageReference.child(documentName + "/" + selectedImageUri.getLastPathSegment());
+            final Image imageToUpload = images.get(imgIndex);
+            final int currentImg = imgIndex;
+            final int finalImg = images.size() - 1;
 
-            final StorageReference imageRef =
-                    mImagesStorageReference;
+            Uri uri = Uri.parse(imageToUpload.getLocal_uri());
+
+            Log.d(TAG, "selected image/video uri:" + uri.toString());
+
+            StorageReference auxStorage = null;
+            String rootDir = null;
+            if (imageToUpload.getImageType().equals(VIDEO)) {
+                auxStorage =  mVideosStorageReference.child(documentName + "/" + uri.getLastPathSegment());
+                rootDir = "videos";
+            } else if (imageToUpload.getImageType().equals(IMAGE)) {
+                auxStorage =  mImagesStorageReference.child(documentName + "/" + uri.getLastPathSegment());
+                rootDir = "images";
+            }
+
+            if (auxStorage == null) {
+                return;
+            }
+
+            final StorageReference storageRef = auxStorage.child(documentName + "/" + uri.getLastPathSegment());
+            final String filePath = rootDir + "/" + documentName + "/" + uri.getLastPathSegment();
 
             // // Refresh permissions (player will load a local file)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
@@ -566,80 +443,252 @@ public class MyFirebaseFragment extends Fragment implements
                     final int takeFlags = intent.getFlags()
                             & (Intent.FLAG_GRANT_READ_URI_PERMISSION
                             | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                    contentResolver.takePersistableUriPermission(selectedImageUri, takeFlags);
+                    contentResolver.takePersistableUriPermission(uri, takeFlags);
                 } catch (Exception e) {
                     Log.e(TAG, "uploadImages takePersistableUriPermission error:" + e.getMessage());
                 }
             }
 
             // Upload file to Firebase Storage
-            UploadTask uploadTask = imageRef.putFile(selectedImageUri);
+            UploadTask uploadTask = storageRef.putFile(uri);
 
             Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
                 @Override
                 public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
-                    if (!task.isSuccessful()) {
+                    if (!task.isSuccessful() && task.getException() != null) {
                         throw task.getException();
                     }
 
                     // Continue with the task to get the download URL
-                    return imageRef.getDownloadUrl();
+                    return storageRef.getDownloadUrl();
                 }
             }).addOnCompleteListener(new OnCompleteListener<Uri>() {
                 @Override
                 public void onComplete(@NonNull Task<Uri> task) {
                     if (task.isSuccessful()) {
 
-                        Log.d(TAG, "uploadTask complete. Uploaded image id:" +
-                                imageToUpload.getPart_id() + " of lesson " + lesson.getLesson_title());
+                        Uri downloadUri = task.getResult();
+
+                        Log.d(TAG, "uploadTask complete. Uploaded image/video id:" +
+                                imageToUpload.getPart_id() + " of lesson id:" + lesson_id);
 
                         String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                                 .format(new Date());
-                        addToLog(time_stamp + ":\nLesson " + lesson.getLesson_title() +
-                                "\nUploaded image id::" + imageToUpload.getPart_id());
+//                        addToLog(time_stamp + ":\nLesson id:" + lesson_id +
+//                                "\nSuccessfully uploaded image id:" + imageToUpload.getPart_id() +
+//                        "\nRemote Url:" + downloadUri.toString());
+                        addToLog(time_stamp + ":\nLesson id:" + lesson_id +
+                                "\nSuccessfully uploaded image/video id:" + imageToUpload.getPart_id());
 
-                        Uri downloadUri = task.getResult();
                         // Save the photoUrl in the database
                         ContentValues contentValues = new ContentValues();
                         // Put the lesson title into the ContentValues
-                        contentValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI,
-                                downloadUri.toString());
+                        if (imageToUpload.getImageType().equals(VIDEO)) {
+                            contentValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI,
+                                    filePath);
+                        } else if (imageToUpload.getImageType().equals(IMAGE)) {
+                            contentValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI,
+                                    filePath);
+                        }
 
                         // Insert the content values via a ContentResolver
                         ContentResolver contentResolver = mContext.getContentResolver();
                         Uri updateUri = ContentUris.withAppendedId(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                                 imageToUpload.getPart_id());
+                        int numberOfImagesUpdated = contentResolver.update(
+                                updateUri,
+                                contentValues,
+                                null,
+                                null);
 
-                        int numberOfImagesUpdated = contentResolver.update(updateUri,
-                                contentValues, null, null);
-
-                        Log.d(TAG, "Updated " + numberOfImagesUpdated + " in the database");
+                        Log.d(TAG, "Updated " + numberOfImagesUpdated + " item(s) in the database");
 
                         time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                                 .format(new Date());
-                        addToLog(time_stamp + ":\nLesson " + lesson.getLesson_title() +
-                                "Updated " + numberOfImagesUpdated + " in the database");
+//                        addToLog(time_stamp + ":\nLesson id:" + lesson_id +
+//                                "\nUpdated " + numberOfImagesUpdated + " item(s) in the database");
+
+                        Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
+
+                        if (currentImg == finalImg) {
+                            // Finished uploading images: call upload lesson
+                            Log.d(TAG, "Call upload to lesson table");
+                            addToLog(time_stamp + ":\nNow uploading lesson table.");
+                            uploadLesson(lesson_id);
+                        }
 
                     } else {
 
                         Log.e(TAG, "uploadTask ERROR. Image id:" +
-                                imageToUpload.getPart_id() + " of lesson " + lesson.getLesson_title());
+                                imageToUpload.getPart_id() + " of lesson id:" + lesson_id);
 
                         String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                                 .format(new Date());
-                        addToLog(time_stamp + ":\nLesson " + lesson.getLesson_title() +
+                        addToLog(time_stamp + ":\nLesson id:" + lesson_id +
                                 "\nUPLOAD ERROR. Image id:" + imageToUpload.getPart_id());
+
+                        Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
+
+                        if (currentImg == finalImg) {
+                            // Finished uploading images: call upload lesson
+                            Log.d(TAG, "Call upload to lesson table");
+                            addToLog(time_stamp + ":\nNow uploading lesson table.");
+                            uploadLesson(lesson_id);
+                        }
                     }
                 }
             });
 
         }
 
-
     }
 
 
+    private void uploadLesson(Long lesson_id) {
 
+        ContentResolver contentResolver = mContext.getContentResolver();
+        Uri lessonUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, lesson_id);
+        Cursor lessonCursor = contentResolver.query(lessonUri,
+                null,
+                null,
+                null,
+                null);
+
+        if (lessonCursor == null) {
+            Log.e(TAG, "uploadDatabase failed to get cursor");
+            mCallback.onUploadFailure(new Exception("Failed to get cursor (database failure)"));
+            return;
+        }
+
+        int nRows = lessonCursor.getCount();
+
+        if (nRows > 1) {
+            Log.e(TAG, "uploadDatabase local database inconsistency nRows:"
+                    + nRows + " with the _id:" + lesson_id);
+        }
+
+        lessonCursor.moveToFirst();
+
+        // Pass the data cursor to Lesson instance
+        // lesson_id is parameter from method
+        String user_uid;
+        String lesson_title;
+        String time_stamp;
+
+        // The database is responsible by the consistency: only one row for lesson _id
+        user_uid = userUid;
+        lesson_title = lessonCursor.
+                getString(lessonCursor.getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
+
+        time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                .format(new Date());
+
+        // Construct a Lesson instance and set with the data from database
+        Lesson lesson = new Lesson();
+        lesson.setLesson_id(lesson_id);
+        lesson.setUser_uid(user_uid);
+        lesson.setLesson_title(lesson_title);
+        lesson.setTime_stamp(time_stamp);
+
+        String jsonString = serialize(lesson);
+
+        Log.d(TAG, "uploadDatabase lesson jsonString:" + jsonString);
+
+        // Load lesson parts from local database into the Lesson instance
+        String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
+        String[] selectionArgs = {Long.toString(lesson_id)};
+        Cursor partsCursor = contentResolver.query(
+                LessonsContract.MyLessonPartsEntry.CONTENT_URI,
+                null,
+                selection,
+                selectionArgs,
+                null);
+
+        ArrayList<LessonPart> lessonParts = new ArrayList<>();
+
+        if (null != partsCursor) {
+            partsCursor.moveToFirst();
+            int nPartsRows = partsCursor.getCount();
+            for (int j = 0; j < nPartsRows; j++) {
+
+                Long item_id = partsCursor.getLong(partsCursor.
+                        getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
+                // lesson_id is already loaded! (don't need to load, is the lesson_id parameter)
+                String lessonPartTitle = partsCursor.getString(partsCursor.
+                        getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
+                String lessonPartText = partsCursor.getString(partsCursor.
+                        getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TEXT));
+                String localImageUri = partsCursor.getString(partsCursor.
+                        getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
+                String cloudImageUri = partsCursor.getString(partsCursor.
+                        getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
+                String localVideoUri = partsCursor.getString(partsCursor.
+                        getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
+                String cloudVideoUri = partsCursor.getString(partsCursor.
+                        getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
+
+                LessonPart lessonPart = new LessonPart();
+                lessonPart.setPart_id(item_id);
+                lessonPart.setLesson_id(lesson_id);
+                lessonPart.setTitle(lessonPartTitle);
+                lessonPart.setText(lessonPartText);
+                lessonPart.setLocal_image_uri(localImageUri);
+                lessonPart.setCloud_image_uri(cloudImageUri);
+                lessonPart.setLocal_video_uri(localVideoUri);
+                lessonPart.setCloud_video_uri(cloudVideoUri);
+
+                Log.v(TAG, "lessonPart:" + lessonPart.toString());
+
+                lessonParts.add(lessonPart);
+                partsCursor.moveToNext();
+            }
+
+            partsCursor.close();
+
+            // set the lesson instance with the values read from the local database
+            lesson.setLesson_parts(lessonParts);
+
+            Log.v(TAG, "uploadDatabase lesson:" + lesson.toString());
+
+            // Upload the Lesson instance to Firebase Database
+            final String documentName = String.format( Locale.US, "%s_%03d",
+                    lesson.getUser_uid(), lesson.getLesson_id());
+
+            Log.d(TAG, "uploadDatabase documentName:" + documentName);
+
+            final String logText = lesson.getLesson_title();
+            mFirebaseDatabase.collection("lessons").document(documentName)
+                    .set(lesson)
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            Log.d(TAG, "DocumentSnapshot successfully written with name:" + documentName);
+                            String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                                    .format(new Date());
+                            addToLog(time_stamp + ":\nLesson " + logText +
+                                    "\nDocumentSnapshot successfully written with name:" + documentName);
+                            mCallback.onUploadSuccess();
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            Log.e(TAG, "Error writing document on Firebase:", e);
+                            String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                                    .format(new Date());
+                            addToLog(time_stamp + ":\nLesson " + logText +
+                                    "\nError writing document on Firebase!" +
+                                    "\nDocument name:" + documentName +"\n" + e.getMessage());
+                            mCallback.onUploadFailure(e);
+                        }
+                    });
+
+        }
+
+        // Close the cursor for prevent database problems
+        lessonCursor.close();
+
+    }
 
 
     // Helper method for refreshing the database from Cloud Firestore
@@ -672,12 +721,14 @@ public class MyFirebaseFragment extends Fragment implements
                                 if (userUid.equals(lesson.getUser_uid())) {
                                     refreshUserLesson(mContext, lesson);
                                 }
+
                             }
 
                         } else if (databaseVisibility.equals(GROUP_DATABASE)) {
 
                             // refresh the lessons of the group table on its separate table
-                            MyFirebaseFragment.refreshGroupLessons(mContext, task);
+                            refreshGroupLessons(mContext, task);
+                            downloadGroupImages();
                         }
 
                     } else {
@@ -787,6 +838,17 @@ public class MyFirebaseFragment extends Fragment implements
                             inserted_lesson_id);
                     insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE,
                             lessonPart.getTitle());
+                    String text = lessonPart.getText();
+                    insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TEXT,
+                            text);
+                    insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI,
+                            lessonPart.getLocal_image_uri());
+                    insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI,
+                            lessonPart.getCloud_image_uri());
+                    insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI,
+                            lessonPart.getLocal_video_uri());
+                    insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI,
+                            lessonPart.getCloud_video_uri());
 
                     Uri partUri = contentResolver.insert(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                             insertLessonPartValues);
@@ -805,7 +867,7 @@ public class MyFirebaseFragment extends Fragment implements
 
 
     // In case of group lessons, clear the existing table and insert new data
-    static private void refreshGroupLessons(Context context, Task<QuerySnapshot> task) {
+    private void refreshGroupLessons(Context context, Task<QuerySnapshot> task) {
 
         Log.v(TAG, "refreshGroupLesson");
 
@@ -869,6 +931,17 @@ public class MyFirebaseFragment extends Fragment implements
                                 lessonPart.getPart_id());
                         insertLessonPartValues.put(LessonsContract.GroupLessonPartsEntry.COLUMN_PART_TITLE,
                                 lessonPart.getTitle());
+                        String text = lessonPart.getText();
+                        insertLessonPartValues.put(LessonsContract.GroupLessonPartsEntry.COLUMN_PART_TEXT,
+                                text);
+                        insertLessonPartValues.put(LessonsContract.GroupLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI,
+                                lessonPart.getLocal_image_uri());
+                        insertLessonPartValues.put(LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI,
+                                lessonPart.getCloud_image_uri());
+                        insertLessonPartValues.put(LessonsContract.GroupLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI,
+                                lessonPart.getLocal_video_uri());
+                        insertLessonPartValues.put(LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI,
+                                lessonPart.getCloud_video_uri());
                         insertLessonPartValues.put(LessonsContract.GroupLessonPartsEntry.COLUMN_USER_UID,
                                 lesson.getUser_uid());
 
@@ -881,6 +954,15 @@ public class MyFirebaseFragment extends Fragment implements
                 }
             }
         }
+     }
+
+
+     private void downloadGroupImages() {
+        // get the group table, query the url's and download the images on local files
+        // write the file names in the table, in the local uri's
+
+
+
      }
 
 

@@ -4,13 +4,15 @@ public class Image {
 
     private Long part_id;
     private String local_uri;
+    private String imageType;
 
-    public Image() {
+     public Image() {
     }
 
-    public Image(Long part_id, String local_uri) {
+    public Image(Long part_id, String local_uri, String imageType) {
         this.part_id = part_id;
         this.local_uri = local_uri;
+        this.imageType = imageType;
     }
 
     public Long getPart_id() {
@@ -29,11 +31,20 @@ public class Image {
         this.local_uri = local_uri;
     }
 
+    public String getImageType() {
+        return imageType;
+    }
+
+    public void setImageType(String imageType) {
+        this.imageType = imageType;
+    }
+
     @Override
     public String toString() {
         return "Image{" +
                 "part_id=" + part_id +
                 ", local_uri='" + local_uri + '\'' +
+                ", imageType='" + imageType + '\'' +
                 '}';
     }
 }

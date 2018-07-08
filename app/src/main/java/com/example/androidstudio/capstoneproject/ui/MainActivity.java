@@ -1,11 +1,14 @@
 package com.example.androidstudio.capstoneproject.ui;
 
 import android.content.ContentResolver;
+import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -32,20 +35,38 @@ import android.widget.Toast;
 
 import com.example.androidstudio.capstoneproject.IdlingResource.SimpleIdlingResource;
 import com.example.androidstudio.capstoneproject.R;
+import com.example.androidstudio.capstoneproject.data.Image;
+import com.example.androidstudio.capstoneproject.data.Lesson;
+import com.example.androidstudio.capstoneproject.data.LessonPart;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.example.androidstudio.capstoneproject.utilities.MyFirebaseFragment;
 import com.example.androidstudio.capstoneproject.utilities.TestUtil;
 import com.firebase.ui.auth.AuthUI;
+import com.google.android.gms.tasks.Continuation;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
+import static com.google.common.net.HostSpecifier.isValid;
 
 
 /**
@@ -125,6 +146,7 @@ public class MainActivity extends AppCompatActivity implements
     private FirebaseStorage mFirebaseStorage;
     private FirebaseAuth mFirebaseAuth;
     private FirebaseAuth.AuthStateListener mAuthStateListener;
+    private StorageReference mImagesStorageReference;
 
     // Menus and buttons
     private Menu mMenu;
@@ -315,6 +337,7 @@ public class MainActivity extends AppCompatActivity implements
                 .build();
         mFirebaseDatabase.setFirestoreSettings(settings);
         mFirebaseStorage = FirebaseStorage.getInstance();
+        mImagesStorageReference = mFirebaseStorage.getReference().child("images");
 
         // Initialize the FirebaseAuth instance and the AuthStateListener method so
         // we can track whenever the user signs in or out.
@@ -383,13 +406,7 @@ public class MainActivity extends AppCompatActivity implements
                             break;
 
                         case R.id.nav_log:
-                            mainVisibility = GONE;
-                            lessonsContainer.setVisibility(mainVisibility);
-                            partsVisibility = GONE;
-                            partsContainer.setVisibility(partsVisibility);
-                            logVisibility = VISIBLE;
-                            logContainer.setVisibility(logVisibility);
-                            actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
+                            viewLog();
                             break;
 
                         default:
@@ -414,6 +431,15 @@ public class MainActivity extends AppCompatActivity implements
 
     }
 
+    private void viewLog() {
+        mainVisibility = GONE;
+        lessonsContainer.setVisibility(mainVisibility);
+        partsVisibility = GONE;
+        partsContainer.setVisibility(partsVisibility);
+        logVisibility = VISIBLE;
+        logContainer.setVisibility(logVisibility);
+        actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
+    }
 
     // Helper method for Firebase login
     private void login() {
@@ -781,6 +807,7 @@ public class MainActivity extends AppCompatActivity implements
             mainFragment.setLoadingIndicator(true);
             firebaseFragment.setFirebase(mFirebaseDatabase, mFirebaseStorage, mUserUid);
             firebaseFragment.uploadDatabase(selectedLesson_id);
+            //uploadDatabase(selectedLesson_id);
         } else {
             Toast.makeText(this,
                     "Please, select a lesson to upload!", Toast.LENGTH_LONG).show();
@@ -945,6 +972,7 @@ public class MainActivity extends AppCompatActivity implements
         // Inform the parts fragment
         partsFragment.setReferenceLesson(_id);
     }
+
 
     // Method for receiving communication from the DeleteLessonFragment
     @Override
@@ -1152,6 +1180,54 @@ public class MainActivity extends AppCompatActivity implements
         if (mIdlingResource != null) {
             mIdlingResource.setIdleState(value);
         }
+    }
+
+
+    private void addToLog(String logText) {
+
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT, logText);
+        // Insert the content values via a ContentResolver
+        Uri uri = mContext.getContentResolver().insert(LessonsContract.MyLogEntry.CONTENT_URI, contentValues);
+
+        if (uri != null) {
+            Log.d(TAG, "addToLog uri:" + uri.toString());
+        } else {
+            Log.e(TAG, "addToLog: error in inserting item on log",
+                    new Exception("addToLog: error in inserting item on log"));
+        }
+
+    }
+
+
+    /**
+     * Serialize string.
+     *
+     * @param <T> Type of the object passed
+     * @param obj Object to serialize
+     * @return Serialized string
+     */
+    static private <T> String serialize(T obj) {
+        Gson gson = new Gson();
+        return gson.toJson(obj);
+    }
+
+
+    /**
+     * De-serialize a string
+     *
+     * @param <T>        Type of the object
+     * @param jsonString Serialized string
+     * @param tClass     Class of the type
+     * @return De-serialized object
+     * @throws ClassNotFoundException the class not found exception
+     */
+    static private <T> T deSerialize(String jsonString, Class<T> tClass) throws ClassNotFoundException {
+        if (!isValid(jsonString)) {
+            return null;
+        }
+        Gson gson = new GsonBuilder().create();
+        return gson.fromJson(jsonString, tClass);
     }
 
 
