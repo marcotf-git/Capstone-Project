@@ -339,7 +339,7 @@ public class MyFirebaseFragment extends Fragment implements
                 null);
 
         if (partsCursor == null) {
-            Log.e(TAG, "uploadImages: failed to get parts cursor (database error)");
+            Log.e(TAG, "uploadDatabase: failed to get parts cursor (database error)");
             mCallback.onUploadFailure(new Exception("Failed to get parts cursor (database failure)"));
             return;
         }
@@ -347,9 +347,10 @@ public class MyFirebaseFragment extends Fragment implements
         int nRows = partsCursor.getCount();
 
         if (nRows == 0) {
-            Log.d(TAG, "uploadImages: no parts found in local database for the lesson _id:"
+            Log.d(TAG, "uploadDatabase: no parts found in local database for the lesson _id:"
                     + mLessonId);
             partsCursor.close();
+            mCallback.onUploadFailure(new Exception("Error: no parts in this lesson"));
             return;
         }
 
@@ -718,17 +719,14 @@ public class MyFirebaseFragment extends Fragment implements
                                 String jsonString = MyFirebaseFragment.serialize(lesson);
                                 Log.v(TAG, "refreshDatabase onComplete lesson jsonString:"
                                         + jsonString);
-
                                 // refresh the lessons of the local user on its separate table
                                 // this gives consistency to the database
                                 if (userUid.equals(lesson.getUser_uid())) {
                                     refreshUserLesson(mContext, lesson);
                                 }
-
                             }
 
                         } else if (databaseVisibility.equals(GROUP_DATABASE)) {
-
                             // refresh the lessons of the group table on its separate table
                             refreshGroupLessons(mContext, task);
                             downloadGroupImages();
@@ -736,7 +734,6 @@ public class MyFirebaseFragment extends Fragment implements
 
                     } else {
                         Log.d(TAG, "Error in getting documents: ", task.getException());
-
                         if (task.getException() != null) {
                             mCallback.onDownloadFailure(task.getException());
                         } else {
@@ -1086,27 +1083,29 @@ public class MyFirebaseFragment extends Fragment implements
 
         int savedItems = 0;
 
-        for (int i = 0; i < uploadingImages.size(); i++){
+        if (null != uploadingImages) {
+            for (int i = 0; i < uploadingImages.size(); i++) {
 
-            UploadingImage uploadingImage = uploadingImages.get(i);
+                UploadingImage uploadingImage = uploadingImages.get(i);
 
-            if (uploadingImage.getStorageRefString()!= null) {
-                outState.putString(REFERENCE + i, uploadingImage.getStorageRefString());
-            }
-            if (uploadingImage.getPartId()!= null) {
-                outState.putLong(PART_ID + i, uploadingImage.getPartId());
-            }
-            if (uploadingImage.getImageType() != null) {
-                outState.putString(IMAGE_TYPE + i, uploadingImage.getImageType());
-            }
-            if (uploadingImage.getFileUriString() != null) {
-                outState.putString(FILE_URI_STRING + i, uploadingImage.getFileUriString());
-            }
-            if (uploadingImage.getFileUriString() != null) {
-                outState.putLong(LESSON_ID + i, uploadingImage.getLessonId());
-            }
+                if (uploadingImage.getStorageRefString() != null) {
+                    outState.putString(REFERENCE + i, uploadingImage.getStorageRefString());
+                }
+                if (uploadingImage.getPartId() != null) {
+                    outState.putLong(PART_ID + i, uploadingImage.getPartId());
+                }
+                if (uploadingImage.getImageType() != null) {
+                    outState.putString(IMAGE_TYPE + i, uploadingImage.getImageType());
+                }
+                if (uploadingImage.getFileUriString() != null) {
+                    outState.putString(FILE_URI_STRING + i, uploadingImage.getFileUriString());
+                }
+                if (uploadingImage.getFileUriString() != null) {
+                    outState.putLong(LESSON_ID + i, uploadingImage.getLessonId());
+                }
 
-            savedItems++;
+                savedItems++;
+            }
         }
 
         outState.putInt(SAVED_ITEMS, savedItems);
