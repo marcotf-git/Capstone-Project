@@ -316,7 +316,7 @@ public class MyFirebaseFragment extends Fragment implements
 
         // Query the parts table with the same lesson_id
         ContentResolver contentResolver = mContext.getContentResolver();
-        
+
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
         String[] selectionArgs = {Long.toString(mLessonId)};
         Cursor partsCursor = contentResolver.query(
