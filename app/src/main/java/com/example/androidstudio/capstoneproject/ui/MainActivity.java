@@ -496,8 +496,6 @@ public class MainActivity extends AppCompatActivity implements
         mUserEmail = userEmail;
         mUserUid = userUid;
 
-        mUserUid = "FWYYkYr4EbRtMIa9oM7JhgG2pfd2";
-
         Log.d(TAG, "userUid:" + userUid);
 
         // save the user uid locally
