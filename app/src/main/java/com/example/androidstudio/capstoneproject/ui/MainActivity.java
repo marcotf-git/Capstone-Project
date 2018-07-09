@@ -124,6 +124,7 @@ public class MainActivity extends AppCompatActivity implements
     private boolean loadingIndicator;
     private long uploadCount;
     private long uploadCountFinal;
+    private Cursor mCursor;
 
     // User data variables
     private String mUsername;
@@ -843,17 +844,17 @@ public class MainActivity extends AppCompatActivity implements
                 LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI + " IS NOT NULL) AND " +
                 LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
         String[] selectionArgs = {Long.toString(selectedLesson_id)};
-        Cursor imagesCursor = mContext.getContentResolver().query(
+        mCursor = mContext.getContentResolver().query(
                     LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                     null,
                     selection,
                     selectionArgs,
                     null);
 
-        if (imagesCursor != null) {
-            imagesCursor.moveToFirst();
-            uploadCountFinal = imagesCursor.getCount();
-            imagesCursor.close();
+        if (mCursor != null) {
+            mCursor.moveToFirst();
+            uploadCountFinal = mCursor.getCount();
+            mCursor.close();
         } else {
             uploadCountFinal = 0;
         }
@@ -983,7 +984,6 @@ public class MainActivity extends AppCompatActivity implements
         if (mAuthStateListener != null) {
             mFirebaseAuth.removeAuthStateListener(mAuthStateListener);
         }
-        //mUserNameText.setText("");
     }
 
     @Override
@@ -992,6 +992,10 @@ public class MainActivity extends AppCompatActivity implements
         // Remove listener from PreferenceManager
         PreferenceManager.getDefaultSharedPreferences(this)
                 .unregisterOnSharedPreferenceChangeListener(this);
+        // Close the global cursor in use
+        if (mCursor != null) {
+            mCursor.close();
+        }
     }
 
 
@@ -1212,9 +1216,9 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
+
     @Override
     public void onUploadImageFailure(@NonNull Exception e) {
-
 
         Toast.makeText(mContext,
                 "Error on uploading:" + e.getMessage(), Toast.LENGTH_LONG).show();
