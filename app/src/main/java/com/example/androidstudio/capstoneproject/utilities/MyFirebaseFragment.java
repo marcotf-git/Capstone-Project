@@ -30,8 +30,9 @@ import com.example.androidstudio.capstoneproject.data.Image;
 import com.example.androidstudio.capstoneproject.data.Lesson;
 import com.example.androidstudio.capstoneproject.data.LessonPart;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
+import com.example.androidstudio.capstoneproject.data.UploadingImage;
 import com.example.androidstudio.capstoneproject.ui.LogListAdapter;
-import com.google.android.gms.tasks.Continuation;
+import com.example.androidstudio.capstoneproject.ui.MainFragment;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -70,11 +71,18 @@ public class MyFirebaseFragment extends Fragment implements
     private static final String VIDEO = "video";
     private static final String IMAGE = "image";
 
+    // static vars to handle saving the state of the task
+    private static final String REFERENCE = "reference";
+    private static final String PART_ID = "partId";
+    private static final String IMAGE_TYPE = "imageType";
+    private static final String FILE_URI_STRING = "fileUriString";
+    private static final String LESSON_ID = "lessonId";
+    private static final String SAVED_ITEMS = "savedItems";
+
     private FirebaseFirestore mFirebaseDatabase;
     private FirebaseStorage mFirebaseStorage;
-    private StorageReference mImagesStorageReference;
-    private StorageReference mVideosStorageReference;
     private StorageReference mStorageReference;
+    private StorageReference storageRef;
 
     // Loader id
     private static final int ID_LOG_LOADER = 30;
@@ -84,6 +92,7 @@ public class MyFirebaseFragment extends Fragment implements
     private Context mContext;
 
     private List<UploadTask> uploadTasks;
+    private List<UploadingImage> uploadingImages;
 
     // Views
     private TextView mErrorMessageDisplay;
@@ -184,6 +193,9 @@ public class MyFirebaseFragment extends Fragment implements
             Log.d(TAG, "recovering savedInstanceState");
             Parcelable recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
             mRecyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+
+            processPendingTasks(savedInstanceState);
+
         }
 
         return rootView;
@@ -384,7 +396,10 @@ public class MyFirebaseFragment extends Fragment implements
         // close the table
         partsCursor.close();
 
-       // Verify the images array
+
+        // If there aren't images, go to upload lesson directly
+
+        // Verify the images array
         if (images.size() == 0) {
             Log.d(TAG, "uploadImages: no images in the database");
             // Go directly to upload the lesson
@@ -396,6 +411,11 @@ public class MyFirebaseFragment extends Fragment implements
 
 
         // Upload the uri's stored in the images array, and after upload the lesson
+
+        uploadTasks = new ArrayList<>();
+        uploadingImages = new ArrayList<>();
+
+        // This has an activity scope, so will unregister when the activity stops
         mStorageReference =  mFirebaseStorage.getReference().child(mUserUid);
 
         final String lessonRef = String.format( Locale.US, "%03d", mLessonId);
@@ -417,7 +437,8 @@ public class MyFirebaseFragment extends Fragment implements
                 rootDir = "images";
             }
 
-            final StorageReference storageRef = mStorageReference.child(rootDir + "/" + lessonRef +
+            // This has activity scope to unregister the listeners when activity stops
+            storageRef = mStorageReference.child(rootDir + "/" + lessonRef +
                     "/" + uri.getLastPathSegment());
             final String filePath = mUserUid + "/" + rootDir + "/" + lessonRef +
                     "/" + uri.getLastPathSegment();
@@ -435,98 +456,71 @@ public class MyFirebaseFragment extends Fragment implements
                 }
             }
 
+
             // Upload file to Firebase Storage
+
+            // Saves the metadata of the images being uploaded in the uploadingImages list
+            UploadingImage uploadingImage = new UploadingImage();
+            uploadingImage.setStorageRefString(storageRef.toString());
+            uploadingImage.setFileUriString(imageToUpload.getLocal_uri());
+            uploadingImage.setPartId(imageToUpload.getPart_id());
+            uploadingImage.setImageType(imageToUpload.getImageType());
+            uploadingImage.setLessonId(lesson_id);
+            uploadingImages.add(uploadingImage);
+
+            // Call the task  (storage has activity scope to unregister the listeners when activity stops)
             UploadTask uploadTask = storageRef.putFile(uri);
 
-            // Observe state change events such as progress, pause, and resume
             uploadTask.addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
                 @Override
                 public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
                     double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
-                    Log.d(TAG, "Upload is " + progress + "% done");
+                    Log.d(TAG, "nUpload is " + progress + "% done");
+                    addToLog("Image part id: "  + imageToUpload.getPart_id() +
+                            " upload is " + progress + "% done.");
                 }
             }).addOnPausedListener(new OnPausedListener<UploadTask.TaskSnapshot>() {
                 @Override
                 public void onPaused(UploadTask.TaskSnapshot taskSnapshot) {
                     Log.d(TAG, "Upload is paused");
+                    addToLog("Image part id: "  + imageToUpload.getPart_id() +
+                            " upload is paused.");
                 }
-            });
-
-
-            // Continue with the task to get the download URL
-            Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
+            }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                 @Override
-                public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
-                    if (!task.isSuccessful() && task.getException() != null) {
-                        throw task.getException();
+                public void onSuccess(UploadTask.TaskSnapshot state) {
+                    //call helper function to handle the event.
+                    handleTaskSuccess(
+                            state,
+                            imageToUpload.getPart_id(),
+                            imageToUpload.getImageType(),
+                            filePath,
+                            lesson_id);
+
+                    String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                            .format(new Date());
+                    Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
+
+                    if (currentImg == finalImg) {
+                        // Finished uploading images: call upload lesson
+                        Log.d(TAG, "Call upload to lesson table");
+                        addToLog(time_stamp + ":\nNow uploading lesson table.");
+                        uploadLesson(lesson_id);
                     }
-                    return storageRef.getDownloadUrl();
                 }
-            }).addOnCompleteListener(new OnCompleteListener<Uri>() {
-                @Override
-                public void onComplete(@NonNull Task<Uri> task) {
-                    if (task.isSuccessful()) {
-
-                        Uri downloadUri = task.getResult();
-
-                        Log.d(TAG, "uploadTask complete. Uploaded image/video id:" +
-                                imageToUpload.getPart_id() + " of lesson id:" + lesson_id);
-
-                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
-                                .format(new Date());
-//                        addToLog(time_stamp + ":\nLesson id:" + lesson_id +
-//                                "\nSuccessfully uploaded image id:" + imageToUpload.getPart_id() +
-//                        "\nRemote Url:" + downloadUri.toString());
-                        addToLog(time_stamp + ":\nLesson id:" + lesson_id +
-                                "\nSuccessfully uploaded image/video id:" + imageToUpload.getPart_id());
-
-                        // Save the photoUrl in the database
-                        ContentValues contentValues = new ContentValues();
-                        // Put the lesson title into the ContentValues
-                        if (imageToUpload.getImageType().equals(VIDEO)) {
-                            contentValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI,
-                                    filePath);
-                        } else if (imageToUpload.getImageType().equals(IMAGE)) {
-                            contentValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI,
-                                    filePath);
-                        }
-
-                        // Insert the content values via a ContentResolver
-                        ContentResolver contentResolver = mContext.getContentResolver();
-                        Uri updateUri = ContentUris.withAppendedId(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
-                                imageToUpload.getPart_id());
-                        int numberOfImagesUpdated = contentResolver.update(
-                                updateUri,
-                                contentValues,
-                                null,
-                                null);
-
-                        Log.d(TAG, "Updated " + numberOfImagesUpdated + " item(s) in the database");
-
-                        time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
-                                .format(new Date());
-//                        addToLog(time_stamp + ":\nLesson id:" + lesson_id +
-//                                "\nUpdated " + numberOfImagesUpdated + " item(s) in the database");
-
-                        Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
-
-                        if (currentImg == finalImg) {
-                            // Finished uploading images: call upload lesson
-                            Log.d(TAG, "Call upload to lesson table");
-                            addToLog(time_stamp + ":\nNow uploading lesson table.");
-                            uploadLesson(lesson_id);
-                        }
-
-                    } else {
-
-                        Log.e(TAG, "uploadTask ERROR. Image id:" +
-                                imageToUpload.getPart_id() + " of lesson id:" + lesson_id);
+            }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception exception) {
+                        // Handle unsuccessful uploads
+                        handleTaskFailure(
+                                exception,
+                                imageToUpload.getPart_id(),
+                                imageToUpload.getImageType(),
+                                filePath,
+                                lesson_id);
 
                         String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                                 .format(new Date());
-                        addToLog(time_stamp + ":\nLesson id:" + lesson_id +
-                                "\nUPLOAD ERROR. Image id:" + imageToUpload.getPart_id());
-
                         Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
 
                         if (currentImg == finalImg) {
@@ -536,15 +530,18 @@ public class MyFirebaseFragment extends Fragment implements
                             uploadLesson(lesson_id);
                         }
                     }
-                }
             });
 
+            // get the next image (for loop)
         }
 
     }
 
 
+    // Helper method to upload the lesson with lesson_id
     private void uploadLesson(Long lesson_id) {
+
+        Log.d(TAG, "uploadLesson lesson_id:" + lesson_id);
 
         ContentResolver contentResolver = mContext.getContentResolver();
         Uri lessonUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, lesson_id);
@@ -604,6 +601,12 @@ public class MyFirebaseFragment extends Fragment implements
                 selectionArgs,
                 null);
 
+        // Return if there aren't parts
+        if (null == partsCursor) {
+            Log.d(TAG, "No parts in this lesson");
+            //mCallback.onUploadFailure(new Exception("No lesson parts"));
+        }
+
         ArrayList<LessonPart> lessonParts = new ArrayList<>();
 
         if (null != partsCursor) {
@@ -644,48 +647,48 @@ public class MyFirebaseFragment extends Fragment implements
             }
 
             partsCursor.close();
-
-            // set the lesson instance with the values read from the local database
-            lesson.setLesson_parts(lessonParts);
-
-            Log.v(TAG, "uploadLesson (to database): lesson title:" + lesson.getLesson_title());
-
-            // Upload the Lesson instance to Firebase Database
-            final String documentName = String.format( Locale.US, "%s_%03d",
-                    lesson.getUser_uid(), lesson.getLesson_id());
-
-            Log.d(TAG, "uploadDatabase documentName:" + documentName);
-
-            final String logText = lesson.getLesson_title();
-            mFirebaseDatabase.collection("lessons").document(documentName)
-                    .set(lesson)
-                    .addOnSuccessListener(new OnSuccessListener<Void>() {
-                        @Override
-                        public void onSuccess(Void aVoid) {
-                            Log.d(TAG, "DocumentSnapshot successfully written with name:" + documentName);
-                            String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
-                                    .format(new Date());
-                            addToLog(time_stamp + ":\nLesson " + logText +
-                                    "\nDocumentSnapshot successfully written with name:" + documentName);
-                            mCallback.onUploadSuccess();
-                        }
-                    })
-                    .addOnFailureListener(new OnFailureListener() {
-                        @Override
-                        public void onFailure(@NonNull Exception e) {
-                            Log.e(TAG, "Error writing document on Firebase:", e);
-                            String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
-                                    .format(new Date());
-                            addToLog(time_stamp + ":\nLesson " + logText +
-                                    "\nError writing document on Firebase!" +
-                                    "\nDocument name:" + documentName +"\n" + e.getMessage());
-                            mCallback.onUploadFailure(e);
-                        }
-                    });
-
         }
 
-        // Close the cursor for prevent database problems
+
+        // set the lesson instance with the values read from the local database
+        lesson.setLesson_parts(lessonParts);
+
+        Log.v(TAG, "uploadLesson (to database): lesson title:" + lesson.getLesson_title());
+
+        // Upload the Lesson instance to Firebase Database
+        final String documentName = String.format( Locale.US, "%s_%03d",
+                lesson.getUser_uid(), lesson.getLesson_id());
+
+        Log.d(TAG, "uploadDatabase documentName:" + documentName);
+
+        final String logText = lesson.getLesson_title();
+        mFirebaseDatabase.collection("lessons").document(documentName)
+                .set(lesson)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        Log.d(TAG, "DocumentSnapshot successfully written with name:" + documentName);
+                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                                .format(new Date());
+                        addToLog(time_stamp + ":\nLesson " + logText +
+                                "\nDocumentSnapshot successfully written with name:" + documentName);
+                        mCallback.onUploadSuccess();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.e(TAG, "Error writing document on Firebase:", e);
+                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                                .format(new Date());
+                        addToLog(time_stamp + ":\nLesson " + logText +
+                                "\nError writing document on Firebase!" +
+                                "\nDocument name:" + documentName +"\n" + e.getMessage());
+                        mCallback.onUploadFailure(e);
+                    }
+                });
+
+        // Close the lesson cursor
         lessonCursor.close();
 
     }
@@ -1071,18 +1074,232 @@ public class MyFirebaseFragment extends Fragment implements
     }
 
 
-
     @Override
-    public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
+    public void onSaveInstanceState(@NonNull Bundle outState) {
 
         Log.d(TAG, "onSaveInstanceState: saving instance state");
 
         Parcelable recyclerViewState = mRecyclerView.getLayoutManager().onSaveInstanceState();
-        savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
+        outState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
 
-        savedInstanceState.putString(USER_UID, this.userUid);
+        outState.putString(USER_UID, this.userUid);
 
-        super.onSaveInstanceState(savedInstanceState);
+        int savedItems = 0;
+
+        for (int i = 0; i < uploadingImages.size(); i++){
+
+            UploadingImage uploadingImage = uploadingImages.get(i);
+
+            if (uploadingImage.getStorageRefString()!= null) {
+                outState.putString(REFERENCE + i, uploadingImage.getStorageRefString());
+            }
+            if (uploadingImage.getPartId()!= null) {
+                outState.putLong(PART_ID + i, uploadingImage.getPartId());
+            }
+            if (uploadingImage.getImageType() != null) {
+                outState.putString(IMAGE_TYPE + i, uploadingImage.getImageType());
+            }
+            if (uploadingImage.getFileUriString() != null) {
+                outState.putString(FILE_URI_STRING + i, uploadingImage.getFileUriString());
+            }
+            if (uploadingImage.getFileUriString() != null) {
+                outState.putLong(LESSON_ID + i, uploadingImage.getLessonId());
+            }
+
+            savedItems++;
+        }
+
+        outState.putInt(SAVED_ITEMS, savedItems);
+
+        super.onSaveInstanceState(outState);
+    }
+
+
+    // Helper method called by the onCreate when recovering the fragment saved state
+    // This method will resume and process all pending tasks
+    private void processPendingTasks(Bundle savedInstanceState) {
+
+        int savedItems = savedInstanceState.getInt(SAVED_ITEMS);
+
+        if (!(savedItems > 0)) {
+            return;
+        }
+
+        // Will resume each task saved
+        for (int i = 0; i < savedItems; i++){
+
+            // Each image has a unique storage reference, so a unique task is possible
+           final String stringRef = savedInstanceState.getString(REFERENCE + i);
+           final long partId = savedInstanceState.getLong(PART_ID + i);
+           final String imageType = savedInstanceState.getString(IMAGE_TYPE + i);
+           final String uriString = savedInstanceState.getString(FILE_URI_STRING + i);
+           final long lessonId = savedInstanceState.getLong(LESSON_ID + i);
+
+            // If there was an upload in progress, get its reference and create a new StorageReference
+            if (stringRef == null) {
+                return;
+            }
+
+            mStorageReference = FirebaseStorage.getInstance().getReferenceFromUrl(stringRef);
+
+            // Find all UploadTasks under this StorageReference (in this example, there should be one)
+            List<UploadTask> tasks = mStorageReference.getActiveUploadTasks();
+            if (tasks.size() > 0) {
+
+                // cancel all tasks above the first task for this storageRef (this unique image)
+                if (tasks.size() > 1) {
+                    for (int j = 1; j < tasks.size(); j++) {
+                        tasks.get(j).cancel();
+                    }
+                }
+
+                // resume the first task
+
+                // Get the task monitoring the upload
+                UploadTask task = tasks.get(0);
+
+//                // Add new listeners to the task using an Activity scope
+//                task.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+//                    @Override
+//                    public void onSuccess(UploadTask.TaskSnapshot state) {
+//                        //call helper function to handle the event.
+//                        handleTaskSuccess(state, imageId, imageType, uriString, lessonId);
+//                    }
+//                });
+
+                final int currentImg = i;
+                final int finalImg = savedItems - 1;
+
+                // Observe state change events such as progress, pause, and resume
+                task.addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
+                    @Override
+                    public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
+                        double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+                        Log.d(TAG, "Upload is " + progress + "% done");
+                        addToLog("Image part id: "  + partId +
+                                " (resumed) upload is " + progress + "% done.");
+                    }
+                }).addOnPausedListener(new OnPausedListener<UploadTask.TaskSnapshot>() {
+                    @Override
+                    public void onPaused(UploadTask.TaskSnapshot taskSnapshot) {
+                        Log.d(TAG, "Upload is paused");
+                        addToLog("Image part id: "  +partId +
+                                " (resumed) upload is paused.");
+                    }
+                }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                    @Override
+                    public void onSuccess(UploadTask.TaskSnapshot state) {
+                        //call helper function to handle the event.
+                        handleTaskSuccess(
+                                state,
+                                partId,
+                                imageType,
+                                uriString,
+                                lessonId);
+
+                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                                .format(new Date());
+                        Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
+
+                        if (currentImg == finalImg) {
+                            // Finished uploading images: call upload lesson
+                            Log.d(TAG, "Call upload to lesson table");
+                            addToLog(time_stamp + ":\nNow uploading lesson table.");
+                            uploadLesson(lessonId);
+                        }
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception exception) {
+                        // Handle unsuccessful uploads
+                        handleTaskFailure(
+                                exception,
+                                partId,
+                                imageType,
+                                uriString,
+                                lessonId);
+
+                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                                .format(new Date());
+                        Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
+
+                        if (currentImg == finalImg) {
+                            // Finished uploading images: call upload lesson
+                            Log.d(TAG, "Call upload to lesson table");
+                            addToLog(time_stamp + ":\nNow uploading lesson table.");
+                            uploadLesson(lessonId);
+                        }
+                    }
+                });
+
+            }
+        }
+    }
+
+
+    private void handleTaskSuccess(UploadTask.TaskSnapshot state,
+                                   long partId,
+                                   String imageType,
+                                   String fileUriString,
+                                   long lessonId) {
+
+        Log.d(TAG, "handleTaskSuccess complete. Uploaded image/video id:" +
+                partId + " of lesson id:" + lessonId);
+
+        if (state.getMetadata() != null) {
+            Log.d(TAG, "bucket:" + state.getMetadata().getBucket());
+        }
+
+        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                .format(new Date());
+        addToLog(time_stamp + ":\nLesson id:" + lessonId +
+                "\nSuccessfully uploaded image/video id:" + partId);
+
+        // Save the photoUrl in the database
+        ContentValues contentValues = new ContentValues();
+        // Put the lesson title into the ContentValues
+
+        // test for integrity
+        if(imageType == null) {
+            return;
+        }
+
+        if (imageType.equals(VIDEO)) {
+            contentValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI,
+                    fileUriString);
+        } else if (imageType.equals(IMAGE)) {
+            contentValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI,
+                    fileUriString);
+        }
+
+        // Insert the content values via a ContentResolver
+        ContentResolver contentResolver = mContext.getContentResolver();
+        Uri updateUri = ContentUris.withAppendedId(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
+                partId);
+        int numberOfImagesUpdated = contentResolver.update(
+                updateUri,
+                contentValues,
+                null,
+                null);
+
+        Log.d(TAG, "Updated " + numberOfImagesUpdated + " item(s) in the database");
+
+    }
+
+
+    private void handleTaskFailure(Exception e,
+                                   long partId,
+                                   String imageType,
+                                   String fileUriString,
+                                   long lessonId) {
+
+        Log.e(TAG, "handleTaskFailure failure: image/video id:" +
+                partId + " of lesson id:" + lessonId, e);
+        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                .format(new Date());
+        addToLog(time_stamp + ":\nLesson id:" + lessonId +
+                "\nUpload failure image/video id:" + partId + "\nError:" + e.getMessage());
+
     }
 
 
