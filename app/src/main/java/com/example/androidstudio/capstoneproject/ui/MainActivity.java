@@ -120,6 +120,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final String LOG_VISIBILITY = "logVisibility";
     private static final String DATABASE_VISIBILITY = "databaseVisibility";
     private static final String LOCAL_USER_UID = "localUserUid";
+    private static final String LOADING_INDICATOR = "loadingIndicator";
 
     // Final strings
     private static final String USER_DATABASE = "userDatabase";
@@ -136,6 +137,7 @@ public class MainActivity extends AppCompatActivity implements
     private int logVisibility;
     private String databaseVisibility;
     private String mUserUid; // The user's ID, unique to the Firebase project.
+    private boolean loadingIndicator;
 
     // User data variables
     private String mUsername;
@@ -201,6 +203,7 @@ public class MainActivity extends AppCompatActivity implements
             logVisibility =  savedInstanceState.getInt(LOG_VISIBILITY);
             databaseVisibility = savedInstanceState.getString(DATABASE_VISIBILITY);
             mUserUid = savedInstanceState.getString(LOCAL_USER_UID);
+            loadingIndicator = savedInstanceState.getBoolean(LOADING_INDICATOR);
 
         } else {
             // Initialize the state vars
@@ -216,6 +219,7 @@ public class MainActivity extends AppCompatActivity implements
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
             mUserUid = sharedPreferences.getString(LOCAL_USER_UID,"");
             databaseVisibility = sharedPreferences.getString(DATABASE_VISIBILITY, USER_DATABASE);
+            loadingIndicator = false;
         }
 
         // Init the main view
@@ -309,6 +313,7 @@ public class MainActivity extends AppCompatActivity implements
         lessonsContainer.setVisibility(mainVisibility);
         partsContainer.setVisibility(partsVisibility);
         logContainer.setVisibility(logVisibility);
+        mainFragment.setLoadingIndicator(loadingIndicator);
 
         Log.d(TAG, "lessonsContainer visibility:" + lessonsContainer.getVisibility());
         Log.d(TAG, "partsContainer visibility:" + partsContainer.getVisibility());
@@ -793,7 +798,8 @@ public class MainActivity extends AppCompatActivity implements
      * Other helper methods. Handle for refreshing/uploading.
      */
     private void refreshDatabase() {
-        mainFragment.setLoadingIndicator(true);
+        loadingIndicator = true;
+        mainFragment.setLoadingIndicator(loadingIndicator);
         // Calls the refresh method
         firebaseFragment.refreshDatabase(databaseVisibility);
         deselectViews();
@@ -804,7 +810,8 @@ public class MainActivity extends AppCompatActivity implements
         // Verify if there is a lesson selected
         if (selectedLesson_id != -1) {
             // calls the upload method
-            mainFragment.setLoadingIndicator(true);
+            loadingIndicator = true;
+            mainFragment.setLoadingIndicator(loadingIndicator);
             firebaseFragment.setFirebase(mFirebaseDatabase, mFirebaseStorage, mUserUid);
             firebaseFragment.uploadDatabase(selectedLesson_id);
             //uploadDatabase(selectedLesson_id);
@@ -938,6 +945,8 @@ public class MainActivity extends AppCompatActivity implements
 
         outState.putString(DATABASE_VISIBILITY, databaseVisibility);
         outState.putString(LOCAL_USER_UID, mUserUid);
+
+        outState.putBoolean(LOADING_INDICATOR, loadingIndicator);
 
         super.onSaveInstanceState(outState);
     }
@@ -1127,7 +1136,8 @@ public class MainActivity extends AppCompatActivity implements
     // Receive communication form MyFirebaseFragment instance
     @Override
     public void onUploadSuccess() {
-        mainFragment.setLoadingIndicator(false);
+        loadingIndicator = false;
+        mainFragment.setLoadingIndicator(loadingIndicator);
         Toast.makeText(mContext,
                 "Lesson uploaded!", Toast.LENGTH_LONG).show();
         // Deselect the last view selected
@@ -1137,7 +1147,8 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onUploadFailure(@NonNull Exception e) {
-        mainFragment.setLoadingIndicator(false);
+        loadingIndicator = false;
+        mainFragment.setLoadingIndicator(loadingIndicator);
         Toast.makeText(mContext,
                 "Error on uploading:" + e.getMessage(), Toast.LENGTH_LONG).show();
         Log.e(TAG, "onUploadFailure error:" + e.getMessage());
@@ -1145,14 +1156,16 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onDownloadComplete() {
-        mainFragment.setLoadingIndicator(false);
+        loadingIndicator = false;
+        mainFragment.setLoadingIndicator(loadingIndicator);
         Toast.makeText(mContext,
                 "Download completed. Updating the local database...", Toast.LENGTH_LONG).show();
     }
 
     @Override
     public void onDownloadFailure(@NonNull Exception e) {
-        mainFragment.setLoadingIndicator(false);
+        loadingIndicator = false;
+        mainFragment.setLoadingIndicator(loadingIndicator);
         Toast.makeText(mContext,
                 "Error on downloading:" + e.getMessage(), Toast.LENGTH_LONG).show();
         Log.e(TAG, "onDownloadFailure error:" + e.getMessage());

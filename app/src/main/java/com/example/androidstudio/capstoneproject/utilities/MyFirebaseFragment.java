@@ -476,14 +476,16 @@ public class MyFirebaseFragment extends Fragment implements
                 @Override
                 public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
                     double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
-                    Log.d(TAG, "nUpload is " + progress + "% done");
+                    Log.d(TAG, "Image part id: "  + imageToUpload.getPart_id() +
+                            " upload is " + String.format(Locale.US, "%.2f", progress) + "% done.");
                     addToLog("Image part id: "  + imageToUpload.getPart_id() +
-                            " upload is " + progress + "% done.");
+                            " upload is " + String.format(Locale.US, "%.2f", progress) + "% done.");
                 }
             }).addOnPausedListener(new OnPausedListener<UploadTask.TaskSnapshot>() {
                 @Override
                 public void onPaused(UploadTask.TaskSnapshot taskSnapshot) {
-                    Log.d(TAG, "Upload is paused");
+                    Log.d(TAG, "Image part id: "  + imageToUpload.getPart_id() +
+                            " upload is paused.");
                     addToLog("Image part id: "  + imageToUpload.getPart_id() +
                             " upload is paused.");
                 }
@@ -1050,9 +1052,7 @@ public class MyFirebaseFragment extends Fragment implements
         // Insert the content values via a ContentResolver
         Uri uri = mContext.getContentResolver().insert(LessonsContract.MyLogEntry.CONTENT_URI, contentValues);
 
-        if (uri != null) {
-            Log.d(TAG, "addToLog uri:" + uri.toString());
-        } else {
+        if (uri == null) {
             Log.e(TAG, "addToLog: error in inserting item on log",
                     new Exception("addToLog: error in inserting item on log"));
         }
@@ -1174,16 +1174,16 @@ public class MyFirebaseFragment extends Fragment implements
                     @Override
                     public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
                         double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
-                        Log.d(TAG, "Upload is " + progress + "% done");
+                        Log.d(TAG, "Image part id: "  + partId +
+                                " (resumed) upload is " + String.format(Locale.US, "%.2f", progress) + "% done.");
                         addToLog("Image part id: "  + partId +
-                                " (resumed) upload is " + progress + "% done.");
+                                " (resumed) upload is " + String.format(Locale.US, "%.2f", progress) + "% done.");
                     }
                 }).addOnPausedListener(new OnPausedListener<UploadTask.TaskSnapshot>() {
                     @Override
                     public void onPaused(UploadTask.TaskSnapshot taskSnapshot) {
-                        Log.d(TAG, "Upload is paused");
-                        addToLog("Image part id: "  +partId +
-                                " (resumed) upload is paused.");
+                        Log.d(TAG, "Image part id: "  +partId + " (resumed) upload is paused.");
+                        addToLog("Image part id: "  +partId + " (resumed) upload is paused.");
                     }
                 }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                     @Override
@@ -1242,7 +1242,7 @@ public class MyFirebaseFragment extends Fragment implements
                                    String fileUriString,
                                    long lessonId) {
 
-        Log.d(TAG, "handleTaskSuccess complete. Uploaded image/video id:" +
+        Log.d(TAG, "handleTaskSuccess complete. Uploaded " + imageType + " id:" +
                 partId + " of lesson id:" + lessonId);
 
         if (state.getMetadata() != null) {
@@ -1252,7 +1252,7 @@ public class MyFirebaseFragment extends Fragment implements
         String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                 .format(new Date());
         addToLog(time_stamp + ":\nLesson id:" + lessonId +
-                "\nSuccessfully uploaded image/video id:" + partId);
+                "\nSuccessfully uploaded " + imageType + " id:" + partId);
 
         // Save the photoUrl in the database
         ContentValues contentValues = new ContentValues();
@@ -1292,12 +1292,12 @@ public class MyFirebaseFragment extends Fragment implements
                                    String fileUriString,
                                    long lessonId) {
 
-        Log.e(TAG, "handleTaskFailure failure: image/video id:" +
+        Log.e(TAG, "handleTaskFailure failure: " + imageType + " id:" +
                 partId + " of lesson id:" + lessonId, e);
         String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                 .format(new Date());
         addToLog(time_stamp + ":\nLesson id:" + lessonId +
-                "\nUpload failure image/video id:" + partId + "\nError:" + e.getMessage());
+                "\nUpload failure " + imageType + " id:" + partId + "\nError:" + e.getMessage());
 
     }
 

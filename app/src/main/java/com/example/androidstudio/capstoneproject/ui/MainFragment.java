@@ -443,12 +443,13 @@ public class MainFragment extends Fragment implements
 
     public void setLoadingIndicator(Boolean value) {
 
-        if (value) {
-            mLoadingIndicator.setVisibility(View.VISIBLE);
-        } else {
-            mLoadingIndicator.setVisibility(View.INVISIBLE);
+        if (mLoadingIndicator != null) {
+            if (value) {
+                mLoadingIndicator.setVisibility(View.VISIBLE);
+            } else {
+                mLoadingIndicator.setVisibility(View.INVISIBLE);
+            }
         }
-
     }
 
 
