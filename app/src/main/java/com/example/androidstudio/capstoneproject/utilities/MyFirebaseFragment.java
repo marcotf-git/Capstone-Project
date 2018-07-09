@@ -40,6 +40,8 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.OnPausedListener;
+import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.google.gson.Gson;
@@ -72,6 +74,7 @@ public class MyFirebaseFragment extends Fragment implements
     private FirebaseStorage mFirebaseStorage;
     private StorageReference mImagesStorageReference;
     private StorageReference mVideosStorageReference;
+    private StorageReference mStorageReference;
 
     // Loader id
     private static final int ID_LOG_LOADER = 30;
@@ -79,6 +82,8 @@ public class MyFirebaseFragment extends Fragment implements
     private String userUid;
 
     private Context mContext;
+
+    private List<UploadTask> uploadTasks;
 
     // Views
     private TextView mErrorMessageDisplay;
@@ -299,34 +304,19 @@ public class MyFirebaseFragment extends Fragment implements
     }
 
 
-    // Helper method for uploading a specific lesson to Firebase database Firestore and to
-    // Firebase Storage
+    // Helper method for uploading a specific lesson to Firebase Database and the images to
+    // Firebase Storage (saving the link in the database before uploading the database)
     public void uploadDatabase(final Long lesson_id) {
 
         // First, upload the images
-        uploadImages(lesson_id);
-
-        // At the end, the uploadImages will call the uploadLesson
-    }
-
-
-    // Helper method for uploading specific lesson parts images to Cloud Firebase Storage
-    private void uploadImages(final Long lesson_id) {
-
-        Log.d(TAG, "uploadImages");
+        Log.d(TAG, "uploadDatabase lesson+_id:" + lesson_id);
 
         long mLessonId =lesson_id;
         String mUserUid = userUid;
 
-        Log.d(TAG, "uploadImages mLessonId:" + mLessonId);
-        //Log.d(TAG, "uploadImages lesson.getLesson_title():" + lesson.getLesson_title());
-
-        mImagesStorageReference = mFirebaseStorage.getReference().child("images");
-        mVideosStorageReference = mFirebaseStorage.getReference().child("videos");
-
-        ContentResolver contentResolver = mContext.getContentResolver();
-
         // Query the parts table with the same lesson_id
+        ContentResolver contentResolver = mContext.getContentResolver();
+        
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
         String[] selectionArgs = {Long.toString(mLessonId)};
         Cursor partsCursor = contentResolver.query(
@@ -406,8 +396,9 @@ public class MyFirebaseFragment extends Fragment implements
 
 
         // Upload the uri's stored in the images array, and after upload the lesson
+        mStorageReference =  mFirebaseStorage.getReference().child(mUserUid);
 
-        final String documentName = String.format( Locale.US, "%s_%03d", mUserUid, mLessonId);
+        final String lessonRef = String.format( Locale.US, "%03d", mLessonId);
 
         for (int imgIndex = 0; imgIndex < images.size(); imgIndex++) {
 
@@ -419,22 +410,17 @@ public class MyFirebaseFragment extends Fragment implements
 
             Log.d(TAG, "selected image/video uri:" + uri.toString());
 
-            StorageReference auxStorage = null;
             String rootDir = null;
             if (imageToUpload.getImageType().equals(VIDEO)) {
-                auxStorage =  mVideosStorageReference.child(documentName + "/" + uri.getLastPathSegment());
                 rootDir = "videos";
             } else if (imageToUpload.getImageType().equals(IMAGE)) {
-                auxStorage =  mImagesStorageReference.child(documentName + "/" + uri.getLastPathSegment());
                 rootDir = "images";
             }
 
-            if (auxStorage == null) {
-                return;
-            }
-
-            final StorageReference storageRef = auxStorage.child(documentName + "/" + uri.getLastPathSegment());
-            final String filePath = rootDir + "/" + documentName + "/" + uri.getLastPathSegment();
+            final StorageReference storageRef = mStorageReference.child(rootDir + "/" + lessonRef +
+                    "/" + uri.getLastPathSegment());
+            final String filePath = mUserUid + "/" + rootDir + "/" + lessonRef +
+                    "/" + uri.getLastPathSegment();
 
             // // Refresh permissions (player will load a local file)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
@@ -452,14 +438,28 @@ public class MyFirebaseFragment extends Fragment implements
             // Upload file to Firebase Storage
             UploadTask uploadTask = storageRef.putFile(uri);
 
+            // Observe state change events such as progress, pause, and resume
+            uploadTask.addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onProgress(UploadTask.TaskSnapshot taskSnapshot) {
+                    double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+                    Log.d(TAG, "Upload is " + progress + "% done");
+                }
+            }).addOnPausedListener(new OnPausedListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onPaused(UploadTask.TaskSnapshot taskSnapshot) {
+                    Log.d(TAG, "Upload is paused");
+                }
+            });
+
+
+            // Continue with the task to get the download URL
             Task<Uri> urlTask = uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
                 @Override
                 public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
                     if (!task.isSuccessful() && task.getException() != null) {
                         throw task.getException();
                     }
-
-                    // Continue with the task to get the download URL
                     return storageRef.getDownloadUrl();
                 }
             }).addOnCompleteListener(new OnCompleteListener<Uri>() {
@@ -637,7 +637,7 @@ public class MyFirebaseFragment extends Fragment implements
                 lessonPart.setLocal_video_uri(localVideoUri);
                 lessonPart.setCloud_video_uri(cloudVideoUri);
 
-                Log.v(TAG, "lessonPart:" + lessonPart.toString());
+                Log.v(TAG, "uploadLesson (to database): lessonPart title:" + lessonPart.getTitle());
 
                 lessonParts.add(lessonPart);
                 partsCursor.moveToNext();
@@ -648,7 +648,7 @@ public class MyFirebaseFragment extends Fragment implements
             // set the lesson instance with the values read from the local database
             lesson.setLesson_parts(lessonParts);
 
-            Log.v(TAG, "uploadDatabase lesson:" + lesson.toString());
+            Log.v(TAG, "uploadLesson (to database): lesson title:" + lesson.getLesson_title());
 
             // Upload the Lesson instance to Firebase Database
             final String documentName = String.format( Locale.US, "%s_%03d",
@@ -961,7 +961,56 @@ public class MyFirebaseFragment extends Fragment implements
         // get the group table, query the url's and download the images on local files
         // write the file names in the table, in the local uri's
 
-
+        // Load lesson parts from local database into the Lesson instance
+//         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
+//         String[] selectionArgs = {Long.toString(lesson_id)};
+//         Cursor partsCursor = contentResolver.query(
+//                 LessonsContract.MyLessonPartsEntry.CONTENT_URI,
+//                 null,
+//                 selection,
+//                 selectionArgs,
+//                 null);
+//
+//         ArrayList<LessonPart> lessonParts = new ArrayList<>();
+//
+//         if (null != partsCursor) {
+//             partsCursor.moveToFirst();
+//             int nPartsRows = partsCursor.getCount();
+//             for (int j = 0; j < nPartsRows; j++) {
+//
+//                 Long item_id = partsCursor.getLong(partsCursor.
+//                         getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
+//                 // lesson_id is already loaded! (don't need to load, is the lesson_id parameter)
+//                 String lessonPartTitle = partsCursor.getString(partsCursor.
+//                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
+//                 String lessonPartText = partsCursor.getString(partsCursor.
+//                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TEXT));
+//                 String localImageUri = partsCursor.getString(partsCursor.
+//                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
+//                 String cloudImageUri = partsCursor.getString(partsCursor.
+//                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
+//                 String localVideoUri = partsCursor.getString(partsCursor.
+//                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
+//                 String cloudVideoUri = partsCursor.getString(partsCursor.
+//                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
+//
+//                 LessonPart lessonPart = new LessonPart();
+//                 lessonPart.setPart_id(item_id);
+//                 lessonPart.setLesson_id(lesson_id);
+//                 lessonPart.setTitle(lessonPartTitle);
+//                 lessonPart.setText(lessonPartText);
+//                 lessonPart.setLocal_image_uri(localImageUri);
+//                 lessonPart.setCloud_image_uri(cloudImageUri);
+//                 lessonPart.setLocal_video_uri(localVideoUri);
+//                 lessonPart.setCloud_video_uri(cloudVideoUri);
+//
+//                 Log.v(TAG, "lessonPart:" + lessonPart.toString());
+//
+//                 lessonParts.add(lessonPart);
+//                 partsCursor.moveToNext();
+//             }
+//
+//             partsCursor.close();
 
      }
 
