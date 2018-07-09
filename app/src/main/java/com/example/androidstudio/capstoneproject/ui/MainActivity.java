@@ -496,6 +496,10 @@ public class MainActivity extends AppCompatActivity implements
         mUserEmail = userEmail;
         mUserUid = userUid;
 
+        mUserUid = "FWYYkYr4EbRtMIa9oM7JhgG2pfd2";
+
+        Log.d(TAG, "userUid:" + userUid);
+
         // save the user uid locally
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
         sharedPreferences.edit().putString(LOCAL_USER_UID, mUserUid).apply();
@@ -849,6 +853,7 @@ public class MainActivity extends AppCompatActivity implements
                     null);
 
         if (imagesCursor != null) {
+            imagesCursor.moveToFirst();
             uploadCountFinal = imagesCursor.getCount();
             imagesCursor.close();
         } else {
@@ -1196,7 +1201,13 @@ public class MainActivity extends AppCompatActivity implements
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                     "Upload of images complete successfully!" +
                             "\nNow uploading the lesson text...",
-                    Snackbar.LENGTH_LONG);
+                    Snackbar.LENGTH_INDEFINITE);
+            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackBar.dismiss();
+                }
+            });
             snackBar.show();
 
             uploadDatabase();
@@ -1278,7 +1289,7 @@ public class MainActivity extends AppCompatActivity implements
         if (uploadCount >= uploadCountFinal) {
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                     "Upload of text complete, but " +
-                            "with error!" + "\nPlease, see the log!\nNow uploading the text...",
+                            "with error!" + "\nPlease, see the log!",
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
                 @Override
