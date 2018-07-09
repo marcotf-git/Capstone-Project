@@ -4,4 +4,10 @@
         <item>@string/image</item>
         <item>@string/video</item>
     </string-array>
+
+    <string-array name="uploading_array">
+        <item>@string/images</item>
+        <item>@string/text</item>
+    </string-array>
+
 </resources>

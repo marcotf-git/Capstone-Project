@@ -73,5 +73,9 @@
     <string name="form_pick_video">Select a video</string>
     <string name="dialog_delete_lesson_part">Delete the lesson part?</string>
     <string name="log">Log</string>
+    <string name="upload_type">Please, choose what to upload</string>
+
+    <string name="images">Images or Videos</string>
+    <string name="text">Text Content</string>
 
 </resources>

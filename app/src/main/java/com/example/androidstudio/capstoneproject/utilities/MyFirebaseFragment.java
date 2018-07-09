@@ -32,7 +32,6 @@ import com.example.androidstudio.capstoneproject.data.LessonPart;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.example.androidstudio.capstoneproject.data.UploadingImage;
 import com.example.androidstudio.capstoneproject.ui.LogListAdapter;
-import com.example.androidstudio.capstoneproject.ui.MainFragment;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -46,15 +45,12 @@ import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-
-import static com.google.common.net.HostSpecifier.isValid;
 
 
 public class MyFirebaseFragment extends Fragment implements
@@ -82,6 +78,7 @@ public class MyFirebaseFragment extends Fragment implements
     private FirebaseFirestore mFirebaseDatabase;
     private FirebaseStorage mFirebaseStorage;
     private StorageReference mStorageReference;
+    // global ref to the storage
     private StorageReference storageRef;
 
     // Loader id
@@ -91,7 +88,6 @@ public class MyFirebaseFragment extends Fragment implements
 
     private Context mContext;
 
-    private List<UploadTask> uploadTasks;
     private List<UploadingImage> uploadingImages;
 
     // Views
@@ -108,8 +104,10 @@ public class MyFirebaseFragment extends Fragment implements
 
     // Listener for sending information to the Activity
     public interface OnCloudListener {
-        void onUploadSuccess();
-        void onUploadFailure(@NonNull Exception e);
+        void onUploadImageSuccess();
+        void onUploadImageFailure(@NonNull Exception e);
+        void onUploadDatabaseSuccess();
+        void onUploadDatabaseFailure(@NonNull Exception e);
         void onDownloadComplete();
         void onDownloadFailure(@NonNull Exception e);
         void onDeletedSuccess();
@@ -316,12 +314,12 @@ public class MyFirebaseFragment extends Fragment implements
     }
 
 
-    // Helper method for uploading a specific lesson to Firebase Database and the images to
-    // Firebase Storage (saving the link in the database before uploading the database)
-    public void uploadDatabase(final Long lesson_id) {
+    // Helper method for uploading the images to
+    // Firebase Storage
+    public void uploadImages(final Long lesson_id) {
 
         // First, upload the images
-        Log.d(TAG, "uploadDatabase lesson+_id:" + lesson_id);
+        Log.d(TAG, "uploadImages lesson+_id:" + lesson_id);
 
         long mLessonId =lesson_id;
         String mUserUid = userUid;
@@ -339,18 +337,18 @@ public class MyFirebaseFragment extends Fragment implements
                 null);
 
         if (partsCursor == null) {
-            Log.e(TAG, "uploadDatabase: failed to get parts cursor (database error)");
-            mCallback.onUploadFailure(new Exception("Failed to get parts cursor (database failure)"));
+            Log.e(TAG, "uploadImages: failed to get parts cursor (database error)");
+            mCallback.onUploadImageFailure(new Exception("Failed to get parts cursor (database failure)"));
             return;
         }
 
-        int nRows = partsCursor.getCount();
+        long nRows = partsCursor.getCount();
 
         if (nRows == 0) {
-            Log.d(TAG, "uploadDatabase: no parts found in local database for the lesson _id:"
+            Log.d(TAG, "uploadImages: no parts found in local database for the lesson _id:"
                     + mLessonId);
             partsCursor.close();
-            mCallback.onUploadFailure(new Exception("Error: no parts in this lesson"));
+            mCallback.onUploadImageFailure(new Exception("Error: no parts in this lesson"));
             return;
         }
 
@@ -411,9 +409,7 @@ public class MyFirebaseFragment extends Fragment implements
         }
 
 
-        // Upload the uri's stored in the images array, and after upload the lesson
-
-        uploadTasks = new ArrayList<>();
+        // Upload the uri's stored in the images array, and after, upload the lesson
         uploadingImages = new ArrayList<>();
 
         // This has an activity scope, so will unregister when the activity stops
@@ -504,12 +500,8 @@ public class MyFirebaseFragment extends Fragment implements
                             .format(new Date());
                     Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
 
-                    if (currentImg == finalImg) {
-                        // Finished uploading images: call upload lesson
-                        Log.d(TAG, "Call upload to lesson table");
-                        addToLog(time_stamp + ":\nNow uploading lesson table.");
-                        uploadLesson(lesson_id);
-                    }
+                    mCallback.onUploadImageSuccess();
+
                 }
             }).addOnFailureListener(new OnFailureListener() {
                     @Override
@@ -524,27 +516,25 @@ public class MyFirebaseFragment extends Fragment implements
 
                         String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                                 .format(new Date());
-                        Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
+                        Log.e(TAG, "Error: currentImg:" + currentImg + " finalImg:" + finalImg, exception);
 
-                        if (currentImg == finalImg) {
-                            // Finished uploading images: call upload lesson
-                            Log.d(TAG, "Call upload to lesson table");
-                            addToLog(time_stamp + ":\nNow uploading lesson table.");
-                            uploadLesson(lesson_id);
-                        }
+                        mCallback.onUploadImageFailure(exception);
                     }
             });
-
-            // get the next image (for loop)
         }
-
     }
 
 
-    // Helper method to upload the lesson with lesson_id
-    private void uploadLesson(Long lesson_id) {
+    // Helper method to upload the lesson text to
+    // Firebase Database
+    public void uploadLesson(Long lesson_id) {
 
         Log.d(TAG, "uploadLesson lesson_id:" + lesson_id);
+
+        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                .format(new Date());
+        addToLog(time_stamp + ":\nNow uploading lesson...");
+
 
         ContentResolver contentResolver = mContext.getContentResolver();
         Uri lessonUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, lesson_id);
@@ -555,15 +545,15 @@ public class MyFirebaseFragment extends Fragment implements
                 null);
 
         if (lessonCursor == null) {
-            Log.e(TAG, "uploadDatabase failed to get cursor");
-            mCallback.onUploadFailure(new Exception("Failed to get cursor (database failure)"));
+            Log.e(TAG, "uploadImages failed to get cursor");
+            mCallback.onUploadImageFailure(new Exception("Failed to get cursor (database failure)"));
             return;
         }
 
         int nRows = lessonCursor.getCount();
 
         if (nRows > 1) {
-            Log.e(TAG, "uploadDatabase local database inconsistency nRows:"
+            Log.e(TAG, "uploadImages local database inconsistency nRows:"
                     + nRows + " with the _id:" + lesson_id);
         }
 
@@ -573,7 +563,6 @@ public class MyFirebaseFragment extends Fragment implements
         // lesson_id is parameter from method
         String user_uid;
         String lesson_title;
-        String time_stamp;
 
         // The database is responsible by the consistency: only one row for lesson _id
         user_uid = userUid;
@@ -583,8 +572,12 @@ public class MyFirebaseFragment extends Fragment implements
         time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                 .format(new Date());
 
+        // Close the lesson cursor
+        lessonCursor.close();
+
         // Construct a Lesson instance and set with the data from database
         Lesson lesson = new Lesson();
+
         lesson.setLesson_id(lesson_id);
         lesson.setUser_uid(user_uid);
         lesson.setLesson_title(lesson_title);
@@ -592,7 +585,7 @@ public class MyFirebaseFragment extends Fragment implements
 
         String jsonString = serialize(lesson);
 
-        Log.d(TAG, "uploadDatabase lesson jsonString:" + jsonString);
+        Log.d(TAG, "uploadImages lesson jsonString:" + jsonString);
 
         // Load lesson parts from local database into the Lesson instance
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
@@ -607,7 +600,7 @@ public class MyFirebaseFragment extends Fragment implements
         // Return if there aren't parts
         if (null == partsCursor) {
             Log.d(TAG, "No parts in this lesson");
-            //mCallback.onUploadFailure(new Exception("No lesson parts"));
+            //mCallback.onUploadImageFailure(new Exception("No lesson parts"));
         }
 
         ArrayList<LessonPart> lessonParts = new ArrayList<>();
@@ -662,7 +655,7 @@ public class MyFirebaseFragment extends Fragment implements
         final String documentName = String.format( Locale.US, "%s_%03d",
                 lesson.getUser_uid(), lesson.getLesson_id());
 
-        Log.d(TAG, "uploadDatabase documentName:" + documentName);
+        Log.d(TAG, "uploadImages documentName:" + documentName);
 
         final String logText = lesson.getLesson_title();
         mFirebaseDatabase.collection("lessons").document(documentName)
@@ -675,7 +668,7 @@ public class MyFirebaseFragment extends Fragment implements
                                 .format(new Date());
                         addToLog(time_stamp + ":\nLesson " + logText +
                                 "\nDocumentSnapshot successfully written with name:" + documentName);
-                        mCallback.onUploadSuccess();
+                        mCallback.onUploadDatabaseSuccess();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -687,12 +680,9 @@ public class MyFirebaseFragment extends Fragment implements
                         addToLog(time_stamp + ":\nLesson " + logText +
                                 "\nError writing document on Firebase!" +
                                 "\nDocument name:" + documentName +"\n" + e.getMessage());
-                        mCallback.onUploadFailure(e);
+                        mCallback.onUploadDatabaseFailure(e);
                     }
                 });
-
-        // Close the lesson cursor
-        lessonCursor.close();
 
     }
 
@@ -1045,19 +1035,7 @@ public class MyFirebaseFragment extends Fragment implements
     }
 
 
-    private void addToLog(String logText) {
 
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT, logText);
-        // Insert the content values via a ContentResolver
-        Uri uri = mContext.getContentResolver().insert(LessonsContract.MyLogEntry.CONTENT_URI, contentValues);
-
-        if (uri == null) {
-            Log.e(TAG, "addToLog: error in inserting item on log",
-                    new Exception("addToLog: error in inserting item on log"));
-        }
-
-    }
 
 
     @Override
@@ -1157,15 +1135,6 @@ public class MyFirebaseFragment extends Fragment implements
                 // Get the task monitoring the upload
                 UploadTask task = tasks.get(0);
 
-//                // Add new listeners to the task using an Activity scope
-//                task.addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-//                    @Override
-//                    public void onSuccess(UploadTask.TaskSnapshot state) {
-//                        //call helper function to handle the event.
-//                        handleTaskSuccess(state, imageId, imageType, uriString, lessonId);
-//                    }
-//                });
-
                 final int currentImg = i;
                 final int finalImg = savedItems - 1;
 
@@ -1200,12 +1169,8 @@ public class MyFirebaseFragment extends Fragment implements
                                 .format(new Date());
                         Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
 
-                        if (currentImg == finalImg) {
-                            // Finished uploading images: call upload lesson
-                            Log.d(TAG, "Call upload to lesson table");
-                            addToLog(time_stamp + ":\nNow uploading lesson table.");
-                            uploadLesson(lessonId);
-                        }
+                        mCallback.onUploadImageSuccess();
+
                     }
                 }).addOnFailureListener(new OnFailureListener() {
                     @Override
@@ -1220,14 +1185,10 @@ public class MyFirebaseFragment extends Fragment implements
 
                         String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                                 .format(new Date());
-                        Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
+                        Log.e(TAG, "Error: currentImg:" + currentImg + " finalImg:" + finalImg, exception);
 
-                        if (currentImg == finalImg) {
-                            // Finished uploading images: call upload lesson
-                            Log.d(TAG, "Call upload to lesson table");
-                            addToLog(time_stamp + ":\nNow uploading lesson table.");
-                            uploadLesson(lessonId);
-                        }
+                        mCallback.onUploadImageFailure(exception);
+
                     }
                 });
 
@@ -1236,6 +1197,7 @@ public class MyFirebaseFragment extends Fragment implements
     }
 
 
+    // This handles the upload images task success
     private void handleTaskSuccess(UploadTask.TaskSnapshot state,
                                    long partId,
                                    String imageType,
@@ -1251,8 +1213,8 @@ public class MyFirebaseFragment extends Fragment implements
 
         String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                 .format(new Date());
-        addToLog(time_stamp + ":\nLesson id:" + lessonId +
-                "\nSuccessfully uploaded " + imageType + " id:" + partId);
+        addToLog(time_stamp + ":\nLesson id:" + lessonId + "\nSuccessfully uploaded " +
+                imageType + " part id: " + partId + "\nfile:" + fileUriString);
 
         // Save the photoUrl in the database
         ContentValues contentValues = new ContentValues();
@@ -1275,7 +1237,7 @@ public class MyFirebaseFragment extends Fragment implements
         ContentResolver contentResolver = mContext.getContentResolver();
         Uri updateUri = ContentUris.withAppendedId(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                 partId);
-        int numberOfImagesUpdated = contentResolver.update(
+        long numberOfImagesUpdated = contentResolver.update(
                 updateUri,
                 contentValues,
                 null,
@@ -1286,6 +1248,7 @@ public class MyFirebaseFragment extends Fragment implements
     }
 
 
+    // This handles the upload images task failure
     private void handleTaskFailure(Exception e,
                                    long partId,
                                    String imageType,
@@ -1293,14 +1256,28 @@ public class MyFirebaseFragment extends Fragment implements
                                    long lessonId) {
 
         Log.e(TAG, "handleTaskFailure failure: " + imageType + " id:" +
-                partId + " of lesson id:" + lessonId, e);
+                partId + " of lesson id:" + lessonId + " fileUriString:" + fileUriString, e);
         String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                 .format(new Date());
-        addToLog(time_stamp + ":\nLesson id:" + lessonId +
-                "\nUpload failure " + imageType + " id:" + partId + "\nError:" + e.getMessage());
+        addToLog(time_stamp + ":\nLesson id:" + lessonId + "\nUpload failure " + imageType +
+                " part id: " + partId + "\nfile:" + fileUriString + "\nError:" + e.getMessage());
 
     }
 
+
+    private void addToLog(String logText) {
+
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT, logText);
+        // Insert the content values via a ContentResolver
+        Uri uri = mContext.getContentResolver().insert(LessonsContract.MyLogEntry.CONTENT_URI, contentValues);
+
+        if (uri == null) {
+            Log.e(TAG, "addToLog: error in inserting item on log",
+                    new Exception("addToLog: error in inserting item on log"));
+        }
+
+    }
 
     /**
      * Serialize string.
@@ -1313,25 +1290,6 @@ public class MyFirebaseFragment extends Fragment implements
         Gson gson = new Gson();
         return gson.toJson(obj);
     }
-
-
-    /**
-     * De-serialize a string
-     *
-     * @param <T>        Type of the object
-     * @param jsonString Serialized string
-     * @param tClass     Class of the type
-     * @return De-serialized object
-     * @throws ClassNotFoundException the class not found exception
-     */
-    static private <T> T deSerialize(String jsonString, Class<T> tClass) throws ClassNotFoundException {
-        if (!isValid(jsonString)) {
-            return null;
-        }
-        Gson gson = new GsonBuilder().create();
-        return gson.fromJson(jsonString, tClass);
-    }
-
 
 
 }

@@ -13,7 +13,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
     private static final int DATABASE_VERSION = 1;
 
     // Constructor
-    public LessonsDbHelper(Context context) {
+    LessonsDbHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
