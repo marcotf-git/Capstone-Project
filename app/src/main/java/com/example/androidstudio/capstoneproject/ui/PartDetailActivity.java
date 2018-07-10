@@ -325,7 +325,8 @@ public class PartDetailActivity extends AppCompatActivity implements
                                 | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                         getContentResolver().takePersistableUriPermission(uri, takeFlags);
                     } catch (Exception e) {
-                        Log.e(TAG, "updateView takePersistableUriPermission error:" + e.getMessage());
+                        Log.d(TAG, "updateView takePersistableUriPermission Exception:" +
+                                e.getMessage());
                     }
                 }
 

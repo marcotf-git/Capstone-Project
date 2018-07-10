@@ -836,7 +836,7 @@ public class MainActivity extends AppCompatActivity implements
         if (cursor != null) {
             cursor.moveToFirst();
             int nRows = cursor.getCount();
-            for (long i = 0; i < nRows; i++) {
+            for (int i = 0; i < nRows; i++) {
                 Long part_id = cursor.getLong(cursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry._ID));
                 String cloud_video_uri = cursor.
                         getString(cursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
@@ -896,7 +896,8 @@ public class MainActivity extends AppCompatActivity implements
         // Count the images
         if (cursor != null) {
             cursor.moveToFirst();
-            for (long i = 0; i < cursor.getCount(); i++) {
+            int nRows = cursor.getCount();
+            for (int i = 0; i < nRows; i++) {
                 Long part_id = cursor.getLong(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
                 String local_video_uri = cursor.
                         getString(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
@@ -909,7 +910,9 @@ public class MainActivity extends AppCompatActivity implements
                     // Total number of images/videos to upload
                     uploadCountFinal++;
                 }
+                cursor.moveToNext();
             }
+
             Log.d(TAG, "cursor: getCount:" + cursor.getCount());
         }
 

@@ -86,8 +86,8 @@ public class MyFirebaseFragment extends Fragment implements
     private static final String DOWNLOADING_SAVED_ITEMS = "downloadingSavedItems";
 
     // This limits the number of rows in the log table
-    private static final int MAX_ROWS_LOG_TABLE = 1000;
-    
+    private static final int MAX_ROWS_LOG_TABLE = 100;
+
     private FirebaseFirestore mFirebaseDatabase;
     private FirebaseStorage mFirebaseStorage;
     private StorageReference mStorageReference;
@@ -288,7 +288,7 @@ public class MyFirebaseFragment extends Fragment implements
         // Limit the size of the log table
         // the order of the table is DESC --> move to last to get the first
         long maxDelete = mLogCursor.getCount();
-        maxDelete = maxDelete/2;
+        maxDelete = maxDelete/5;
         mLogCursor.moveToLast();
         while (mLogCursor.getCount() > MAX_ROWS_LOG_TABLE && maxDelete > 0) {
             long log_id = mLogCursor.getLong(mLogCursor.getColumnIndex(LessonsContract.MyLogEntry._ID));
