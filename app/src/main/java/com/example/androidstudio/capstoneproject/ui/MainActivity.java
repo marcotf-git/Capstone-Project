@@ -758,7 +758,7 @@ public class MainActivity extends AppCompatActivity implements
         if (databaseVisibility.equals(GROUP_DATABASE)) {
             mMenu.findItem(R.id.select_view).setVisible(false);
             mMenu.findItem(R.id.select_create).setVisible(false);
-            mMenu.findItem(R.id.action_cancel).setVisible(false);
+            mMenu.findItem(R.id.action_cancel).setVisible(true);
         } else if (databaseVisibility.equals(USER_DATABASE)) {
             mMenu.findItem(R.id.select_view).setVisible(true);
             mMenu.findItem(R.id.select_create).setVisible(true);
@@ -817,8 +817,9 @@ public class MainActivity extends AppCompatActivity implements
 
 
     /**
-     * Other helper methods. Handle for refreshing/uploading.
+     * Methods for refreshing/uploading.
      */
+
     private void refreshDatabase() {
         loadingIndicator = true;
         mainFragment.setLoadingIndicator(true);
@@ -828,6 +829,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
+    // It will upload the images and videos, and after, upload the database
     private void uploadImage() {
 
         // Verify if there is a lesson selected
@@ -879,6 +881,7 @@ public class MainActivity extends AppCompatActivity implements
         loadingIndicator = true;
         mainFragment.setLoadingIndicator(true);
         firebaseFragment.setFirebase(mFirebaseDatabase, mFirebaseStorage, mUserUid);
+        // After uploading images, this method will upload the database
         firebaseFragment.uploadImages(selectedLesson_id);
 
     }

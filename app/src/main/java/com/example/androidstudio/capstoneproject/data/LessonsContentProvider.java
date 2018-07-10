@@ -431,6 +431,14 @@ public class LessonsContentProvider extends ContentProvider {
                         "_id=?", new String[]{part_id});
                 break;
 
+            case GROUP_LESSON_PART_WITH_ID:
+                // update a single lesson part by getting the "_id"
+                String group_part_id = uri.getPathSegments().get(1);
+                // Use selections/selectionArgs to filter for this ID
+                rowsUpdated = db.update(LessonsContract.GroupLessonPartsEntry.TABLE_NAME, values,
+                        "_id=?", new String[]{group_part_id});
+                break;
+
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }

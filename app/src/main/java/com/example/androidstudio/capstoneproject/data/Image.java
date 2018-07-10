@@ -3,16 +3,12 @@ package com.example.androidstudio.capstoneproject.data;
 public class Image {
 
     private Long part_id;
+    private Long lesson_id;
     private String local_uri;
+    private String cloud_uri;
     private String imageType;
 
-     public Image() {
-    }
-
-    public Image(Long part_id, String local_uri, String imageType) {
-        this.part_id = part_id;
-        this.local_uri = local_uri;
-        this.imageType = imageType;
+    public Image() {
     }
 
     public Long getPart_id() {
@@ -23,12 +19,28 @@ public class Image {
         this.part_id = part_id;
     }
 
+    public Long getLesson_id() {
+        return lesson_id;
+    }
+
+    public void setLesson_id(Long lesson_id) {
+        this.lesson_id = lesson_id;
+    }
+
     public String getLocal_uri() {
         return local_uri;
     }
 
     public void setLocal_uri(String local_uri) {
         this.local_uri = local_uri;
+    }
+
+    public String getCloud_uri() {
+        return cloud_uri;
+    }
+
+    public void setCloud_uri(String cloud_uri) {
+        this.cloud_uri = cloud_uri;
     }
 
     public String getImageType() {
@@ -43,7 +55,9 @@ public class Image {
     public String toString() {
         return "Image{" +
                 "part_id=" + part_id +
+                ", lesson_id=" + lesson_id +
                 ", local_uri='" + local_uri + '\'' +
+                ", cloud_uri='" + cloud_uri + '\'' +
                 ", imageType='" + imageType + '\'' +
                 '}';
     }

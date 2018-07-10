@@ -1,4 +1,4 @@
-package com.example.androidstudio.capstoneproject.ui;
+package com.example.androidstudio.capstoneproject.utilities;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -12,54 +12,28 @@ import android.widget.TextView;
 
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
+import com.example.androidstudio.capstoneproject.ui.PartsListAdapter;
 
 
-public class LogListAdapter extends RecyclerView.Adapter<LogListAdapter.LogItemViewHolder>{
+public class MyFirebaseLogListAdapter extends RecyclerView.Adapter<MyFirebaseLogListAdapter.LogItemViewHolder>{
 
 
-    private static final String TAG = LogListAdapter.class.getSimpleName();
+    private static final String TAG = MyFirebaseLogListAdapter.class.getSimpleName();
 
     // Store the count of items to be displayed in the recycler view
     private static int viewHolderCount;
 
     // Store the data to be displayed
-    private Cursor logCursor;
+    private Cursor mCursor;
 
 
-    /**
-     * An on-click handler that we've defined to make it easy for an Activity to interface with
-     * our RecyclerView
-     */
-    final private ListItemClickListener mOnClickListener;
-
-    /**
-     * The interface that receives onClick messages and is implemented in MyFirebaseFragment
-     * (communicates with the MyFirebaseFragment).
-     */
-    public interface ListItemClickListener {
-        void onListItemClick(View view,
-                             int clickedItemIndex,
-                             long log_id);
-
-        void onListItemLongClick(View view,
-                                 int clickedItemIndex,
-                                 long log_id);
-    }
-
-    /**
-     * Constructor for ListAdapter that accepts a number of items to display and the specification
-     * for the ListItemClickListener.
-     *
-     * @param listener Listener for list item clicks
-     */
-    public LogListAdapter(ListItemClickListener listener) {
-        mOnClickListener = listener;
+    MyFirebaseLogListAdapter() {
         viewHolderCount = 0;
     }
 
 
-    public void setLogCursorData(Cursor cursor){
-        this.logCursor = cursor;
+    public void swapCursor(Cursor newCursor){
+        mCursor = newCursor;
         notifyDataSetChanged();
     }
 
@@ -111,10 +85,10 @@ public class LogListAdapter extends RecyclerView.Adapter<LogListAdapter.LogItemV
 
         Log.d(TAG, "#" + position);
 
-        if(!logCursor.moveToPosition(position))
+        if(!mCursor.moveToPosition(position))
             return;
 
-        String logText = logCursor.getString(logCursor.
+        String logText = mCursor.getString(mCursor.
                 getColumnIndex(LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT));
 
         if (logText != null && !logText.equals("")) {
@@ -136,23 +110,17 @@ public class LogListAdapter extends RecyclerView.Adapter<LogListAdapter.LogItemV
     @Override
     public int getItemCount() {
 
-        if (null != logCursor) {
-            return logCursor.getCount();
-        } else {
-            return 0;
-        }
+        if (null == mCursor) return 0;
+        return mCursor.getCount();
     }
 
 
     /**
      * Cache of the children views for a list item.
      */
-    class LogItemViewHolder extends RecyclerView.ViewHolder
-            implements View.OnClickListener, View.OnLongClickListener {
+    class LogItemViewHolder extends RecyclerView.ViewHolder {
 
         private TextView logTextView;
-
-        final Context context;
 
         /**
          * Constructor for our ViewHolder. Within this constructor, we get a reference to our
@@ -165,52 +133,8 @@ public class LogListAdapter extends RecyclerView.Adapter<LogListAdapter.LogItemV
 
             super(itemView);
 
-            context = itemView.getContext();
-
             logTextView = itemView.findViewById(R.id.tv_log);
 
-            // Call setOnClickListener on the View passed into the constructor
-            // (use 'this' as the OnClickListener)
-            itemView.setOnClickListener(this);
-
-            // Call setOnLongClickListener on the View passed into the constructor
-            // (use 'this' as the OnLongClickListener)
-            itemView.setOnLongClickListener(this);
-        }
-
-        /**
-         * Called whenever a user clicks on an item in the list.
-         * @param view The View that was clicked
-         */
-        @Override
-        public void onClick(View view) {
-
-            int clickedItemIndex = getAdapterPosition();
-            if(!logCursor.moveToPosition(clickedItemIndex))
-                return;
-            long log_id = logCursor.getLong(logCursor.
-                    getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
-            // Calls the method implemented in the main activity
-            mOnClickListener.onListItemClick(view, clickedItemIndex, log_id);
-
-        }
-
-        /**
-         * Called whenever a user long clicks on an item in the list.
-         * @param view The View that was clicked
-         */
-        @Override
-        public boolean onLongClick(View view) {
-
-            int clickedItemIndex = getAdapterPosition();
-            if(!logCursor.moveToPosition(clickedItemIndex))
-                return true;
-            long log_id = logCursor.getLong(logCursor.
-                    getColumnIndex(LessonsContract.MyLogEntry._ID));
-            // Calls the method implemented in the main activity
-            mOnClickListener.onListItemLongClick(view, clickedItemIndex, log_id);
-
-            return true;
         }
 
     }

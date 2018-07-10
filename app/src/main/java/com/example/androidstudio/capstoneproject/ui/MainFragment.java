@@ -149,21 +149,6 @@ public class MainFragment extends Fragment implements
         return rootView;
     }
 
-//    @Override
-//    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-//        super.onActivityCreated(savedInstanceState);
-//
-//        // Query the database and set the adapter with the cursor data
-//        if (null != getActivity()) {
-//            if (databaseVisibility.equals(USER_DATABASE)) {
-//                getActivity().getSupportLoaderManager().initLoader(ID_LESSONS_LOADER, null, this);
-//            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
-//                getActivity().getSupportLoaderManager().initLoader(ID_GROUP_LESSONS_LOADER, null, this);
-//            }
-//        }
-//    }
-
-
 
     // This method is saving the position of the recycler view
     @Override
