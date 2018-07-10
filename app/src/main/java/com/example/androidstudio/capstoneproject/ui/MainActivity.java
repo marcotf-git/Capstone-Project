@@ -124,6 +124,8 @@ public class MainActivity extends AppCompatActivity implements
     private boolean loadingIndicator;
     private int uploadCount;
     private int uploadCountFinal;
+    private int downloadCount;
+    private int downloadCountFinal;
     private Cursor mCursor;
 
     // User data variables
@@ -821,10 +823,44 @@ public class MainActivity extends AppCompatActivity implements
      */
 
     private void refreshDatabase() {
+
+        // query the group lesson parts table to count for the number of images to download
+        mCursor = this.getContentResolver().query(
+                LessonsContract.GroupLessonPartsEntry.CONTENT_URI,
+                null,
+                null,
+                null,
+                null);
+
+        downloadCountFinal = 0;
+
+        // Count the images
+        if (mCursor != null) {
+            mCursor.moveToFirst();
+            for (long i = 0; i < mCursor.getCount(); i++) {
+                Long part_id = mCursor.getLong(mCursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry._ID));
+                String cloud_video_uri = mCursor.
+                        getString(mCursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
+                String cloud_image_uri = mCursor.
+                        getString(mCursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
+                Log.d(TAG, "part_id: " + part_id);
+                Log.d(TAG, "local_video_uri: " + cloud_video_uri);
+                Log.d(TAG, "local_image_uri: " + cloud_image_uri);
+                if (cloud_video_uri != null || cloud_image_uri != null ) {
+                    // Total number of images/videos to upload
+                    downloadCountFinal++;
+                }
+            }
+            Log.d(TAG, "cursor: getCount:" + mCursor.getCount());
+        }
+
+        // This will count the actual downloads
+        downloadCount = 0;
+
         loadingIndicator = true;
         mainFragment.setLoadingIndicator(true);
         // Calls the refresh method
-        firebaseFragment.refreshDatabase(databaseVisibility);
+        firebaseFragment.refreshDatabase(this, databaseVisibility);
         deselectViews();
     }
 
@@ -882,7 +918,7 @@ public class MainActivity extends AppCompatActivity implements
         mainFragment.setLoadingIndicator(true);
         firebaseFragment.setFirebase(mFirebaseDatabase, mFirebaseStorage, mUserUid);
         // After uploading images, this method will upload the database
-        firebaseFragment.uploadImages(selectedLesson_id);
+        firebaseFragment.uploadImages(this, selectedLesson_id);
 
     }
 
@@ -903,7 +939,7 @@ public class MainActivity extends AppCompatActivity implements
         loadingIndicator = true;
         mainFragment.setLoadingIndicator(true);
         firebaseFragment.setFirebase(mFirebaseDatabase, mFirebaseStorage, mUserUid);
-        firebaseFragment.uploadLesson(selectedLesson_id);
+        firebaseFragment.uploadLesson(this, selectedLesson_id);
     }
 
     /**
@@ -1283,20 +1319,85 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onDownloadComplete() {
-        loadingIndicator = false;
-        mainFragment.setLoadingIndicator(false);
-        Toast.makeText(mContext,
-                "Download completed. Updating the local database...", Toast.LENGTH_LONG).show();
+    public void onDownloadDatabaseComplete() {
+        final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                "Download of text completed successfully." +
+                        "\nNow downloading images...",
+                Snackbar.LENGTH_INDEFINITE);
+        snackBar.setAction("Dismiss", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                snackBar.dismiss();
+            }
+        });
+        snackBar.show();
     }
 
     @Override
-    public void onDownloadFailure(@NonNull Exception e) {
+    public void onDownloadDatabaseFailure(@NonNull Exception e) {
         loadingIndicator = false;
         mainFragment.setLoadingIndicator(false);
-        Toast.makeText(mContext,
-                "Error on downloading:" + e.getMessage(), Toast.LENGTH_LONG).show();
+
+        final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                "Error in downloading the database:" + "\n" + e.getMessage() +
+                "\nPlease, see the log!",
+                Snackbar.LENGTH_INDEFINITE);
+        snackBar.setAction("Dismiss", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                snackBar.dismiss();
+            }
+        });
+        snackBar.show();
+
         Log.e(TAG, "onDownloadFailure error:" + e.getMessage());
+    }
+
+    @Override
+    public void onDownloadImageComplete() {
+
+        downloadCount++;
+
+        if (downloadCount >= downloadCountFinal) {
+
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "Download of images complete successfully!",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackBar.dismiss();
+                }
+            });
+            snackBar.show();
+
+            loadingIndicator = false;
+            mainFragment.setLoadingIndicator(false);
+        }
+    }
+
+    @Override
+    public void onDownloadImageFailure(@NonNull Exception e) {
+
+        downloadCount++;
+
+        if (downloadCount >= downloadCountFinal) {
+
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "Download of images complete with error!" + "\n" + e.getMessage() +
+                            "\nPlease, see the log!",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackBar.dismiss();
+                }
+            });
+            snackBar.show();
+
+            loadingIndicator = false;
+            mainFragment.setLoadingIndicator(false);
+        }
     }
 
     @Override

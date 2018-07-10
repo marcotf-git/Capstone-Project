@@ -5,7 +5,6 @@ import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.UriMatcher;
-import android.content.pm.ProviderInfo;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
@@ -65,6 +64,8 @@ public class LessonsContentProvider extends ContentProvider {
                 GROUP_LESSON_PART_WITH_ID);
         uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LOG,
                 MY_LOG);
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LOG + "/#",
+                MY_LOG_WITH_ID);
 
         return uriMatcher;
 
@@ -301,7 +302,9 @@ public class LessonsContentProvider extends ContentProvider {
         }
 
         // Set a notification URI on the Cursor and return that Cursor
-        retCursor.setNotificationUri(getContext().getContentResolver(), uri);
+        if (getContext() != null) {
+            retCursor.setNotificationUri(getContext().getContentResolver(), uri);
+        }
 
         // Return the desired Cursor (must not close the database now)
         return retCursor;
@@ -445,7 +448,9 @@ public class LessonsContentProvider extends ContentProvider {
 
         // Notify the resolver of a lesson was updated
         if (rowsUpdated != 0) {
-            getContext().getContentResolver().notifyChange(uri, null);
+            if (getContext() != null) {
+                getContext().getContentResolver().notifyChange(uri, null);
+            }
         }
 
         // Close database

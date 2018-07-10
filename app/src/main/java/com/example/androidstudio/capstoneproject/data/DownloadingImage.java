@@ -3,6 +3,7 @@ package com.example.androidstudio.capstoneproject.data;
 public class DownloadingImage {
 
     String storageRefString;
+    String fileUriString;
     Long partId;
     String imageType;
     Long lessonId;
@@ -16,6 +17,14 @@ public class DownloadingImage {
 
     public void setStorageRefString(String storageRefString) {
         this.storageRefString = storageRefString;
+    }
+
+    public String getFileUriString() {
+        return fileUriString;
+    }
+
+    public void setFileUriString(String fileUriString) {
+        this.fileUriString = fileUriString;
     }
 
     public Long getPartId() {
@@ -46,9 +55,11 @@ public class DownloadingImage {
     public String toString() {
         return "DownloadingImage{" +
                 "storageRefString='" + storageRefString + '\'' +
+                ", fileUriString='" + fileUriString + '\'' +
                 ", partId=" + partId +
                 ", imageType='" + imageType + '\'' +
                 ", lessonId=" + lessonId +
                 '}';
     }
 }
+
