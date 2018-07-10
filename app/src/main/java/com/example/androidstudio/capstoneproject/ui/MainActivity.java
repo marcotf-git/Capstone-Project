@@ -1,7 +1,6 @@
 package com.example.androidstudio.capstoneproject.ui;
 
 import android.content.ContentResolver;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -126,7 +125,6 @@ public class MainActivity extends AppCompatActivity implements
     private int uploadCountFinal;
     private int downloadCount;
     private int downloadCountFinal;
-    private Cursor mCursor;
 
     // User data variables
     private String mUsername;
@@ -825,7 +823,7 @@ public class MainActivity extends AppCompatActivity implements
     private void refreshDatabase() {
 
         // query the group lesson parts table to count for the number of images to download
-        mCursor = this.getContentResolver().query(
+        Cursor cursor = this.getContentResolver().query(
                 LessonsContract.GroupLessonPartsEntry.CONTENT_URI,
                 null,
                 null,
@@ -835,23 +833,25 @@ public class MainActivity extends AppCompatActivity implements
         downloadCountFinal = 0;
 
         // Count the images
-        if (mCursor != null) {
-            mCursor.moveToFirst();
-            for (long i = 0; i < mCursor.getCount(); i++) {
-                Long part_id = mCursor.getLong(mCursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry._ID));
-                String cloud_video_uri = mCursor.
-                        getString(mCursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
-                String cloud_image_uri = mCursor.
-                        getString(mCursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
+        if (cursor != null) {
+            cursor.moveToFirst();
+            int nRows = cursor.getCount();
+            for (long i = 0; i < nRows; i++) {
+                Long part_id = cursor.getLong(cursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry._ID));
+                String cloud_video_uri = cursor.
+                        getString(cursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
+                String cloud_image_uri = cursor.
+                        getString(cursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
                 Log.d(TAG, "part_id: " + part_id);
-                Log.d(TAG, "local_video_uri: " + cloud_video_uri);
-                Log.d(TAG, "local_image_uri: " + cloud_image_uri);
+                Log.d(TAG, "cloud_video_uri: " + cloud_video_uri);
+                Log.d(TAG, "cloud_image_uri: " + cloud_image_uri);
                 if (cloud_video_uri != null || cloud_image_uri != null ) {
-                    // Total number of images/videos to upload
+                    // Total number of images/videos to download
                     downloadCountFinal++;
                 }
+                cursor.moveToNext();
             }
-            Log.d(TAG, "cursor: getCount:" + mCursor.getCount());
+            Log.d(TAG, "cursor: getCount:" + cursor.getCount());
         }
 
         // This will count the actual downloads
@@ -860,8 +860,13 @@ public class MainActivity extends AppCompatActivity implements
         loadingIndicator = true;
         mainFragment.setLoadingIndicator(true);
         // Calls the refresh method
-        firebaseFragment.refreshDatabase(this, databaseVisibility);
+        firebaseFragment.refreshDatabase(databaseVisibility);
         deselectViews();
+
+
+        if (cursor != null) {
+            cursor.close();
+        }
     }
 
 
@@ -879,7 +884,7 @@ public class MainActivity extends AppCompatActivity implements
         /* Perform the ContentProvider query for the lesson parts */
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + " =? ";
         String[] selectionArgs = {Long.toString(selectedLesson_id)};
-        mCursor = this.getContentResolver().query(
+        Cursor cursor = this.getContentResolver().query(
                 LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                 null,
                 selection,
@@ -889,14 +894,14 @@ public class MainActivity extends AppCompatActivity implements
         uploadCountFinal = 0;
 
         // Count the images
-        if (mCursor != null) {
-            mCursor.moveToFirst();
-            for (long i = 0; i < mCursor.getCount(); i++) {
-                Long part_id = mCursor.getLong(mCursor.getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
-                String local_video_uri = mCursor.
-                        getString(mCursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
-                String local_image_uri = mCursor.
-                        getString(mCursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
+        if (cursor != null) {
+            cursor.moveToFirst();
+            for (long i = 0; i < cursor.getCount(); i++) {
+                Long part_id = cursor.getLong(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
+                String local_video_uri = cursor.
+                        getString(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
+                String local_image_uri = cursor.
+                        getString(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
                 Log.d(TAG, "part_id: " + part_id);
                 Log.d(TAG, "local_video_uri: " + local_video_uri);
                 Log.d(TAG, "local_image_uri: " + local_image_uri);
@@ -905,21 +910,25 @@ public class MainActivity extends AppCompatActivity implements
                     uploadCountFinal++;
                 }
             }
-            Log.d(TAG, "cursor: getCount:" + mCursor.getCount());
+            Log.d(TAG, "cursor: getCount:" + cursor.getCount());
         }
 
         // This will count the actual uploads
         uploadCount = 0;
 
         Log.d(TAG, "uploadCountFinal:" + uploadCountFinal + " images to upload");
-        addToLog("STARTING UPLOAD IMAGES/VIDEOS: " + uploadCountFinal + " files to upload.");
+        firebaseFragment.addToLog("STARTING UPLOAD IMAGES/VIDEOS: " +
+                uploadCountFinal + " files to upload.");
 
         loadingIndicator = true;
         mainFragment.setLoadingIndicator(true);
         firebaseFragment.setFirebase(mFirebaseDatabase, mFirebaseStorage, mUserUid);
         // After uploading images, this method will upload the database
-        firebaseFragment.uploadImages(this, selectedLesson_id);
+        firebaseFragment.uploadImages(selectedLesson_id);
 
+        if (cursor != null) {
+            cursor.close();
+        }
     }
 
 
@@ -934,12 +943,12 @@ public class MainActivity extends AppCompatActivity implements
         uploadCount = 0;
         uploadCountFinal = 1;
 
-        addToLog("STARTING UPLOAD TEXT: " + uploadCountFinal + " files to upload.");
+        firebaseFragment.addToLog("STARTING UPLOAD TEXT: " + uploadCountFinal + " files to upload.");
 
         loadingIndicator = true;
         mainFragment.setLoadingIndicator(true);
         firebaseFragment.setFirebase(mFirebaseDatabase, mFirebaseStorage, mUserUid);
-        firebaseFragment.uploadLesson(this, selectedLesson_id);
+        firebaseFragment.uploadLesson(selectedLesson_id);
     }
 
     /**
@@ -1063,14 +1072,14 @@ public class MainActivity extends AppCompatActivity implements
         // Query the parts table with the same lesson_id
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
         String[] selectionArgs = {Long.toString(_id)};
-        mCursor = contentResolver.query(
+        Cursor cursor = contentResolver.query(
                 LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                 null,
                 selection,
                 selectionArgs,
                 null);
 
-        if (mCursor == null) {
+        if (cursor == null) {
             Log.e(TAG, "Failed to get cursor",
                     new Exception("onDialogDeleteLessonLocallyPositiveClick: Failed to get cursor."));
             Toast.makeText(this, "The application has found an error!\n" +
@@ -1078,8 +1087,7 @@ public class MainActivity extends AppCompatActivity implements
             return;
         }
 
-        int nRows = mCursor.getCount();
-        //mCursor.close();
+        int nRows = cursor.getCount();
 
         if (nRows > 1) {
             Log.d(TAG, "onDialogDeleteLessonLocallyPositiveClick number of lesson parts nRows:" + nRows);
@@ -1114,6 +1122,7 @@ public class MainActivity extends AppCompatActivity implements
             selectedLesson_id = -1;
         }
 
+        cursor.close();
     }
 
     // Method for receiving communication from the DeleteLessonFragment
@@ -1207,7 +1216,8 @@ public class MainActivity extends AppCompatActivity implements
         uploadCount++;
 
         Log.d(TAG, "uploadCount:"  + uploadCount);
-        addToLog("upload count " + uploadCount + "/" + uploadCountFinal);
+        firebaseFragment.addToLog("upload count " +
+                uploadCount + "/" + uploadCountFinal);
 
         if (uploadCount >= uploadCountFinal) {
 
@@ -1238,7 +1248,8 @@ public class MainActivity extends AppCompatActivity implements
         uploadCount++;
 
         Log.d(TAG, "uploadCount:"  + uploadCount);
-        addToLog("upload count " + uploadCount + "/" + uploadCountFinal);
+        firebaseFragment.addToLog("upload count " + uploadCount +
+                "/" + uploadCountFinal);
 
         if (uploadCount >= uploadCountFinal) {
 
@@ -1269,7 +1280,7 @@ public class MainActivity extends AppCompatActivity implements
         uploadCount++;
 
         Log.d(TAG, "uploadCount:"  + uploadCount);
-        addToLog("upload count " + uploadCount);
+        firebaseFragment.addToLog("upload count " + uploadCount);
 
         if (uploadCount >= uploadCountFinal) {
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
@@ -1298,7 +1309,7 @@ public class MainActivity extends AppCompatActivity implements
         uploadCount++;
 
         Log.d(TAG, "uploadCount:"  + uploadCount);
-        addToLog("upload count " + uploadCount);
+        firebaseFragment.addToLog("upload count " + uploadCount);
 
         if (uploadCount >= uploadCountFinal) {
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
@@ -1415,20 +1426,20 @@ public class MainActivity extends AppCompatActivity implements
                 "Error on deleting from Cloud:" + e.getMessage(), Toast.LENGTH_LONG).show();
         Log.e(TAG, "onDeleteFailure error:" + e.getMessage());
     }
-
-    private void addToLog(String logText) {
-
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT, logText);
-        // Insert the content values via a ContentResolver
-        Uri uri = mContext.getContentResolver().insert(LessonsContract.MyLogEntry.CONTENT_URI, contentValues);
-
-        if (uri == null) {
-            Log.e(TAG, "addToLog: error in inserting item on log",
-                    new Exception("addToLog: error in inserting item on log"));
-        }
-
-    }
+//
+//    private void addToLog(String logText) {
+//
+//        ContentValues contentValues = new ContentValues();
+//        contentValues.put(LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT, logText);
+//        // Insert the content values via a ContentResolver
+//        Uri uri = mContext.getContentResolver().insert(LessonsContract.MyLogEntry.CONTENT_URI, contentValues);
+//
+//        if (uri == null) {
+//            Log.e(TAG, "addToLog: error in inserting item on log",
+//                    new Exception("addToLog: error in inserting item on log"));
+//        }
+//
+//    }
 
 
     /**

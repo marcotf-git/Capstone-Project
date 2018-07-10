@@ -2,12 +2,11 @@ package com.example.androidstudio.capstoneproject.data;
 
 public class UploadingImage {
 
-    String storageRefString;
-    String fileUriString;
-    Long partId;
-    String imageType;
-    Long lessonId;
-
+    private String storageRefString;
+    private String fileUriString;
+    private Long partId;
+    private String imageType;
+    private Long lessonId;
 
 
     public UploadingImage() {
