@@ -122,8 +122,8 @@ public class MainActivity extends AppCompatActivity implements
     private String databaseVisibility;
     private String mUserUid; // The user's ID, unique to the Firebase project.
     private boolean loadingIndicator;
-    private long uploadCount;
-    private long uploadCountFinal;
+    private int uploadCount;
+    private int uploadCountFinal;
     private Cursor mCursor;
 
     // User data variables
@@ -192,8 +192,8 @@ public class MainActivity extends AppCompatActivity implements
             databaseVisibility = savedInstanceState.getString(DATABASE_VISIBILITY);
             mUserUid = savedInstanceState.getString(LOCAL_USER_UID);
             loadingIndicator = savedInstanceState.getBoolean(LOADING_INDICATOR);
-            uploadCount = savedInstanceState.getLong(UPLOAD_COUNT);
-            uploadCountFinal = savedInstanceState.getLong(UPLOAD_COUNT_FINAL);
+            uploadCount = savedInstanceState.getInt(UPLOAD_COUNT);
+            uploadCountFinal = savedInstanceState.getInt(UPLOAD_COUNT_FINAL);
 
         } else {
             // Initialize the state vars
@@ -325,7 +325,6 @@ public class MainActivity extends AppCompatActivity implements
         if (mIdlingResource != null) {
             mIdlingResource.setIdleState(false);
         }
-
 
         // Initialize Firebase components
         mFirebaseDatabase = FirebaseFirestore.getInstance();
@@ -839,30 +838,43 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         // query the parts table to count for the number of images to upload
-        /* Perform the ContentProvider query */
-        String selection = "(" + LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI + " IS NOT NULL OR " +
-                LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI + " IS NOT NULL) AND " +
-                LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
+        /* Perform the ContentProvider query for the lesson parts */
+        String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + " =? ";
         String[] selectionArgs = {Long.toString(selectedLesson_id)};
-        mCursor = mContext.getContentResolver().query(
-                    LessonsContract.MyLessonPartsEntry.CONTENT_URI,
-                    null,
-                    selection,
-                    selectionArgs,
-                    null);
+        mCursor = this.getContentResolver().query(
+                LessonsContract.MyLessonPartsEntry.CONTENT_URI,
+                null,
+                selection,
+                selectionArgs,
+                null);
 
+        uploadCountFinal = 0;
+
+        // Count the images
         if (mCursor != null) {
             mCursor.moveToFirst();
-            uploadCountFinal = mCursor.getCount();
-            mCursor.close();
-        } else {
-            uploadCountFinal = 0;
+            for (long i = 0; i < mCursor.getCount(); i++) {
+                Long part_id = mCursor.getLong(mCursor.getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
+                String local_video_uri = mCursor.
+                        getString(mCursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
+                String local_image_uri = mCursor.
+                        getString(mCursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
+                Log.d(TAG, "part_id: " + part_id);
+                Log.d(TAG, "local_video_uri: " + local_video_uri);
+                Log.d(TAG, "local_image_uri: " + local_image_uri);
+                if (local_image_uri != null || local_video_uri != null ) {
+                    // Total number of images/videos to upload
+                    uploadCountFinal++;
+                }
+            }
+            Log.d(TAG, "cursor: getCount:" + mCursor.getCount());
         }
 
+        // This will count the actual uploads
         uploadCount = 0;
 
         Log.d(TAG, "uploadCountFinal:" + uploadCountFinal + " images to upload");
-        addToLog(uploadCountFinal + " images to upload");
+        addToLog("STARTING UPLOAD IMAGES/VIDEOS: " + uploadCountFinal + " files to upload.");
 
         loadingIndicator = true;
         mainFragment.setLoadingIndicator(true);
@@ -883,11 +895,12 @@ public class MainActivity extends AppCompatActivity implements
         uploadCount = 0;
         uploadCountFinal = 1;
 
+        addToLog("STARTING UPLOAD TEXT: " + uploadCountFinal + " files to upload.");
+
         loadingIndicator = true;
         mainFragment.setLoadingIndicator(true);
         firebaseFragment.setFirebase(mFirebaseDatabase, mFirebaseStorage, mUserUid);
         firebaseFragment.uploadLesson(selectedLesson_id);
-
     }
 
     /**
@@ -960,46 +973,6 @@ public class MainActivity extends AppCompatActivity implements
 
 
     /**
-     * Methods for handling the activity state change
-     */
-
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
-        String modeOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
-                this.getString(R.string.pref_mode_view));
-        Log.d(TAG, "onSharedPreferenceChanged modeOption:" + modeOption);
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        // Attach the Firebase Auth listener
-        mFirebaseAuth.addAuthStateListener(mAuthStateListener);
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        // Remove Firebase Auth listener
-        if (mAuthStateListener != null) {
-            mFirebaseAuth.removeAuthStateListener(mAuthStateListener);
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        // Remove listener from PreferenceManager
-        PreferenceManager.getDefaultSharedPreferences(this)
-                .unregisterOnSharedPreferenceChangeListener(this);
-        // Close the global cursor in use
-        if (mCursor != null) {
-            mCursor.close();
-        }
-    }
-
-
-    /**
      * The following methods are for receiving communication from other fragments or instances
      */
 
@@ -1051,14 +1024,14 @@ public class MainActivity extends AppCompatActivity implements
         // Query the parts table with the same lesson_id
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
         String[] selectionArgs = {Long.toString(_id)};
-        Cursor partsCursor = contentResolver.query(
+        mCursor = contentResolver.query(
                 LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                 null,
                 selection,
                 selectionArgs,
                 null);
 
-        if (partsCursor == null) {
+        if (mCursor == null) {
             Log.e(TAG, "Failed to get cursor",
                     new Exception("onDialogDeleteLessonLocallyPositiveClick: Failed to get cursor."));
             Toast.makeText(this, "The application has found an error!\n" +
@@ -1066,8 +1039,8 @@ public class MainActivity extends AppCompatActivity implements
             return;
         }
 
-        int nRows = partsCursor.getCount();
-        partsCursor.close();
+        int nRows = mCursor.getCount();
+        //mCursor.close();
 
         if (nRows > 1) {
             Log.d(TAG, "onDialogDeleteLessonLocallyPositiveClick number of lesson parts nRows:" + nRows);
@@ -1188,7 +1161,6 @@ public class MainActivity extends AppCompatActivity implements
                 "Canceled!", Toast.LENGTH_LONG).show();
     }
 
-
     // Receive communication form MyFirebaseFragment instance
     @Override
     public void onUploadImageSuccess() {
@@ -1254,10 +1226,11 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onUploadDatabaseSuccess() {
+
         uploadCount++;
 
         Log.d(TAG, "uploadCount:"  + uploadCount);
-        addToLog("upload count " + uploadCount + "/" + uploadCountFinal);
+        addToLog("upload count " + uploadCount);
 
         if (uploadCount >= uploadCountFinal) {
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
@@ -1286,7 +1259,7 @@ public class MainActivity extends AppCompatActivity implements
         uploadCount++;
 
         Log.d(TAG, "uploadCount:"  + uploadCount);
-        addToLog("upload count " + uploadCount + "/" + uploadCountFinal);
+        addToLog("upload count " + uploadCount);
 
         if (uploadCount >= uploadCountFinal) {
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
@@ -1353,6 +1326,11 @@ public class MainActivity extends AppCompatActivity implements
 
     }
 
+
+    /**
+     * Methods for handling the activity state change
+     */
+
     @Override
     public void onIdlingResource(Boolean value) {
         if (mIdlingResource != null) {
@@ -1381,11 +1359,41 @@ public class MainActivity extends AppCompatActivity implements
         outState.putString(LOCAL_USER_UID, mUserUid);
 
         outState.putBoolean(LOADING_INDICATOR, loadingIndicator);
-        outState.putLong(UPLOAD_COUNT, uploadCount);
-        outState.putLong(UPLOAD_COUNT_FINAL, uploadCountFinal);
+        outState.putInt(UPLOAD_COUNT, uploadCount);
+        outState.putInt(UPLOAD_COUNT_FINAL, uploadCountFinal);
 
         super.onSaveInstanceState(outState);
     }
 
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+        String modeOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
+                this.getString(R.string.pref_mode_view));
+        Log.d(TAG, "onSharedPreferenceChanged modeOption:" + modeOption);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Attach the Firebase Auth listener
+        mFirebaseAuth.addAuthStateListener(mAuthStateListener);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Remove Firebase Auth listener
+        if (mAuthStateListener != null) {
+            mFirebaseAuth.removeAuthStateListener(mAuthStateListener);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Remove listener from PreferenceManager
+        PreferenceManager.getDefaultSharedPreferences(this)
+                .unregisterOnSharedPreferenceChangeListener(this);
+    }
 
 }

@@ -24,6 +24,7 @@ public class AddLessonPartActivity extends AppCompatActivity {
     private static final String CLICKED_LESSON_ID = "clickedLessonId";
 
     private long clickedLesson_id;
+    private Cursor mCursor;
 
 
     @Override
@@ -60,30 +61,30 @@ public class AddLessonPartActivity extends AppCompatActivity {
 
         if (null != getContentResolver()) {
 
-            Cursor cursor = getContentResolver().query(
+            mCursor = getContentResolver().query(
                     queryUri,
                     null,
                     null,
                     null,
                     null);
 
-            if (cursor != null) {
+            if (mCursor != null) {
 
-                cursor.moveToLast();
-                Log.d(TAG, "cursor:" + cursor.toString());
+                mCursor.moveToLast();
+                Log.d(TAG, "cursor:" + mCursor.toString());
 
-                if (cursor.getPosition() == -1) {
+                if (mCursor.getPosition() == -1) {
                     Log.e(TAG, "Have cursor position -1");
                     Toast.makeText(getBaseContext(),
                             "No data in the database!", Toast.LENGTH_LONG).show();
-                    cursor.close();
+                    //mCursor.close();
                     finish();
                 } else {
-                    String lessonTitle = cursor.getString(cursor.
+                    String lessonTitle = mCursor.getString(mCursor.
                             getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
 
                     myLessonTitleText.setText(lessonTitle);
-                    cursor.close();
+                    //mCursor.close();
                 }
 
             } else {

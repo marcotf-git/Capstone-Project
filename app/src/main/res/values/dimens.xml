@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <dimen name="error_message_text_size">22sp</dimen>
     <dimen name="lesson_card_margin_horizontal">16dp</dimen>
@@ -20,6 +20,6 @@
     <dimen name="part_text_body_top_margin">16dp</dimen>
     <item name="part_text_line_spacing_multiplier" format="float" type="fraction">1.25</item>
 
-    <integer name="design_snackbar_text_max_lines">5</integer>
+    <integer name="design_snackbar_text_max_lines" tools:ignore="PrivateResource">5</integer>
 
 </resources>

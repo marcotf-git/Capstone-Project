@@ -25,6 +25,7 @@ public class EditPartTextActivity extends AppCompatActivity {
 
     private Uri updateUri;
     private EditText myEditText;
+    private Cursor mCursor;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,30 +54,30 @@ public class EditPartTextActivity extends AppCompatActivity {
 
         if (null != getContentResolver()) {
 
-            Cursor cursor = getContentResolver().query(
+           mCursor = getContentResolver().query(
                     updateUri,
                     null,
                     null,
                     null,
                     null);
 
-            if (cursor != null) {
+            if (mCursor != null) {
 
-                cursor.moveToLast();
-                Log.d(TAG, "cursor:" + cursor.toString());
+                mCursor.moveToLast();
+                Log.d(TAG, "cursor:" + mCursor.toString());
 
-                if (cursor.getPosition() == -1) {
+                if (mCursor.getPosition() == -1) {
                     Log.e(TAG, "Have cursor position -1");
                     Toast.makeText(getBaseContext(),
                             "No data in the database!", Toast.LENGTH_LONG).show();
-                    cursor.close();
+                    //cursor.close();
                     finish();
                 } else {
-                    String lessonPartText = cursor.getString(cursor.
+                    String lessonPartText = mCursor.getString(mCursor.
                             getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TEXT));
 
                     myEditText.setText(lessonPartText);
-                    cursor.close();
+                    //mCursor.close();
                 }
 
             } else {

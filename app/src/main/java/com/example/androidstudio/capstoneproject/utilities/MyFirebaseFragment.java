@@ -85,8 +85,8 @@ public class MyFirebaseFragment extends Fragment implements
     private static final int ID_LOG_LOADER = 30;
 
     private String userUid;
-
     private Context mContext;
+    private Cursor mCursor;
 
     private List<UploadingImage> uploadingImages;
 
@@ -329,31 +329,31 @@ public class MyFirebaseFragment extends Fragment implements
 
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
         String[] selectionArgs = {Long.toString(mLessonId)};
-        Cursor partsCursor = contentResolver.query(
+        mCursor = contentResolver.query(
                 LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                 null,
                 selection,
                 selectionArgs,
                 null);
 
-        if (partsCursor == null) {
+        if (mCursor == null) {
             Log.e(TAG, "uploadImages: failed to get parts cursor (database error)");
             mCallback.onUploadImageFailure(new Exception("Failed to get parts cursor (database failure)"));
             return;
         }
 
-        long nRows = partsCursor.getCount();
+        long nRows = mCursor.getCount();
 
         if (nRows == 0) {
             Log.d(TAG, "uploadImages: no parts found in local database for the lesson _id:"
                     + mLessonId);
-            partsCursor.close();
+            //mCursor.close();
             mCallback.onUploadImageFailure(new Exception("Error: no parts in this lesson"));
             return;
         }
 
         // Moves to the first part of that lesson
-        partsCursor.moveToFirst();
+        mCursor.moveToFirst();
 
         // Get all the parts and sore all image uri's in an array of Image instances
         List<Image> images = new ArrayList<>();
@@ -361,15 +361,15 @@ public class MyFirebaseFragment extends Fragment implements
 
         for (int i = 0; i < nRows; i++) {
 
-            Long item_id = partsCursor.getLong(partsCursor.
+            Long item_id = mCursor.getLong(mCursor.
                     getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
-            String localImageUri = partsCursor.getString(partsCursor.
+            String localImageUri = mCursor.getString(mCursor.
                     getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
-            String localVideoUri = partsCursor.getString(partsCursor.
+            String localVideoUri = mCursor.getString(mCursor.
                     getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
 
             if (localImageUri == null && localVideoUri == null) {
-                partsCursor.moveToNext();
+                mCursor.moveToNext();
                 continue;
             }
 
@@ -389,11 +389,11 @@ public class MyFirebaseFragment extends Fragment implements
             images.add(image);
 
             // get the next part
-            partsCursor.moveToNext();
+            mCursor.moveToNext();
         }
 
         // close the table
-        partsCursor.close();
+        //mCursor.close();
 
 
         // If there aren't images, go to upload lesson directly
@@ -458,11 +458,13 @@ public class MyFirebaseFragment extends Fragment implements
 
             // Saves the metadata of the images being uploaded in the uploadingImages list
             UploadingImage uploadingImage = new UploadingImage();
+
             uploadingImage.setStorageRefString(storageRef.toString());
             uploadingImage.setFileUriString(imageToUpload.getLocal_uri());
             uploadingImage.setPartId(imageToUpload.getPart_id());
             uploadingImage.setImageType(imageToUpload.getImageType());
             uploadingImage.setLessonId(lesson_id);
+
             uploadingImages.add(uploadingImage);
 
             // Call the task  (storage has activity scope to unregister the listeners when activity stops)
@@ -496,8 +498,6 @@ public class MyFirebaseFragment extends Fragment implements
                             filePath,
                             lesson_id);
 
-                    String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
-                            .format(new Date());
                     Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
 
                     mCallback.onUploadImageSuccess();
@@ -514,8 +514,6 @@ public class MyFirebaseFragment extends Fragment implements
                                 filePath,
                                 lesson_id);
 
-                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
-                                .format(new Date());
                         Log.e(TAG, "Error: currentImg:" + currentImg + " finalImg:" + finalImg, exception);
 
                         mCallback.onUploadImageFailure(exception);
@@ -538,26 +536,26 @@ public class MyFirebaseFragment extends Fragment implements
 
         ContentResolver contentResolver = mContext.getContentResolver();
         Uri lessonUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, lesson_id);
-        Cursor lessonCursor = contentResolver.query(lessonUri,
+        mCursor = contentResolver.query(lessonUri,
                 null,
                 null,
                 null,
                 null);
 
-        if (lessonCursor == null) {
+        if (mCursor == null) {
             Log.e(TAG, "uploadImages failed to get cursor");
             mCallback.onUploadImageFailure(new Exception("Failed to get cursor (database failure)"));
             return;
         }
 
-        int nRows = lessonCursor.getCount();
+        int nRows = mCursor.getCount();
 
         if (nRows > 1) {
             Log.e(TAG, "uploadImages local database inconsistency nRows:"
                     + nRows + " with the _id:" + lesson_id);
         }
 
-        lessonCursor.moveToFirst();
+        mCursor.moveToFirst();
 
         // Pass the data cursor to Lesson instance
         // lesson_id is parameter from method
@@ -566,14 +564,14 @@ public class MyFirebaseFragment extends Fragment implements
 
         // The database is responsible by the consistency: only one row for lesson _id
         user_uid = userUid;
-        lesson_title = lessonCursor.
-                getString(lessonCursor.getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
+        lesson_title = mCursor.
+                getString(mCursor.getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
 
         time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                 .format(new Date());
 
         // Close the lesson cursor
-        lessonCursor.close();
+        //mCursor.close();
 
         // Construct a Lesson instance and set with the data from database
         Lesson lesson = new Lesson();
@@ -590,7 +588,7 @@ public class MyFirebaseFragment extends Fragment implements
         // Load lesson parts from local database into the Lesson instance
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
         String[] selectionArgs = {Long.toString(lesson_id)};
-        Cursor partsCursor = contentResolver.query(
+        mCursor = contentResolver.query(
                 LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                 null,
                 selection,
@@ -598,32 +596,32 @@ public class MyFirebaseFragment extends Fragment implements
                 null);
 
         // Return if there aren't parts
-        if (null == partsCursor) {
+        if (null == mCursor) {
             Log.d(TAG, "No parts in this lesson");
             //mCallback.onUploadImageFailure(new Exception("No lesson parts"));
         }
 
         ArrayList<LessonPart> lessonParts = new ArrayList<>();
 
-        if (null != partsCursor) {
-            partsCursor.moveToFirst();
-            int nPartsRows = partsCursor.getCount();
+        if (null != mCursor) {
+            mCursor.moveToFirst();
+            int nPartsRows = mCursor.getCount();
             for (int j = 0; j < nPartsRows; j++) {
 
-                Long item_id = partsCursor.getLong(partsCursor.
+                Long item_id = mCursor.getLong(mCursor.
                         getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
                 // lesson_id is already loaded! (don't need to load, is the lesson_id parameter)
-                String lessonPartTitle = partsCursor.getString(partsCursor.
+                String lessonPartTitle = mCursor.getString(mCursor.
                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
-                String lessonPartText = partsCursor.getString(partsCursor.
+                String lessonPartText = mCursor.getString(mCursor.
                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TEXT));
-                String localImageUri = partsCursor.getString(partsCursor.
+                String localImageUri = mCursor.getString(mCursor.
                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
-                String cloudImageUri = partsCursor.getString(partsCursor.
+                String cloudImageUri = mCursor.getString(mCursor.
                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
-                String localVideoUri = partsCursor.getString(partsCursor.
+                String localVideoUri = mCursor.getString(mCursor.
                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
-                String cloudVideoUri = partsCursor.getString(partsCursor.
+                String cloudVideoUri = mCursor.getString(mCursor.
                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
 
                 LessonPart lessonPart = new LessonPart();
@@ -639,10 +637,10 @@ public class MyFirebaseFragment extends Fragment implements
                 Log.v(TAG, "uploadLesson (to database): lessonPart title:" + lessonPart.getTitle());
 
                 lessonParts.add(lessonPart);
-                partsCursor.moveToNext();
+                mCursor.moveToNext();
             }
 
-            partsCursor.close();
+            //mCursor.close();
         }
 
 
@@ -754,9 +752,8 @@ public class MyFirebaseFragment extends Fragment implements
             lesson.getLesson_id());
 
         ContentResolver contentResolver = context.getContentResolver();
-        Cursor lessonCursor;
         if (queryUri != null) {
-            lessonCursor = contentResolver.query(queryUri,
+            mCursor = contentResolver.query(queryUri,
                     null,
                     null,
                     null,
@@ -769,10 +766,10 @@ public class MyFirebaseFragment extends Fragment implements
         }
 
         int nRows = -1;
-        if (lessonCursor != null) {
-            lessonCursor.moveToFirst();
-            nRows = lessonCursor.getCount();
-            lessonCursor.close();
+        if (mCursor != null) {
+            mCursor.moveToFirst();
+            nRows = mCursor.getCount();
+            //mCursor.close();
         }
 
 
@@ -1165,8 +1162,6 @@ public class MyFirebaseFragment extends Fragment implements
                                 uriString,
                                 lessonId);
 
-                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
-                                .format(new Date());
                         Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
 
                         mCallback.onUploadImageSuccess();
@@ -1183,8 +1178,6 @@ public class MyFirebaseFragment extends Fragment implements
                                 uriString,
                                 lessonId);
 
-                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
-                                .format(new Date());
                         Log.e(TAG, "Error: currentImg:" + currentImg + " finalImg:" + finalImg, exception);
 
                         mCallback.onUploadImageFailure(exception);

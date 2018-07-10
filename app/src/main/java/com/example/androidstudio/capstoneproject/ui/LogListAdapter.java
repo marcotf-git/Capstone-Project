@@ -59,9 +59,6 @@ public class LogListAdapter extends RecyclerView.Adapter<LogListAdapter.LogItemV
 
 
     public void setLogCursorData(Cursor cursor){
-
-        Log.d(TAG, "setLogCursorData cursor.getCount():" + cursor.getCount());
-
         this.logCursor = cursor;
         notifyDataSetChanged();
     }
