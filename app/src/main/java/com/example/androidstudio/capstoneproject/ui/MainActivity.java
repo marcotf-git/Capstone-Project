@@ -35,8 +35,10 @@ import android.widget.Toast;
 import com.example.androidstudio.capstoneproject.IdlingResource.SimpleIdlingResource;
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
+import com.example.androidstudio.capstoneproject.sync.SyncUtilities;
 import com.example.androidstudio.capstoneproject.utilities.MyFirebaseFragment;
-import com.example.androidstudio.capstoneproject.utilities.TestUtil;
+import com.example.androidstudio.capstoneproject.utilities.InsertTestDataUtil;
+import com.example.androidstudio.capstoneproject.utilities.NotificationUtils;
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -696,13 +698,25 @@ public class MainActivity extends AppCompatActivity implements
 
             case R.id.action_insert_fake_data:
                 Log.d(TAG, "Insert fake data action selected");
-                TestUtil.insertFakeData(this);
+                InsertTestDataUtil.insertFakeData(this);
                 Toast.makeText(this,
                         "Fake data inserted!", Toast.LENGTH_LONG).show();
                 break;
 
             case R.id.action_cancel:
                break;
+
+            case R.id.action_job_sync:
+                SyncUtilities.scheduleSyncGroupTable(this);
+                break;
+
+            case R.id.action_job_upload:
+                SyncUtilities.scheduleUploadTable(this, selectedLesson_id);
+                break;
+
+            case R.id.action_notification:
+                NotificationUtils.notifyUserBecauseSyncGroupFinished(this);
+                break;
 
             default:
                 break;

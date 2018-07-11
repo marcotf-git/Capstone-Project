@@ -77,5 +77,13 @@
 
     <string name="images">Images or Videos</string>
     <string name="text">Text Content</string>
+    <string name="menu_action_sync_label">Job Sync</string>
+    <string name="menu_action_job_upload_label">Job Upload</string>
+    <string name="main_notification_channel_name">primary</string>
+    <string name="sync_group_notification_title">Sync Group has finished</string>
+    <string name="sync_group_notification_body">Please, verify the log</string>
+    <string name="upload_notification_title">Upload finishes</string>
+    <string name="upload_notification_body">Please, see the log</string>
+    <string name="menu_action_jnotification_test">Notification Test</string>
 
 </resources>

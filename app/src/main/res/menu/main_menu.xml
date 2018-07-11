@@ -18,6 +18,27 @@
             android:orderInCategory="2"/>
     </group>
 
+
+    <item
+        android:id="@+id/action_notification"
+        android:orderInCategory="12"
+        android:title="@string/menu_action_jnotification_test"
+        app:showAsAction="never" />
+
+
+    <item
+        android:id="@+id/action_job_upload"
+        android:orderInCategory="12"
+        android:title="@string/menu_action_job_upload_label"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_job_sync"
+        android:orderInCategory="11"
+        android:title="@string/menu_action_sync_label"
+        app:showAsAction="never" />
+
+
     <item
         android:id="@+id/action_cancel"
         android:orderInCategory="10"

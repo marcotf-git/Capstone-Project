@@ -16,9 +16,9 @@ import java.util.Locale;
 /**
  * This class inserts fake data in the local database for testing.
  */
-public class TestUtil {
+public class InsertTestDataUtil {
 
-    private static final String TAG = TestUtil.class.getSimpleName();
+    private static final String TAG = InsertTestDataUtil.class.getSimpleName();
 
 
     public static void insertFakeData(Context context){

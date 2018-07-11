@@ -47,6 +47,7 @@ dependencies {
     implementation "com.google.firebase:firebase-storage:16.0.1"
     implementation "com.google.firebase:firebase-auth:16.0.2"
     implementation "com.firebaseui:firebase-ui-auth:4.1.0"
+    implementation 'com.firebase:firebase-jobdispatcher:0.8.5'
 
     // Picasso
     implementation "com.squareup.picasso:picasso:2.71828"
