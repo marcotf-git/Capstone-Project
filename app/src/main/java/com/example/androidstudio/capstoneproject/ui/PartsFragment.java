@@ -405,7 +405,7 @@ public class PartsFragment extends Fragment implements
     public void setCursor(Cursor cursor) {
 
         mLoadingIndicator.setVisibility(View.INVISIBLE);
-        mAdapter.setLessonPartsCursorData(cursor);
+        mAdapter.swapCursor(cursor, databaseVisibility);
 
     }
 

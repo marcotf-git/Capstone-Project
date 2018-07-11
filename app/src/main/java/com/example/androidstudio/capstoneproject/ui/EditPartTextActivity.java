@@ -25,7 +25,7 @@ public class EditPartTextActivity extends AppCompatActivity {
 
     private Uri updateUri;
     private EditText myEditText;
-    private Cursor mCursor;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +54,7 @@ public class EditPartTextActivity extends AppCompatActivity {
 
         if (null != getContentResolver()) {
 
-           mCursor = getContentResolver().query(
+            Cursor mCursor = getContentResolver().query(
                     updateUri,
                     null,
                     null,
@@ -87,12 +87,18 @@ public class EditPartTextActivity extends AppCompatActivity {
                 finish();
             }
 
+            if (mCursor != null) {
+                mCursor.close();
+            }
+
         } else {
             Log.e(TAG, "Did not find content resolver");
             Toast.makeText(getBaseContext(),
                     "Internal error about the database!", Toast.LENGTH_LONG).show();
             finish();
         }
+
+
 
     }
 

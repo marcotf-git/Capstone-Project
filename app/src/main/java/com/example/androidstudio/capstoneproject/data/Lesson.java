@@ -11,15 +11,7 @@ public class Lesson {
     private ArrayList<LessonPart> lesson_parts;
 
 
-
     public Lesson() {
-    }
-
-    public Lesson(long lesson_id, String user_uid, String lesson_title, String time_stamp) {
-        this.lesson_id = lesson_id;
-        this.user_uid = user_uid;
-        this.lesson_title = lesson_title;
-        this.time_stamp = time_stamp;
     }
 
     public long getLesson_id() {

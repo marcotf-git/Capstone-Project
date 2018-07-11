@@ -19,11 +19,15 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
 
     private static final String TAG = LessonsListAdapter.class.getSimpleName();
 
+    private static final String USER_DATABASE = "userDatabase";
+    private static final String GROUP_DATABASE = "groupDatabase";
+
     // Store the count of items to be displayed in the recycler view
     private static int viewHolderCount;
 
     // Store the data to be displayed
-    private Cursor lessonsCursor;
+    private Cursor mCursor;
+    private String mDatabaseVisibility;
 
     // For selecting a view
     private long selectedItemId;
@@ -68,11 +72,9 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
     }
 
 
-    void setLessonsCursorData(Cursor cursor){
-
-        Log.v(TAG, "setLessonsCursorData");
-
-        this.lessonsCursor = cursor;
+    void swapCursor(Cursor cursor, String databaseVisibility){
+        mCursor = cursor;
+        mDatabaseVisibility = databaseVisibility;
         notifyDataSetChanged();
     }
 
@@ -124,13 +126,23 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
 
         Log.d(TAG, "#" + position);
 
-        if(!lessonsCursor.moveToPosition(position))
+        if(!mCursor.moveToPosition(position))
             return;
 
-        String lessonName = lessonsCursor.getString(lessonsCursor.
-                getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
-        Long item_id = lessonsCursor.getLong(lessonsCursor.
-                getColumnIndex(LessonsContract.MyLessonsEntry._ID));
+        String lessonName = null;
+        long item_id = -1;
+
+        if (mDatabaseVisibility.equals(USER_DATABASE)) {
+            lessonName = mCursor.getString(mCursor.
+                    getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
+            item_id = mCursor.getLong(mCursor.
+                    getColumnIndex(LessonsContract.MyLessonsEntry._ID));
+        } else if (mDatabaseVisibility.equals(GROUP_DATABASE)) {
+            lessonName = mCursor.getString(mCursor.
+                    getColumnIndex(LessonsContract.GroupLessonsEntry.COLUMN_LESSON_TITLE));
+            item_id = mCursor.getLong(mCursor.
+                    getColumnIndex(LessonsContract.GroupLessonsEntry._ID));
+        }
 
         if (lessonName != null && !lessonName.equals("")) {
             holder.lessonTextView.setText(lessonName);
@@ -146,53 +158,6 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
             }
         }
 
-//        Log.v(TAG, "onBindViewHolder localImageUri:" + localImageUri);
-//
-//        if (localImageUri != null && !localImageUri.equals("")) {
-//            /*
-//             * Use the call back of picasso to manage the error in loading poster.
-//             * On error, write the message in the text view that is together with the
-//             * image view, and make it visible.
-//             */
-//            Uri uri = Uri.parse(localImageUri);
-//            // Refresh permissions
-//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-//                try {
-//                    Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-//                    final int takeFlags = intent.getFlags()
-//                            & (Intent.FLAG_GRANT_READ_URI_PERMISSION
-//                            | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-//                    getContentResolver().takePersistableUriPermission(uri, takeFlags);
-//                } catch (Exception e) {
-//                    Log.e(TAG, "updateView takePersistableUriPermission error:" + e.getMessage());
-//                }
-//            }
-//
-//            Picasso.get()
-//                    .load(localImageUri)
-//                    .into(imageView, new Callback() {
-//                        @Override
-//                        public void onSuccess() {
-//                            Log.v(TAG, "Image loaded");
-//                            imageView.setVisibility(View.VISIBLE);
-//                        }
-//
-//                        @Override
-//                        public void onError(Exception e) {
-//                            Log.e(TAG, "Picasso error in loading image:" + e.getMessage());
-//                            Toast.makeText(mContext, "Error in loading image:" + e.getMessage(),
-//                                    Toast.LENGTH_LONG).show();
-//                            imageView.setVisibility(View.GONE);
-//                            if(mPlayerView.getVisibility() == View.GONE) {
-//                                errorMessageView.setVisibility(View.VISIBLE);
-//                            }
-//                        }
-//
-//                    });
-//        } else {
-//            holder.errorTextView.setVisibility(View.VISIBLE);
-//        }
-
     }
 
 
@@ -205,8 +170,8 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
     @Override
     public int getItemCount() {
 
-        if (null != lessonsCursor) {
-            return lessonsCursor.getCount();
+        if (null != mCursor) {
+            return mCursor.getCount();
         } else {
             return 0;
         }
@@ -262,17 +227,25 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
 
             int clickedItemIndex = getAdapterPosition();
 
-            if(!lessonsCursor.moveToPosition(clickedItemIndex))
+            if(!mCursor.moveToPosition(clickedItemIndex))
                 return;
 
-            long lesson_id = lessonsCursor.getLong(lessonsCursor.
-                    getColumnIndex(LessonsContract.MyLessonsEntry._ID));
-            String lessonName = lessonsCursor.getString(lessonsCursor.
-                    getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
 
-            //Log.v(TAG, "onClick lessonName:" + lessonName);
+            String lessonName = null;
+            long lesson_id = -1;
 
-            // Calls the method implemented in the main activity
+            if (mDatabaseVisibility.equals(USER_DATABASE)) {
+                lessonName = mCursor.getString(mCursor.
+                        getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
+                lesson_id = mCursor.getLong(mCursor.
+                        getColumnIndex(LessonsContract.MyLessonsEntry._ID));
+            } else if (mDatabaseVisibility.equals(GROUP_DATABASE)) {
+                lessonName = mCursor.getString(mCursor.
+                        getColumnIndex(LessonsContract.GroupLessonsEntry.COLUMN_LESSON_TITLE));
+                lesson_id = mCursor.getLong(mCursor.
+                        getColumnIndex(LessonsContract.GroupLessonsEntry._ID));
+            }
+
             mOnClickListener.onListItemClick(
                     view,
                     clickedItemIndex,
@@ -289,17 +262,26 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
         public boolean onLongClick(View view) {
             int clickedItemIndex = getAdapterPosition();
 
-            if(!lessonsCursor.moveToPosition(clickedItemIndex))
+            if(!mCursor.moveToPosition(clickedItemIndex))
                 return true;
 
-            long lesson_id = lessonsCursor.getLong(lessonsCursor.
-                    getColumnIndex(LessonsContract.MyLessonsEntry._ID));
-            String lessonName = lessonsCursor.getString(lessonsCursor.
-                    getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
+            long lesson_id = -1;
+            String lessonName = null;
 
-            //Log.v(TAG, "onLongClick lessonName:" + lessonName);
 
-            // Calls the method implemented in the main activity
+            if (mDatabaseVisibility.equals(USER_DATABASE)) {
+                lessonName = mCursor.getString(mCursor.
+                        getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
+                lesson_id = mCursor.getLong(mCursor.
+                        getColumnIndex(LessonsContract.MyLessonsEntry._ID));
+            } else if (mDatabaseVisibility.equals(GROUP_DATABASE)) {
+                lessonName = mCursor.getString(mCursor.
+                        getColumnIndex(LessonsContract.GroupLessonsEntry.COLUMN_LESSON_TITLE));
+                lesson_id = mCursor.getLong(mCursor.
+                        getColumnIndex(LessonsContract.GroupLessonsEntry._ID));
+            }
+
+
             mOnClickListener.onListItemLongClick(
                     view,
                     clickedItemIndex,

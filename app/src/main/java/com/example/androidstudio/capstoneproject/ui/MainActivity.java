@@ -1073,15 +1073,27 @@ public class MainActivity extends AppCompatActivity implements
         // Only delete the lesson if has no parts
 
         // Query the parts table with the same lesson_id
-        String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
-        String[] selectionArgs = {Long.toString(_id)};
-        Cursor cursor = contentResolver.query(
-                LessonsContract.MyLessonPartsEntry.CONTENT_URI,
-                null,
-                selection,
-                selectionArgs,
-                null);
+        String selection = null;
+        Uri partsUri = null;
+        if (databaseVisibility.equals(USER_DATABASE)) {
+            selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
+            partsUri = LessonsContract.MyLessonPartsEntry.CONTENT_URI;
+        } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+            selection = LessonsContract.GroupLessonPartsEntry.COLUMN_LESSON_ID + "=?";
+            partsUri = LessonsContract.GroupLessonPartsEntry.CONTENT_URI;
 
+        }
+
+        String[] selectionArgs = {Long.toString(_id)};
+        Cursor cursor = null;
+        if (partsUri != null) {
+            cursor = contentResolver.query(
+                    partsUri,
+                    null,
+                    selection,
+                    selectionArgs,
+                    null);
+        }
         if (cursor == null) {
             Log.e(TAG, "Failed to get cursor",
                     new Exception("onDialogDeleteLessonLocallyPositiveClick: Failed to get cursor."));
@@ -1092,7 +1104,8 @@ public class MainActivity extends AppCompatActivity implements
 
         int nRows = cursor.getCount();
 
-        if (nRows > 1) {
+        // If in the local database, check if lesson has parts and ask to delete parts first
+        if (nRows > 1 && databaseVisibility.equals(USER_DATABASE)) {
             Log.d(TAG, "onDialogDeleteLessonLocallyPositiveClick number of lesson parts nRows:" + nRows);
 
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
@@ -1108,7 +1121,19 @@ public class MainActivity extends AppCompatActivity implements
             snackBar.show();
 
             return;
+
+        } else if (nRows > 1 && databaseVisibility.equals(GROUP_DATABASE)) {
+
+            // In case of group, delete the images or videos directly
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "Deleting the file images/videos from this group lesson...",
+                    Snackbar.LENGTH_LONG);
+            snackBar.show();
+            Log.d(TAG, "onDialogDeleteLessonLocallyPositiveClick: " +
+                    "Deleting the file images/videos from this group lesson");
+            firebaseFragment.deleteImagesFromThisGroupLesson(_id);
         }
+
 
         // Delete the lesson from local database
         int numberOfLessonsDeleted = 0;
@@ -1127,6 +1152,7 @@ public class MainActivity extends AppCompatActivity implements
 
         cursor.close();
     }
+
 
     // Method for receiving communication from the DeleteLessonFragment
     @Override

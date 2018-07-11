@@ -338,8 +338,10 @@ public class MainFragment extends Fragment implements
         // Send to the main activity the order to setting the idling resource state
         mIdlingCallback.onIdlingResource(true);
 
+        mLoadingIndicator.setVisibility(View.INVISIBLE);
+
         // Pass the data to the adapter
-        setCursor(data);
+        mAdapter.swapCursor(data, databaseVisibility);
         mAdapter.setSelectedItemId(selectedLesson_id);
 
         if (data == null) {
@@ -362,7 +364,7 @@ public class MainFragment extends Fragment implements
          * Since this Loader's data is now invalid, we need to clear the Adapter that is
          * displaying the data.
          */
-        setCursor(null);
+        mAdapter.swapCursor(null, databaseVisibility);
     }
 
 
@@ -374,18 +376,6 @@ public class MainFragment extends Fragment implements
 
     public interface OnIdlingResourceListener {
         void onIdlingResource(Boolean value);
-    }
-
-    // Functions for receiving the data from main activity
-    // Receives the data from the main activity
-    public void setCursor(Cursor cursor) {
-
-        mLoadingIndicator.setVisibility(View.INVISIBLE);
-
-        // Saves a reference to the cursor
-        // Set the data for the adapter
-        mAdapter.setLessonsCursorData(cursor);
-
     }
 
 

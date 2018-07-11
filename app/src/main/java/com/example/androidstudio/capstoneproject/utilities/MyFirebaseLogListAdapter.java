@@ -2,6 +2,7 @@ package com.example.androidstudio.capstoneproject.utilities;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -20,6 +21,9 @@ public class MyFirebaseLogListAdapter extends RecyclerView.Adapter<MyFirebaseLog
 
     private static final String TAG = MyFirebaseLogListAdapter.class.getSimpleName();
 
+    // This limits the number of rows in the log table
+    private static final int MAX_ROWS_LOG_TABLE = 100;
+
     // Store the count of items to be displayed in the recycler view
     private static int viewHolderCount;
 
@@ -32,9 +36,29 @@ public class MyFirebaseLogListAdapter extends RecyclerView.Adapter<MyFirebaseLog
     }
 
 
-    public void swapCursor(Cursor newCursor){
+    public void swapCursor(Context context, Cursor newCursor){
+
         mCursor = newCursor;
+
+        // Limit the size of the log table
+        // the order of the table is DESC --> move to last to get the first
+        long maxDelete = mCursor.getCount();
+        maxDelete = maxDelete/5;
+        mCursor.moveToLast();
+        int nRows = mCursor.getCount();
+        while (nRows > MAX_ROWS_LOG_TABLE && maxDelete > 0) {
+            long log_id = mCursor.getLong(mCursor.getColumnIndex(LessonsContract.MyLogEntry._ID));
+            Uri uriToDelete = LessonsContract.MyLogEntry.CONTENT_URI.buildUpon()
+                    .appendPath(Long.toString(log_id)).build();
+            Log.d(TAG, "uriToDelete:" + uriToDelete.toString());
+            int nRowsDeleted = context.getContentResolver().delete(uriToDelete, null, null);
+            Log.d(TAG, "addToLog nRowsDeleted:" + nRowsDeleted);
+            maxDelete--;
+            mCursor.move(-1);
+        }
+
         notifyDataSetChanged();
+
     }
 
 

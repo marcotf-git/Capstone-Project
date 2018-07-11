@@ -19,11 +19,15 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
 
     private static final String TAG = PartsListAdapter.class.getSimpleName();
 
+    private static final String USER_DATABASE = "userDatabase";
+    private static final String GROUP_DATABASE = "groupDatabase";
+
     // Store the count of items to be displayed in the recycler view
     private static int viewHolderCount;
 
     // Store the data to be displayed
-    private Cursor partsCursor;
+    private Cursor mCursor;
+    private String mDatabaseVisibility;
 
     // For selecting a view
     private long selectedItemId;
@@ -67,11 +71,11 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
     }
 
 
-    void setLessonPartsCursorData(Cursor cursor){
+    void swapCursor(Cursor cursor, String databaseVisibility){
 
         Log.d(TAG, "setLessonsCursorData");
-
-        this.partsCursor = cursor;
+        mDatabaseVisibility = databaseVisibility;
+        mCursor = cursor;
         notifyDataSetChanged();
     }
 
@@ -123,15 +127,25 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
 
         Log.d(TAG, "#" + position);
 
-        if(!partsCursor.moveToPosition(position))
+        if(!mCursor.moveToPosition(position))
             return;
 
-        String lessonPartTitle = partsCursor.getString(partsCursor.
-                getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
-        Long item_id = partsCursor.getLong(partsCursor.
-                getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
+        String lessonPartTitle = null;
+        long item_id = -1;
 
-        if (lessonPartTitle != null && !lessonPartTitle.equals("")) {
+        if (mDatabaseVisibility.equals(USER_DATABASE)) {
+            lessonPartTitle = mCursor.getString(mCursor.
+                    getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
+            item_id = mCursor.getLong(mCursor.
+                    getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
+        } else if (mDatabaseVisibility.equals(GROUP_DATABASE)) {
+            lessonPartTitle = mCursor.getString(mCursor.
+                    getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_PART_TITLE));
+            item_id = mCursor.getLong(mCursor.
+                    getColumnIndex(LessonsContract.GroupLessonPartsEntry._ID));
+        }
+
+            if (lessonPartTitle != null && !lessonPartTitle.equals("")) {
             holder.partTextView.setText(lessonPartTitle);
             holder.partTextView.setVisibility(View.VISIBLE);
         }
@@ -145,8 +159,6 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
             }
         }
 
-        // code for loading the image
-
     }
 
 
@@ -159,8 +171,8 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
     @Override
     public int getItemCount() {
 
-        if (null != partsCursor) {
-            return partsCursor.getCount();
+        if (null != mCursor) {
+            return mCursor.getCount();
         } else {
             return 0;
         }
@@ -216,19 +228,31 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
 
             int clickedItemIndex = getAdapterPosition();
 
-            if(!partsCursor.moveToPosition(clickedItemIndex))
+            if(!mCursor.moveToPosition(clickedItemIndex))
                 return;
 
-            long lesson_part_id = partsCursor.getLong(partsCursor.
-                    getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
-            String lessonPartTitle = partsCursor.getString(partsCursor.
-                    getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
+
+            String lessonPartTitle = null;
+            long item_id = -1;
+
+            if (mDatabaseVisibility.equals(USER_DATABASE)) {
+                lessonPartTitle = mCursor.getString(mCursor.
+                        getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
+                item_id = mCursor.getLong(mCursor.
+                        getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
+            } else if (mDatabaseVisibility.equals(GROUP_DATABASE)) {
+                lessonPartTitle = mCursor.getString(mCursor.
+                        getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_PART_TITLE));
+                item_id = mCursor.getLong(mCursor.
+                        getColumnIndex(LessonsContract.GroupLessonPartsEntry._ID));
+            }
+
 
             // Calls the method implemented in the main activity
             mOnClickListener.onListItemClick(
                     view,
                     clickedItemIndex,
-                    lesson_part_id,
+                    item_id,
                     lessonPartTitle);
 
         }
@@ -241,19 +265,29 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
         public boolean onLongClick(View view) {
             int clickedItemIndex = getAdapterPosition();
 
-            if(!partsCursor.moveToPosition(clickedItemIndex))
+            if(!mCursor.moveToPosition(clickedItemIndex))
                 return true;
 
-            long lessonPart_id = partsCursor.getLong(partsCursor.
-                    getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
-            String lessonPartTitle = partsCursor.getString(partsCursor.
-                    getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
+            String lessonPartTitle = null;
+            long item_id = -1;
+
+            if (mDatabaseVisibility.equals(USER_DATABASE)) {
+                lessonPartTitle = mCursor.getString(mCursor.
+                        getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
+                item_id = mCursor.getLong(mCursor.
+                        getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
+            } else if (mDatabaseVisibility.equals(GROUP_DATABASE)) {
+                lessonPartTitle = mCursor.getString(mCursor.
+                        getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_PART_TITLE));
+                item_id = mCursor.getLong(mCursor.
+                        getColumnIndex(LessonsContract.GroupLessonPartsEntry._ID));
+            }
 
             // Calls the method implemented in the main activity
             mOnClickListener.onListItemLongClick(
                     view,
                     clickedItemIndex,
-                    lessonPart_id,
+                    item_id,
                     lessonPartTitle);
 
             return true;

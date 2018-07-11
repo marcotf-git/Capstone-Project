@@ -24,7 +24,6 @@ public class AddLessonPartActivity extends AppCompatActivity {
     private static final String CLICKED_LESSON_ID = "clickedLessonId";
 
     private long clickedLesson_id;
-    private Cursor mCursor;
 
 
     @Override
@@ -61,7 +60,7 @@ public class AddLessonPartActivity extends AppCompatActivity {
 
         if (null != getContentResolver()) {
 
-            mCursor = getContentResolver().query(
+            Cursor mCursor = getContentResolver().query(
                     queryUri,
                     null,
                     null,
@@ -92,6 +91,10 @@ public class AddLessonPartActivity extends AppCompatActivity {
                 Toast.makeText(getBaseContext(),
                         "Internal error about the database!", Toast.LENGTH_LONG).show();
                 finish();
+            }
+
+            if(mCursor != null) {
+                mCursor.close();
             }
 
         } else {

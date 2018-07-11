@@ -85,8 +85,7 @@ public class MyFirebaseFragment extends Fragment implements
     private static final String DOWNLOADING_LESSON_ID = "downloadingLessonId";
     private static final String DOWNLOADING_SAVED_ITEMS = "downloadingSavedItems";
 
-    // This limits the number of rows in the log table
-    private static final int MAX_ROWS_LOG_TABLE = 100;
+
 
     private FirebaseFirestore mFirebaseDatabase;
     private FirebaseStorage mFirebaseStorage;
@@ -99,8 +98,6 @@ public class MyFirebaseFragment extends Fragment implements
 
     private String userUid;
     private Context mContext;
-    private Cursor mCursor;
-    private Cursor mLogCursor;
 
     private List<UploadingImage> uploadingImages;
     private List<DownloadingImage> downloadingImages;
@@ -263,7 +260,6 @@ public class MyFirebaseFragment extends Fragment implements
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
 
-        mLogCursor = data;
 
         if (data != null) {
             Log.d(TAG, "onLoadFinished cursor:" + data.toString());
@@ -272,7 +268,7 @@ public class MyFirebaseFragment extends Fragment implements
         }
 
         // Pass the data to the adapter
-        mAdapter.swapCursor(data);
+        mAdapter.swapCursor(mContext, data);
 
         mLoadingIndicator.setVisibility(View.INVISIBLE);
 
@@ -280,25 +276,6 @@ public class MyFirebaseFragment extends Fragment implements
             showErrorMessage();
         } else {
             showLogDataView();
-        }
-
-        if (mLogCursor == null) { return; }
-
-
-        // Limit the size of the log table
-        // the order of the table is DESC --> move to last to get the first
-        long maxDelete = mLogCursor.getCount();
-        maxDelete = maxDelete/5;
-        mLogCursor.moveToLast();
-        while (mLogCursor.getCount() > MAX_ROWS_LOG_TABLE && maxDelete > 0) {
-            long log_id = mLogCursor.getLong(mLogCursor.getColumnIndex(LessonsContract.MyLogEntry._ID));
-            Uri uriToDelete = LessonsContract.MyLogEntry.CONTENT_URI.buildUpon()
-                    .appendPath(Long.toString(log_id)).build();
-            Log.d(TAG, "uriToDelete:" + uriToDelete.toString());
-            int nRowsDeleted = mContext.getContentResolver().delete(uriToDelete, null, null);
-            Log.d(TAG, "addToLog nRowsDeleted:" + nRowsDeleted);
-            maxDelete--;
-            mLogCursor.move(-1);
         }
 
     }
@@ -315,8 +292,7 @@ public class MyFirebaseFragment extends Fragment implements
          * Since this Loader's data is now invalid, we need to clear the Adapter that is
          * displaying the data.
          */
-        mLogCursor = null;
-        mAdapter.swapCursor(null);
+        mAdapter.swapCursor(mContext, null);
     }
 
 
@@ -366,20 +342,20 @@ public class MyFirebaseFragment extends Fragment implements
 
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
         String[] selectionArgs = {Long.toString(mLessonId)};
-        mCursor = contentResolver.query(
+        Cursor partsCursor = contentResolver.query(
                 LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                 null,
                 selection,
                 selectionArgs,
                 null);
 
-        if (mCursor == null) {
+        if (partsCursor == null) {
             Log.e(TAG, "uploadImages: failed to get parts cursor (database error)");
             mCallback.onUploadImageFailure(new Exception("Failed to get parts cursor (database failure)"));
             return;
         }
 
-        long nRows = mCursor.getCount();
+        long nRows = partsCursor.getCount();
 
         if (nRows == 0) {
             Log.d(TAG, "uploadImages: no parts found in local database for the lesson _id:"
@@ -390,7 +366,7 @@ public class MyFirebaseFragment extends Fragment implements
         }
 
         // Moves to the first part of that lesson
-        mCursor.moveToFirst();
+        partsCursor.moveToFirst();
 
         // Get all the parts and sore all image uri's in an array of Image instances
         List<Image> images = new ArrayList<>();
@@ -398,15 +374,15 @@ public class MyFirebaseFragment extends Fragment implements
 
         for (int i = 0; i < nRows; i++) {
 
-            Long item_id = mCursor.getLong(mCursor.
+            Long item_id = partsCursor.getLong(partsCursor.
                     getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
-            String localImageUri = mCursor.getString(mCursor.
+            String localImageUri = partsCursor.getString(partsCursor.
                     getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
-            String localVideoUri = mCursor.getString(mCursor.
+            String localVideoUri = partsCursor.getString(partsCursor.
                     getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
 
             if (localImageUri == null && localVideoUri == null) {
-                mCursor.moveToNext();
+                partsCursor.moveToNext();
                 continue;
             }
 
@@ -424,10 +400,10 @@ public class MyFirebaseFragment extends Fragment implements
             // Store the instance in the array
             images.add(image);
             // get the next part
-            mCursor.moveToNext();
+            partsCursor.moveToNext();
         }
 
-        //mCursor.close();
+        partsCursor.close();
 
         // If there aren't images, go to upload lesson directly
         if (images.size() == 0) {
@@ -569,26 +545,26 @@ public class MyFirebaseFragment extends Fragment implements
 
         ContentResolver contentResolver = mContext.getContentResolver();
         Uri lessonUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, lesson_id);
-        mCursor = contentResolver.query(lessonUri,
+        Cursor cursorLesson = contentResolver.query(lessonUri,
                 null,
                 null,
                 null,
                 null);
 
-        if (mCursor == null) {
+        if (cursorLesson == null) {
             Log.e(TAG, "uploadImages failed to get cursor");
             mCallback.onUploadImageFailure(new Exception("Failed to get cursor (database failure)"));
             return;
         }
 
-        int nRows = mCursor.getCount();
+        int nRows = cursorLesson.getCount();
 
         if (nRows > 1) {
             Log.e(TAG, "uploadImages local database inconsistency nRows:"
                     + nRows + " with the _id:" + lesson_id);
         }
 
-        mCursor.moveToFirst();
+        cursorLesson.moveToFirst();
 
         // Pass the data cursor to Lesson instance
         // lesson_id is parameter from method
@@ -597,8 +573,8 @@ public class MyFirebaseFragment extends Fragment implements
 
         // The database is responsible by the consistency: only one row for lesson _id
         user_uid = userUid;
-        lesson_title = mCursor.
-                getString(mCursor.getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
+        lesson_title = cursorLesson.
+                getString(cursorLesson.getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
 
         time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                 .format(new Date());
@@ -616,12 +592,14 @@ public class MyFirebaseFragment extends Fragment implements
 
         String jsonString = serialize(lesson);
 
+        cursorLesson.close();
+
         Log.d(TAG, "uploadImages lesson jsonString:" + jsonString);
 
         // Load lesson parts from local database into the Lesson instance
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
         String[] selectionArgs = {Long.toString(lesson_id)};
-        mCursor = contentResolver.query(
+        Cursor cursorParts = contentResolver.query(
                 LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                 null,
                 selection,
@@ -629,32 +607,32 @@ public class MyFirebaseFragment extends Fragment implements
                 null);
 
         // Return if there aren't parts
-        if (null == mCursor) {
+        if (null == cursorParts) {
             Log.d(TAG, "No parts in this lesson");
             //mCallback.onUploadImageFailure(new Exception("No lesson parts"));
         }
 
         ArrayList<LessonPart> lessonParts = new ArrayList<>();
 
-        if (null != mCursor) {
-            mCursor.moveToFirst();
-            int nPartsRows = mCursor.getCount();
+        if (null != cursorParts) {
+            cursorParts.moveToFirst();
+            int nPartsRows = cursorParts.getCount();
             for (int j = 0; j < nPartsRows; j++) {
 
-                Long item_id = mCursor.getLong(mCursor.
+                Long item_id = cursorParts.getLong(cursorParts.
                         getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
                 // lesson_id is already loaded! (don't need to load, is the lesson_id parameter)
-                String lessonPartTitle = mCursor.getString(mCursor.
+                String lessonPartTitle = cursorParts.getString(cursorParts.
                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE));
-                String lessonPartText = mCursor.getString(mCursor.
+                String lessonPartText = cursorParts.getString(cursorParts.
                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TEXT));
-                String localImageUri = mCursor.getString(mCursor.
+                String localImageUri = cursorParts.getString(cursorParts.
                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
-                String cloudImageUri = mCursor.getString(mCursor.
+                String cloudImageUri = cursorParts.getString(cursorParts.
                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
-                String localVideoUri = mCursor.getString(mCursor.
+                String localVideoUri = cursorParts.getString(cursorParts.
                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
-                String cloudVideoUri = mCursor.getString(mCursor.
+                String cloudVideoUri = cursorParts.getString(cursorParts.
                         getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
 
                 LessonPart lessonPart = new LessonPart();
@@ -670,10 +648,10 @@ public class MyFirebaseFragment extends Fragment implements
                 Log.v(TAG, "uploadLesson (to database): lessonPart title:" + lessonPart.getTitle());
 
                 lessonParts.add(lessonPart);
-                mCursor.moveToNext();
+                cursorParts.moveToNext();
             }
 
-            //mCursor.close();
+            cursorParts.close();
         }
 
 
@@ -784,6 +762,7 @@ public class MyFirebaseFragment extends Fragment implements
         queryUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI,
             lesson.getLesson_id());
 
+        Cursor mCursor;
         ContentResolver contentResolver = mContext.getContentResolver();
         if (queryUri != null) {
             mCursor = contentResolver.query(queryUri,
@@ -884,6 +863,11 @@ public class MyFirebaseFragment extends Fragment implements
                 }
             }
         }
+
+        if (mCursor != null) {
+            mCursor.close();
+        }
+
     }
 
 
@@ -991,7 +975,7 @@ public class MyFirebaseFragment extends Fragment implements
 
          // Load the images uri's into the images array
          ContentResolver contentResolver = mContext.getContentResolver();
-         mCursor = contentResolver.query(
+         Cursor mCursor = contentResolver.query(
                  LessonsContract.GroupLessonPartsEntry.CONTENT_URI,
                  null,
                  null,
@@ -1162,6 +1146,9 @@ public class MyFirebaseFragment extends Fragment implements
              });
          }
 
+
+         mCursor.close();
+
      }
 
 
@@ -1190,6 +1177,63 @@ public class MyFirebaseFragment extends Fragment implements
                     }
                 });
 
+    }
+
+
+    public void deleteImagesFromThisGroupLesson(long lessonId) {
+
+        // Query the parts table with the same lesson_id
+        ContentResolver contentResolver = mContext.getContentResolver();
+
+        String selection = LessonsContract.GroupLessonPartsEntry.COLUMN_LESSON_ID + "=?";
+        String[] selectionArgs = {Long.toString(lessonId)};
+        Cursor cursor = contentResolver.query(
+                LessonsContract.GroupLessonPartsEntry.CONTENT_URI,
+                null,
+                selection,
+                selectionArgs,
+                null);
+
+        if (cursor == null) {
+            return;
+        }
+
+        long nRows = cursor.getCount();
+
+        if (nRows == 0) {
+            return;
+        }
+
+        // Moves to the first part of that lesson
+        cursor.moveToFirst();
+
+        for (int i = 0; i < nRows; i++) {
+
+            String localImageUri = cursor.getString(cursor.
+                    getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
+            String localVideoUri = cursor.getString(cursor.
+                    getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
+
+            Log.d(TAG, "deleteImagesFromThisGroupLesson localImageUri:" + localImageUri);
+            Log.d(TAG, "deleteImagesFromThisGroupLesson localVideoUri:" + localVideoUri);
+
+            if (localImageUri != null) {
+                File file = new File(localImageUri);
+                boolean fileDeleted = file.delete();
+                Log.d(TAG, "deleteImagesFromThisGroupLesson fileDeleted:" + fileDeleted);
+            }
+
+            if (localVideoUri != null) {
+                File file = new File(localVideoUri);
+                boolean fileDeleted = file.delete();
+                Log.d(TAG, "deleteImagesFromThisGroupLesson fileDeleted:" + fileDeleted);
+            }
+
+            cursor.moveToNext();
+        }
+
+
+        cursor.close();
     }
 
 

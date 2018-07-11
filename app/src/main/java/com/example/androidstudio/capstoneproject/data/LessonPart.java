@@ -14,25 +14,6 @@ public class LessonPart {
     public LessonPart() {
     }
 
-    public LessonPart(long part_id,
-                      long lesson_id,
-                      String title,
-                      String text,
-                      String local_image_uri,
-                      String cloud_image_uri,
-                      String local_video_uri,
-                      String cloud_video_uri) {
-
-        this.part_id = part_id;
-        this.lesson_id = lesson_id;
-        this.title = title;
-        this.text = text;
-        this.local_image_uri = local_image_uri;
-        this.cloud_image_uri = cloud_image_uri;
-        this.local_video_uri = local_video_uri;
-        this.cloud_video_uri = cloud_video_uri;
-    }
-
     public long getPart_id() {
         return part_id;
     }
