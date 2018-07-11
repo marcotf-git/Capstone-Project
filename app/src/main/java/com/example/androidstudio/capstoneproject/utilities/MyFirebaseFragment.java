@@ -50,10 +50,6 @@ import com.google.gson.Gson;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -367,17 +363,18 @@ public class MyFirebaseFragment extends Fragment implements
                     + mLessonId);
             //mCursor.close();
             mCallback.onUploadImageFailure(new Exception("Error: no parts in this lesson"));
+            partsCursor.close();
             return;
         }
-
-        // Moves to the first part of that lesson
-        partsCursor.moveToFirst();
 
         // Get all the parts and sore all image uri's in an array of Image instances
         List<Image> images = new ArrayList<>();
         Image image;
 
-        for (int i = 0; i < nRows; i++) {
+        // Moves to the first part of that lesson
+        partsCursor.moveToFirst();
+
+        do {
 
             Long item_id = partsCursor.getLong(partsCursor.
                     getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
@@ -402,13 +399,15 @@ public class MyFirebaseFragment extends Fragment implements
                 image.setLocal_uri(localImageUri);
                 image.setImageType(IMAGE);
             }
+
             // Store the instance in the array
             images.add(image);
+
             // get the next part
-            partsCursor.moveToNext();
-        }
+        } while (partsCursor.moveToNext());
 
         partsCursor.close();
+
 
         // If there aren't images, go to upload lesson directly
         if (images.size() == 0) {
@@ -585,7 +584,8 @@ public class MyFirebaseFragment extends Fragment implements
                 .format(new Date());
 
         // Close the lesson cursor
-        //mCursor.close();
+        cursorLesson.close();
+
 
         // Construct a Lesson instance and set with the data from database
         Lesson lesson = new Lesson();
@@ -596,8 +596,6 @@ public class MyFirebaseFragment extends Fragment implements
         lesson.setTime_stamp(time_stamp);
 
         String jsonString = serialize(lesson);
-
-        cursorLesson.close();
 
         Log.d(TAG, "uploadImages lesson jsonString:" + jsonString);
 
@@ -786,7 +784,7 @@ public class MyFirebaseFragment extends Fragment implements
         if (mCursor != null) {
             mCursor.moveToFirst();
             nRows = mCursor.getCount();
-            //mCursor.close();
+            mCursor.close();
         }
 
 
@@ -867,10 +865,6 @@ public class MyFirebaseFragment extends Fragment implements
                     Log.v(TAG, "refreshUserLesson partUri inserted:" + partUri);
                 }
             }
-        }
-
-        if (mCursor != null) {
-            mCursor.close();
         }
 
     }
@@ -1017,13 +1011,13 @@ public class MyFirebaseFragment extends Fragment implements
 
          mCursor.moveToFirst();
 
-         int nRows = mCursor.getCount();
+         //int nRows = mCursor.getCount();
 
         // Get all the parts and sore all image cloud uri's in an array of Image instances
          List<Image> images = new ArrayList<>();
          Image image;
 
-         for (int i = 0; i < nRows; i++) {
+         do {
 
              Long item_id = mCursor.getLong(mCursor.
                      getColumnIndex(LessonsContract.GroupLessonPartsEntry._ID));
@@ -1056,8 +1050,10 @@ public class MyFirebaseFragment extends Fragment implements
              images.add(image);
 
              // get the next part
-             mCursor.moveToNext();
-         }
+             //mCursor.moveToNext();
+         } while (mCursor.moveToNext());
+
+        mCursor.close();
 
          // Download the file with the uri's stored in the images array, and after,
          // updates the parts table with the local file path
@@ -1174,9 +1170,6 @@ public class MyFirebaseFragment extends Fragment implements
              });
          }
 
-
-         mCursor.close();
-
      }
 
 
@@ -1237,7 +1230,7 @@ public class MyFirebaseFragment extends Fragment implements
         // Moves to the first part of that lesson
         cursor.moveToFirst();
 
-        for (int i = 0; i < nRows; i++) {
+        do {
 
             String localImageUri = cursor.getString(cursor.
                     getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
@@ -1276,8 +1269,8 @@ public class MyFirebaseFragment extends Fragment implements
                 }
             }
 
-            cursor.moveToNext();
-        }
+            // get the next part
+        } while (cursor.moveToNext());
 
         cursor.close();
     }
@@ -1723,7 +1716,7 @@ public class MyFirebaseFragment extends Fragment implements
             // count the number of rows deleted
             maxToDelete--;
 
-            // Refresh the query
+            // make new query
             mCursor = contentResolver.query(LessonsContract.MyLogEntry.CONTENT_URI,
                     null,
                     null,

@@ -12,10 +12,24 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
     // If you change the database schema, you must increment the database version
     private static final int DATABASE_VERSION = 1;
 
-    // Constructor
-    LessonsDbHelper(Context context) {
+    // Singleton Pattern
+    private static LessonsDbHelper sInstance;
+
+
+    // Constructor (private to prevent direct instantiation)
+    private LessonsDbHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
+
+    // The static getInstance() method ensures that only one LessonsDbHelper will ever exist at any
+    // given time.
+    public static synchronized LessonsDbHelper getInstance(Context context) {
+        if (sInstance == null) {
+            sInstance = new LessonsDbHelper(context.getApplicationContext());
+        }
+        return sInstance;
+    }
+
 
     @Override
     public void onCreate(SQLiteDatabase sqLiteDatabase) {

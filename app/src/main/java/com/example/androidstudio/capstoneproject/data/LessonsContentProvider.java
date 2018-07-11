@@ -79,7 +79,8 @@ public class LessonsContentProvider extends ContentProvider {
         // Initialize a LessonsDbHelper on startup
         // Declare the DbHelper as a global variable
         Context context = getContext();
-        mLessonsDbHelper = new LessonsDbHelper(context);
+        //mLessonsDbHelper = LessonsDbHelper(context);
+        mLessonsDbHelper = LessonsDbHelper.getInstance(context);
         return true;
     }
 
