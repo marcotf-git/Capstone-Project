@@ -50,6 +50,10 @@ import com.google.gson.Gson;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -85,7 +89,8 @@ public class MyFirebaseFragment extends Fragment implements
     private static final String DOWNLOADING_LESSON_ID = "downloadingLessonId";
     private static final String DOWNLOADING_SAVED_ITEMS = "downloadingSavedItems";
 
-
+    // This limits the number of rows in the log table
+    private static final int MAX_ROWS_LOG_TABLE = 100;
 
     private FirebaseFirestore mFirebaseDatabase;
     private FirebaseStorage mFirebaseStorage;
@@ -268,7 +273,7 @@ public class MyFirebaseFragment extends Fragment implements
         }
 
         // Pass the data to the adapter
-        mAdapter.swapCursor(mContext, data);
+        mAdapter.swapCursor(data);
 
         mLoadingIndicator.setVisibility(View.INVISIBLE);
 
@@ -292,7 +297,7 @@ public class MyFirebaseFragment extends Fragment implements
          * Since this Loader's data is now invalid, we need to clear the Adapter that is
          * displaying the data.
          */
-        mAdapter.swapCursor(mContext, null);
+        mAdapter.swapCursor(null);
     }
 
 
@@ -877,8 +882,29 @@ public class MyFirebaseFragment extends Fragment implements
 
         Log.v(TAG, "refreshGroupLesson");
 
+        // first, delete the file images of each lesson
         ContentResolver contentResolver = mContext.getContentResolver();
+        Cursor mCursor = contentResolver.query(LessonsContract.GroupLessonsEntry.CONTENT_URI,
+                null,
+                null,
+                null,
+                null);
 
+        if (mCursor != null && mCursor.moveToFirst()) {
+            // delete the images with the help of the deleteImageLocalFilesOfGroupLesson method
+            do {
+                long lesson_id = mCursor.getLong(mCursor.getColumnIndex(LessonsContract.GroupLessonsEntry._ID));
+                deleteImageLocalFilesOfGroupLesson(lesson_id);
+                // get the next lesson_id
+            } while (mCursor.moveToNext());
+        }
+
+        // grants that the cursor is closed
+        if (mCursor != null) {
+            mCursor.close();
+        }
+
+        // now delete the lesson parts table (from group tables)
         int numberOfLessonPartsDeleted = contentResolver.delete(
                 LessonsContract.GroupLessonPartsEntry.CONTENT_URI,
                 null,
@@ -886,6 +912,7 @@ public class MyFirebaseFragment extends Fragment implements
 
         Log.v(TAG, "refreshGroupLesson numberOfLessonPartsDeleted:" + numberOfLessonPartsDeleted);
 
+        // and delete the lesson table (from group tables)
         int numberOfLessonsDeleted = contentResolver.delete(
                 LessonsContract.GroupLessonsEntry.CONTENT_URI,
                 null,
@@ -893,12 +920,13 @@ public class MyFirebaseFragment extends Fragment implements
 
         Log.v(TAG, "refreshGroupLesson numberOfLessonsDeleted:" + numberOfLessonsDeleted);
 
-
+        // insert the new data
         for (QueryDocumentSnapshot document : task.getResult()) {
 
             Log.d(TAG, "refreshGroupLessons onComplete document.getId():" +
                     document.getId() + " => " + document.getData());
 
+            // recover the Lesson instance
             Lesson lesson = document.toObject(Lesson.class);
             String jsonString = MyFirebaseFragment.serialize(lesson);
             Log.v(TAG, "refreshGroupLessons onComplete lesson jsonString:" + jsonString);
@@ -1180,9 +1208,11 @@ public class MyFirebaseFragment extends Fragment implements
     }
 
 
-    public void deleteImagesFromThisGroupLesson(long lessonId) {
+    public void deleteImageLocalFilesOfGroupLesson(long lessonId) {
 
         // Query the parts table with the same lesson_id
+        // find the uri's of the images to delete
+        // delete the local files
         ContentResolver contentResolver = mContext.getContentResolver();
 
         String selection = LessonsContract.GroupLessonPartsEntry.COLUMN_LESSON_ID + "=?";
@@ -1214,24 +1244,40 @@ public class MyFirebaseFragment extends Fragment implements
             String localVideoUri = cursor.getString(cursor.
                     getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
 
-            Log.d(TAG, "deleteImagesFromThisGroupLesson localImageUri:" + localImageUri);
-            Log.d(TAG, "deleteImagesFromThisGroupLesson localVideoUri:" + localVideoUri);
+            Log.d(TAG, "deleteImageLocalFilesOfGroupLesson localImageUri:" + localImageUri);
+            Log.d(TAG, "deleteImageLocalFilesOfGroupLesson localVideoUri:" + localVideoUri);
 
             if (localImageUri != null) {
-                File file = new File(localImageUri);
-                boolean fileDeleted = file.delete();
-                Log.d(TAG, "deleteImagesFromThisGroupLesson fileDeleted:" + fileDeleted);
+                Uri uri = Uri.parse(localImageUri);
+                String fileName = uri.getLastPathSegment();
+                Log.d(TAG, "localImageUri file name:" + fileName);
+                File file = new File(mContext.getFilesDir(), fileName);
+                Log.d(TAG, "localImageUri file exists:" + file.exists());
+                try {
+                    boolean fileDeleted = file.delete();
+                    Log.d(TAG, "localImageUri fileDeleted:" + fileDeleted);
+                } catch (Exception e) {
+                    Log.e(TAG, "localImageUri:" + e.getMessage());
+                }
+
             }
 
             if (localVideoUri != null) {
-                File file = new File(localVideoUri);
-                boolean fileDeleted = file.delete();
-                Log.d(TAG, "deleteImagesFromThisGroupLesson fileDeleted:" + fileDeleted);
+                Uri uri = Uri.parse(localVideoUri);
+                String fileName = uri.getLastPathSegment();
+                Log.d(TAG, "localVideoUri file name:" + fileName);
+                File file = new File(mContext.getFilesDir(), fileName);
+                Log.d(TAG, "localVideoUri file exists:" + file.exists());
+                try {
+                    boolean fileDeleted = file.delete();
+                    Log.d(TAG, "localVideoUri fileDeleted:" + fileDeleted);
+                } catch (Exception e) {
+                    Log.e(TAG, "localVideoUri:" + e.getMessage());
+                }
             }
 
             cursor.moveToNext();
         }
-
 
         cursor.close();
     }
@@ -1644,9 +1690,63 @@ public class MyFirebaseFragment extends Fragment implements
     // Add data to the log table and limit its size
     public void addToLog(String logText) {
 
-        ContentValues contentValues = new ContentValues();
+        // Limit the size of the log table
         ContentResolver contentResolver = mContext.getContentResolver();
+        Cursor mCursor = contentResolver.query(LessonsContract.MyLogEntry.CONTENT_URI,
+                null,
+                null,
+                null,
+                null);
 
+        // find the size of the table
+        int nRows = 0;
+        if (mCursor != null) {
+            nRows = mCursor.getCount();
+            mCursor.moveToFirst();
+        }
+
+        // limit the number of deletions
+        int maxToDelete = nRows / 5;
+
+        while (nRows > MAX_ROWS_LOG_TABLE && maxToDelete > 0) {
+
+            // Query the _id of the position to delete
+            long log_id = mCursor.getLong(mCursor.getColumnIndex(LessonsContract.MyLogEntry._ID));
+            // close the query
+            mCursor.close();
+            // delete the row with that _id
+            Uri uriToDelete = LessonsContract.MyLogEntry.CONTENT_URI.buildUpon()
+                    .appendPath(Long.toString(log_id)).build();
+            Log.d(TAG, "uriToDelete:" + uriToDelete.toString());
+            int nRowsDeleted = mContext.getContentResolver().delete(uriToDelete, null, null);
+            Log.d(TAG, "addToLog nRowsDeleted:" + nRowsDeleted);
+            // count the number of rows deleted
+            maxToDelete--;
+
+            // Refresh the query
+            mCursor = contentResolver.query(LessonsContract.MyLogEntry.CONTENT_URI,
+                    null,
+                    null,
+                    null,
+                    null);
+
+            if(mCursor == null) {
+                break;
+            } else {
+                // get the new size of the table
+                nRows = mCursor.getCount();
+            }
+            // reposition to find the new _id of the row to delete
+            mCursor.moveToFirst();
+        }
+
+        // grants that the cursor is closed
+        if (mCursor != null) {
+            mCursor.close();
+        }
+
+        // Now add the new value to the log table
+        ContentValues contentValues = new ContentValues();
         contentValues.put(LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT, logText);
 
         // Insert the content values via a ContentResolver
@@ -1656,6 +1756,7 @@ public class MyFirebaseFragment extends Fragment implements
             Log.e(TAG, "addToLog: error in inserting item on log",
                     new Exception("addToLog: error in inserting item on log"));
         }
+
     }
 
     /**

@@ -2,7 +2,6 @@ package com.example.androidstudio.capstoneproject.utilities;
 
 import android.content.Context;
 import android.database.Cursor;
-import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -21,44 +20,25 @@ public class MyFirebaseLogListAdapter extends RecyclerView.Adapter<MyFirebaseLog
 
     private static final String TAG = MyFirebaseLogListAdapter.class.getSimpleName();
 
-    // This limits the number of rows in the log table
-    private static final int MAX_ROWS_LOG_TABLE = 100;
-
     // Store the count of items to be displayed in the recycler view
-    private static int viewHolderCount;
+    //private static int viewHolderCount;
 
     // Store the data to be displayed
     private Cursor mCursor;
 
 
     MyFirebaseLogListAdapter() {
-        viewHolderCount = 0;
+        //viewHolderCount = 0;
     }
 
 
-    public void swapCursor(Context context, Cursor newCursor){
+    public void swapCursor(Cursor newCursor){
+
+        Log.d(TAG, "swapCursor");
 
         mCursor = newCursor;
 
-        // Limit the size of the log table
-        // the order of the table is DESC --> move to last to get the first
-        long maxDelete = mCursor.getCount();
-        maxDelete = maxDelete/5;
-        mCursor.moveToLast();
-        int nRows = mCursor.getCount();
-        while (nRows > MAX_ROWS_LOG_TABLE && maxDelete > 0) {
-            long log_id = mCursor.getLong(mCursor.getColumnIndex(LessonsContract.MyLogEntry._ID));
-            Uri uriToDelete = LessonsContract.MyLogEntry.CONTENT_URI.buildUpon()
-                    .appendPath(Long.toString(log_id)).build();
-            Log.d(TAG, "uriToDelete:" + uriToDelete.toString());
-            int nRowsDeleted = context.getContentResolver().delete(uriToDelete, null, null);
-            Log.d(TAG, "addToLog nRowsDeleted:" + nRowsDeleted);
-            maxDelete--;
-            mCursor.move(-1);
-        }
-
         notifyDataSetChanged();
-
     }
 
 
@@ -85,12 +65,11 @@ public class MyFirebaseLogListAdapter extends RecyclerView.Adapter<MyFirebaseLog
         final boolean shouldAttachToParentImmediately = false;
 
         View view = inflater.inflate(layoutIdForListItem, viewGroup, shouldAttachToParentImmediately);
-        LogItemViewHolder viewHolder = new LogItemViewHolder(view);
 
-        viewHolderCount++;
-        Log.d(TAG, "onCreateViewHolder: number of ViewHolders created: " + viewHolderCount);
+        //viewHolderCount++;
+        //Log.d(TAG, "onCreateViewHolder: number of ViewHolders created: " + viewHolderCount);
 
-        return viewHolder;
+        return new LogItemViewHolder(view);
     }
 
 
@@ -107,7 +86,7 @@ public class MyFirebaseLogListAdapter extends RecyclerView.Adapter<MyFirebaseLog
     @Override
     public void onBindViewHolder(@NonNull final LogItemViewHolder holder, int position) {
 
-        Log.d(TAG, "#" + position);
+        //Log.d(TAG, "#" + position);
 
         if(!mCursor.moveToPosition(position))
             return;
@@ -120,7 +99,7 @@ public class MyFirebaseLogListAdapter extends RecyclerView.Adapter<MyFirebaseLog
             holder.logTextView.setVisibility(View.VISIBLE);
         }
 
-        Log.v(TAG, "onBindViewHolder logText:" + logText);
+        //Log.v(TAG, "onBindViewHolder logText:" + logText);
 
     }
 

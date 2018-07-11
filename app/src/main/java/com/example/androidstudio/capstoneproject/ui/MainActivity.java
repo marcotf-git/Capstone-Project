@@ -1131,7 +1131,7 @@ public class MainActivity extends AppCompatActivity implements
             snackBar.show();
             Log.d(TAG, "onDialogDeleteLessonLocallyPositiveClick: " +
                     "Deleting the file images/videos from this group lesson");
-            firebaseFragment.deleteImagesFromThisGroupLesson(_id);
+            firebaseFragment.deleteImageLocalFilesOfGroupLesson(_id);
         }
 
 
