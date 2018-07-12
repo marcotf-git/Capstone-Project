@@ -1,6 +1,7 @@
 package com.example.androidstudio.capstoneproject.ui;
 
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -136,6 +137,8 @@ public class MainActivity extends AppCompatActivity implements
     private int uploadCountFinal;
     private int downloadCount;
     private int downloadCountFinal;
+    private int totalImagesToDelete;
+    private int imagesToDeleteCount;
 
     // User data variables
     private String mUsername;
@@ -986,9 +989,9 @@ public class MainActivity extends AppCompatActivity implements
         // Count the images
         if (cursor != null) {
             cursor.moveToFirst();
-            int nRows = cursor.getCount();
-            for (int i = 0; i < nRows; i++) {
-                Long part_id = cursor.getLong(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
+
+            do {
+                long part_id = cursor.getLong(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
                 String local_video_uri = cursor.
                         getString(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
                 String local_image_uri = cursor.
@@ -1000,8 +1003,8 @@ public class MainActivity extends AppCompatActivity implements
                     // Total number of images/videos to upload
                     uploadCountFinal++;
                 }
-                cursor.moveToNext();
-            }
+
+            } while (cursor.moveToNext());
 
             Log.d(TAG, "cursor: getCount:" + cursor.getCount());
         }
@@ -1083,6 +1086,28 @@ public class MainActivity extends AppCompatActivity implements
 
     // Helper function to delete lesson data from cloud (delete the lesson document)
     private void deleteLessonFromCloud(long _id) {
+
+        // query the images to delete
+        String selection = LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID + "=?";
+        String selectionArgs[] = {Long.toString(_id)};
+        Cursor cursor = this.getContentResolver().query(
+                LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI,
+                null,
+                selection,
+                selectionArgs,
+                null);
+
+        // save the total images to delete
+        if (cursor != null) {
+            totalImagesToDelete = cursor.getCount();
+            cursor.close();
+        } else {
+            totalImagesToDelete = 0;
+        }
+
+        imagesToDeleteCount = 0;
+
+        // call the dialog
         Log.d(TAG, "deleteLessonFromCloud _id:" + _id);
         // Call the fragment for showing the delete dialog
         DialogFragment deleteLessonCloudFragment = new DeleteLessonOnCloudDialogFragment();
@@ -1316,6 +1341,45 @@ public class MainActivity extends AppCompatActivity implements
         ContentResolver contentResolver = mContext.getContentResolver();
         /* The delete method deletes the row by its _id */
 
+        // first, save the cloud file reference in the form "images/001/file_name" or
+        // "videos/001/file_name" where 001 is the lesson_id (not the part_id) in the
+        // var fileReference
+        String selection = LessonsContract.MyLessonPartsEntry._ID + "=?";
+        String[] selectionArgs = {Long.toString(_id)};
+        Cursor cursor = contentResolver.query(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
+                null,
+                selection,
+                selectionArgs,
+                null);
+
+        String fileReference = null;
+
+        if (cursor != null) {
+            cursor.moveToLast();
+        }
+
+        if (cursor != null) {
+
+            String cloud_image_uri = cursor.getString(cursor.
+                    getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
+            String cloud_video_uri = cursor.getString(cursor.
+                    getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
+
+            if (cloud_image_uri != null) {
+                String[] filePathParts = cloud_image_uri.split("/");
+                fileReference = filePathParts[1] + "/" + filePathParts[2] + "/" + filePathParts[3];
+            } else if (cloud_video_uri != null) {
+                String[] filePathParts = cloud_video_uri.split("/");
+                fileReference = filePathParts[1] + "/" + filePathParts[2] + "/" + filePathParts[3];
+            }
+
+            Log.d(TAG, "onDialogDeletePartPositiveClick fileReference:" + fileReference);
+        }
+
+
+        // Now, delete that part from parts table, and in case of success
+        // store the fileRef in the my_cloud_files_to_delete
+
         Uri uriToDelete = null;
 
         if (databaseVisibility.equals(USER_DATABASE)) {
@@ -1339,7 +1403,14 @@ public class MainActivity extends AppCompatActivity implements
             // Deselect the last view selected
             partsFragment.deselectViews();
             selectedLessonPart_id = -1;
+            // store the fileRef in the table my_cloud_files_to_delete
+            ContentValues content = new ContentValues();
+            content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE, fileReference);
+            content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID, _id);
+            Uri uri = contentResolver.insert(LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI, content);
+            Log.d(TAG, "onDialogDeletePartPositiveClick inserted uri:" + uri);
         }
+
     }
 
     // Receive communication form DeleteDialogPartFragment
@@ -1356,9 +1427,7 @@ public class MainActivity extends AppCompatActivity implements
         uploadCount++;
 
         Log.d(TAG, "uploadCount:"  + uploadCount);
-        firebaseFragment.addToLog("upload count " +
-                uploadCount + "/" + uploadCountFinal);
-
+        firebaseFragment.addToLog("upload count " +  uploadCount + "/" + uploadCountFinal);
 
         if (uploadCount >= uploadCountFinal) {
 
@@ -1374,9 +1443,10 @@ public class MainActivity extends AppCompatActivity implements
             });
             snackBar.show();
 
+            firebaseFragment.addToLog(RELEASE);
+
             uploadDatabase();
 
-            firebaseFragment.addToLog(RELEASE);
         }
     }
 
@@ -1570,7 +1640,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onDeletedSuccess() {
+    public void onDeleteDatabaseSuccess() {
         Toast.makeText(mContext,
                 "Lesson deleted from Cloud!", Toast.LENGTH_LONG).show();
         firebaseFragment.addToLog(RELEASE);
@@ -1580,12 +1650,56 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onDeleteFailure(@NonNull Exception e) {
+    public void onDeleteDatabaseFailure(@NonNull Exception e) {
         Toast.makeText(mContext,
                 "Error on deleting from Cloud:" + e.getMessage(), Toast.LENGTH_LONG).show();
-        Log.e(TAG, "onDeleteFailure error:" + e.getMessage());
+        Log.e(TAG, "onDeleteDatabaseFailure error:" + e.getMessage());
         firebaseFragment.addToLog(RELEASE);
     }
+
+    @Override
+    public void onDeleteImagesSuccess() {
+
+        Log.d(TAG, "onDeleteImagesSuccess");
+
+        imagesToDeleteCount++;
+
+        if (imagesToDeleteCount >= totalImagesToDelete) {
+
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "Deletion of images complete successfully!",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackBar.dismiss();
+                }
+            });
+            snackBar.show();
+        }
+
+        firebaseFragment.addToLog(RELEASE);
+    }
+
+    @Override
+    public void onDeleteImagesFailure(@NonNull Exception e) {
+
+        Log.e(TAG, "onDeleteImagesFailure error:" + e.getMessage());
+
+        final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                "Error in deleting image!",
+                Snackbar.LENGTH_INDEFINITE);
+        snackBar.setAction("Dismiss", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                snackBar.dismiss();
+            }
+        });
+        snackBar.show();
+
+        firebaseFragment.addToLog(RELEASE);
+    }
+
 
     /**
      * Methods for handling the activity state change

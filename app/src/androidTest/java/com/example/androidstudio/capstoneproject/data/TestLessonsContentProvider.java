@@ -53,7 +53,7 @@ public class TestLessonsContentProvider {
     @Before
     public void setUp() {
         /* Use the LessonsDbHelper to get access to a writable database */
-        LessonsDbHelper dbHelper = new LessonsDbHelper(mContext);
+        LessonsDbHelper dbHelper = LessonsDbHelper.getInstance(mContext);
         SQLiteDatabase database = dbHelper.getWritableDatabase();
         database.delete(LessonsContract.MyLessonsEntry.TABLE_NAME, null, null);
     }
@@ -230,7 +230,7 @@ public class TestLessonsContentProvider {
     public void testQuery() {
 
         /* Get access to a writable database */
-        LessonsDbHelper dbHelper = new LessonsDbHelper(mContext);
+        LessonsDbHelper dbHelper = LessonsDbHelper.getInstance(mContext);
         SQLiteDatabase database = dbHelper.getWritableDatabase();
 
         /* Create values to insert */
@@ -364,7 +364,7 @@ public class TestLessonsContentProvider {
     @Test
     public void testDelete() {
         /* Access writable database */
-        LessonsDbHelper helper = new LessonsDbHelper(InstrumentationRegistry.getTargetContext());
+        LessonsDbHelper helper = LessonsDbHelper.getInstance(InstrumentationRegistry.getTargetContext());
         SQLiteDatabase database = helper.getWritableDatabase();
 
         /* Create a new row of task data */

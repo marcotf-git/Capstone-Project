@@ -28,6 +28,9 @@ public class LessonsContentProvider extends ContentProvider {
     public static final int GROUP_LESSON_PART_WITH_ID = 401;
     public static final int MY_LOG = 500;
     public static final int MY_LOG_WITH_ID = 501;
+    public static final int MY_CLOUD_FILES_TO_DELETE = 600;
+    public static final int MY_CLOUD_FILES_TO_DELETE_WITH_ID = 601;
+
 
     // Declare a static variable for the Uri matcher
     private static final UriMatcher sUriMatcher = buildUriMatcher();
@@ -66,6 +69,10 @@ public class LessonsContentProvider extends ContentProvider {
                 MY_LOG);
         uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_LOG + "/#",
                 MY_LOG_WITH_ID);
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_CLOUD_FILES_TO_DELETE,
+                MY_CLOUD_FILES_TO_DELETE);
+        uriMatcher.addURI(LessonsContract.AUTHORITY, LessonsContract.PATH_MY_CLOUD_FILES_TO_DELETE + "/#",
+                MY_CLOUD_FILES_TO_DELETE_WITH_ID);
 
         return uriMatcher;
 
@@ -133,9 +140,11 @@ public class LessonsContentProvider extends ContentProvider {
             case GROUP_LESSON_PARTS:
                 // Insert new values into the database
                 // Inserting values into my_lesson_parts table
-                long groupLessonPart_id = db.insert(LessonsContract.GroupLessonPartsEntry.TABLE_NAME, null, values);
+                long groupLessonPart_id = db.insert(LessonsContract.GroupLessonPartsEntry.TABLE_NAME,
+                        null, values);
                 if ( groupLessonPart_id > 0 ) {
-                    returnUri = ContentUris.withAppendedId(LessonsContract.GroupLessonPartsEntry.CONTENT_URI, groupLessonPart_id);
+                    returnUri = ContentUris.withAppendedId(LessonsContract.GroupLessonPartsEntry.CONTENT_URI,
+                            groupLessonPart_id);
                 } else {
                     throw new SQLException("Failed to insert row into " + uri);
                 }
@@ -145,6 +154,18 @@ public class LessonsContentProvider extends ContentProvider {
                 long log_id = db.insert(LessonsContract.MyLogEntry.TABLE_NAME, null, values);
                 if ( log_id > 0 ) {
                     returnUri = ContentUris.withAppendedId(LessonsContract.MyLogEntry.CONTENT_URI, log_id);
+                } else {
+                    throw new SQLException("Failed to insert row into " + uri);
+                }
+                break;
+
+
+            case MY_CLOUD_FILES_TO_DELETE:
+                long cloud_file_to_delete_id = db.insert(LessonsContract.MyCloudFilesToDeleteEntry.TABLE_NAME,
+                        null, values);
+                if ( cloud_file_to_delete_id > 0 ) {
+                    returnUri = ContentUris.withAppendedId(LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI,
+                            cloud_file_to_delete_id);
                 } else {
                     throw new SQLException("Failed to insert row into " + uri);
                 }
@@ -297,6 +318,16 @@ public class LessonsContentProvider extends ContentProvider {
                         sortOrder);
                 break;
 
+            case MY_CLOUD_FILES_TO_DELETE:
+                retCursor =  db.query(LessonsContract.MyCloudFilesToDeleteEntry.TABLE_NAME,
+                        projection,
+                        selection,
+                        selectionArgs,
+                        null,
+                        null,
+                        sortOrder);
+                break;
+
             // Default exception
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
@@ -387,6 +418,14 @@ public class LessonsContentProvider extends ContentProvider {
                 // Use selections/selectionArgs to filter for this "_id"
                 rowsDeleted = db.delete(LessonsContract.MyLogEntry.TABLE_NAME,
                         "_id=?", new String[]{log_id});
+                break;
+
+            case MY_CLOUD_FILES_TO_DELETE_WITH_ID:
+                // Get the lesson "_id" from the URI path
+                String my_cloud_file_to_delete_id = uri.getPathSegments().get(1);
+                // Use selections/selectionArgs to filter for this "_id"
+                rowsDeleted = db.delete(LessonsContract.MyCloudFilesToDeleteEntry.TABLE_NAME,
+                        "_id=?", new String[]{my_cloud_file_to_delete_id});
                 break;
 
             default:

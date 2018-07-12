@@ -9,30 +9,17 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.CursorLoader;
-import android.support.v4.content.Loader;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 
-import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.DownloadingImage;
 import com.example.androidstudio.capstoneproject.data.Image;
 import com.example.androidstudio.capstoneproject.data.Lesson;
 import com.example.androidstudio.capstoneproject.data.LessonPart;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.example.androidstudio.capstoneproject.data.UploadingImage;
-import com.example.androidstudio.capstoneproject.ui.LogListAdapter;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -45,6 +32,7 @@ import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnPausedListener;
 import com.google.firebase.storage.OnProgressListener;
+import com.google.firebase.storage.StorageMetadata;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.google.gson.Gson;
@@ -64,7 +52,6 @@ public class MyFirebaseFragment extends Fragment {
 
     private static final String TAG = MyFirebaseFragment.class.getSimpleName();
 
-    private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
     private static final String USER_DATABASE = "userDatabase";
     private static final String GROUP_DATABASE = "groupDatabase";
     private static final String USER_UID = "userUid";
@@ -97,7 +84,7 @@ public class MyFirebaseFragment extends Fragment {
     private StorageReference storageRef;
 
     private String userUid;
-    private Context mContext;
+    private static Context mContext;
 
     private List<UploadingImage> uploadingImages;
     private List<DownloadingImage> downloadingImages;
@@ -122,8 +109,11 @@ public class MyFirebaseFragment extends Fragment {
         void onDownloadImageSuccess();
         void onDownloadImageFailure(@NonNull Exception e);
 
-        void onDeletedSuccess();
-        void onDeleteFailure(@NonNull Exception e);
+        void onDeleteDatabaseSuccess();
+        void onDeleteDatabaseFailure(@NonNull Exception e);
+        void onDeleteImagesSuccess();
+        void onDeleteImagesFailure(@NonNull Exception e);
+
     }
 
     // Constructor
@@ -402,7 +392,6 @@ public class MyFirebaseFragment extends Fragment {
                 .format(new Date());
         addToLog( time_stamp + ":\nNow uploading lesson...");
 
-
         ContentResolver contentResolver = mContext.getContentResolver();
         Uri lessonUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, lesson_id);
         Cursor cursorLesson = contentResolver.query(lessonUri,
@@ -442,7 +431,6 @@ public class MyFirebaseFragment extends Fragment {
         // Close the lesson cursor
         cursorLesson.close();
 
-
         // Construct a Lesson instance and set with the data from database
         Lesson lesson = new Lesson();
 
@@ -458,6 +446,9 @@ public class MyFirebaseFragment extends Fragment {
         // Load lesson parts from local database into the Lesson instance
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
         String[] selectionArgs = {Long.toString(lesson_id)};
+
+        //contentResolver.refresh(LessonsContract.MyLessonPartsEntry.CONTENT_URI, null, null);
+
         Cursor cursorParts = contentResolver.query(
                 LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                 null,
@@ -475,8 +466,8 @@ public class MyFirebaseFragment extends Fragment {
 
         if (null != cursorParts) {
             cursorParts.moveToFirst();
-            int nPartsRows = cursorParts.getCount();
-            for (int j = 0; j < nPartsRows; j++) {
+
+            do {
 
                 Long item_id = cursorParts.getLong(cursorParts.
                         getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
@@ -507,8 +498,8 @@ public class MyFirebaseFragment extends Fragment {
                 Log.v(TAG, "uploadLesson (to database): lessonPart title:" + lessonPart.getTitle());
 
                 lessonParts.add(lessonPart);
-                cursorParts.moveToNext();
-            }
+
+            } while (cursorParts.moveToNext());
 
             cursorParts.close();
         }
@@ -874,6 +865,7 @@ public class MyFirebaseFragment extends Fragment {
          Image image;
 
          if (nRows > 0) {
+
              do {
 
                  Long item_id = mCursor.getLong(mCursor.
@@ -886,7 +878,6 @@ public class MyFirebaseFragment extends Fragment {
                          getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
 
                  if (cloudImageUri != null || cloudVideoUri != null) {
-
                      // Set the values in the Image instance
                      image = new Image();
                      image.setPart_id(item_id);
@@ -902,9 +893,7 @@ public class MyFirebaseFragment extends Fragment {
 
                      // Store the instance in the array
                      images.add(image);
-
                  }
-
                  // get the next part
              } while (mCursor.moveToNext());
 
@@ -1043,23 +1032,120 @@ public class MyFirebaseFragment extends Fragment {
 
         Log.v(TAG, "deleteLessonFromCloud documentName:" + documentName);
 
-        mFirebaseDatabase.collection("lessons").document(documentName)
-                .delete()
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
-                        Log.d(TAG, "deleteLessonFromCloud: DocumentSnapshot successfully deleted!");
-                        mCallback.onDeletedSuccess();
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
-                        Log.w(TAG, "deleteLessonFromCloud: Error deleting document", e);
-                        mCallback.onDeleteFailure(e);
-                    }
-                });
+//        mFirebaseDatabase.collection("lessons").document(documentName)
+//                .delete()
+//                .addOnSuccessListener(new OnSuccessListener<Void>() {
+//                    @Override
+//                    public void onSuccess(Void aVoid) {
+//                        Log.d(TAG, "deleteLessonFromCloud: DocumentSnapshot successfully deleted!");
+//                        mCallback.onDeleteDatabaseSuccess();
+//                    }
+//                })
+//                .addOnFailureListener(new OnFailureListener() {
+//                    @Override
+//                    public void onFailure(@NonNull Exception e) {
+//                        Log.w(TAG, "deleteLessonFromCloud: Error deleting document", e);
+//                        mCallback.onDeleteDatabaseFailure(e);
+//                    }
+//                });
 
+
+
+        // Load the images uri's from the files to delete cache table into the images array
+        ContentResolver contentResolver = mContext.getContentResolver();
+        Cursor mCursor = contentResolver.query(
+                LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI,
+                null,
+                null,
+                null,
+                null);
+
+        if (mCursor == null) {
+            Log.d(TAG, "Failed to get cursor for group_lesson_parts");
+            return;
+        }
+
+        int nRows = mCursor.getCount();
+        mCursor.moveToFirst();
+
+        // Get all the parts and sore all image cloud uri's in an array of Image instances
+        List<Image> images = new ArrayList<>();
+        Image image;
+
+        if (nRows > 0) {
+            do {
+
+                Long itemId = mCursor.getLong(mCursor.
+                        getColumnIndex(LessonsContract.MyCloudFilesToDeleteEntry._ID));
+                Long lessonId = mCursor.getLong(mCursor.
+                        getColumnIndex(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID));
+                String cloudImageRef = mCursor.getString(mCursor.
+                        getColumnIndex(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE));
+
+                if (cloudImageRef != null) {
+                    // Set the values in the Image instance
+                    image = new Image();
+                    image.setPart_id(itemId);
+                    image.setLesson_id(lessonId);
+                    image.setCloud_uri(cloudImageRef);
+                    // Store the instance in the array
+                    images.add(image);
+                }
+                // get the next image
+            } while (mCursor.moveToNext());
+        }
+
+        // close the cursor
+        mCursor.close();
+
+        Log.d(TAG, "deleteLessonFromCloud images to delete:" + images.toString());
+
+        // for each image, delete from cloud
+
+        // This has an activity scope, so will unregister when the activity stops
+        mStorageReference = mFirebaseStorage.getReference().child(userUid);
+
+        for(Image imageToDelete: images) {
+
+            final String fileRef = imageToDelete.getCloud_uri();
+            final long _id = imageToDelete.getPart_id();
+
+            storageRef = mStorageReference.child(fileRef);
+
+            // Create a reference to the file to delete
+            Log.d(TAG, "deleteLessonFromCloud storageRef:" + storageRef.toString());
+
+            // Delete the images
+            storageRef.delete().addOnSuccessListener(new OnSuccessListener<Void>() {
+                @Override
+                public void onSuccess(Void aVoid) {
+                    // File deleted successfully
+
+                    // delete from table
+                    ContentResolver contentResolver = mContext.getContentResolver();
+                    /* The delete method deletes the previously inserted row by its _id */
+                    Uri uriToDelete = LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI.buildUpon()
+                            .appendPath("" + _id + "").build();
+                    Log.d(TAG, "Uri to delete:" + uriToDelete.toString());
+                    int numberOfRowsDeleted = contentResolver.delete(uriToDelete, null, null);
+                    Log.d(TAG, "numberOfRowsDeleted:" + numberOfRowsDeleted);
+
+                    addToLog("Image file " + fileRef + "deleted from cloud successfully!");
+
+                    mCallback.onDeleteImagesSuccess();
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception exception) {
+
+                    addToLog("Image file " + fileRef + " error while deleting from cloud:" +
+                            "\n" + exception.getMessage());
+
+                    mCallback.onDeleteImagesFailure(exception);
+
+                }
+            });
+        }
     }
 
 

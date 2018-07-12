@@ -27,6 +27,8 @@ public class LessonsContract {
     public static final String PATH_GROUP_LESSON_PARTS = "group_lesson_parts";
     // This is the path for the my_log" directory
     public static final String PATH_MY_LOG = "my_log";
+    // This is the path for the my_cloud_files_to_delete" directory
+    public static final String PATH_MY_CLOUD_FILES_TO_DELETE = "my_cloud_files_to_delete";
 
     // Empty constructor
     private LessonsContract() {}
@@ -123,4 +125,23 @@ public class LessonsContract {
         public static final String COLUMN_LOG_ITEM_TEXT = "log_item_text";
 
     }
+
+
+    public static class MyCloudFilesToDeleteEntry implements BaseColumns {
+
+        // my_lessons table entry content URI = base content URI + path
+        public static final Uri CONTENT_URI =
+                BASE_CONTENT_URI.buildUpon().appendPath(PATH_MY_CLOUD_FILES_TO_DELETE).build();
+
+        // table and column names
+        public static final String TABLE_NAME = "my_cloud_files_to_delete";
+        /* Since MyContentEntry implements the interface "BaseColumns", it has an automatically produced
+         * "_id" column in addition to the column "id" below.
+         */
+        public static final String COLUMN_LESSON_ID = "lesson_id"; // _id in the local database
+        public static final String COLUMN_FILE_REFERENCE = "file_reference"; // in the form "images/lesson_id/file_name"
+
+    }
+
+
 }
