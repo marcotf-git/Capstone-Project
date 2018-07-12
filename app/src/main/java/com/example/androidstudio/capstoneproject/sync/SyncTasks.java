@@ -4,6 +4,7 @@ import android.content.Context;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+import com.example.androidstudio.capstoneproject.utilities.MyFirebaseFragment;
 import com.example.androidstudio.capstoneproject.utilities.NotificationUtils;
 
 
@@ -14,28 +15,59 @@ public class SyncTasks {
     public static final String ACTION_UPLOAD_LESSON = "upload-lesson";
     public static final String ACTION_DISMISS_NOTIFICATION = "dismiss_notification";
 
-    public static void executeTask(Context context, String action, @Nullable Long lesson_id) {
-        if(ACTION_SYNC_GROUP_TABLE.equals(action)) {
-            syncGroupTable(context);
-        } else if (ACTION_UPLOAD_LESSON.equals(action)) {
-            uploadLesson(context, lesson_id);
-        } else if (ACTION_DISMISS_NOTIFICATION.equals(action)) {
+
+    public static void executeTask(Context context, String action) {
+        if (ACTION_DISMISS_NOTIFICATION.equals(action)) {
             NotificationUtils.clearAllNotifications(context);
         }
     }
 
+    public static void executeTask(Context context, String action, String userUid, Long lesson_id) {
+        if (ACTION_UPLOAD_LESSON.equals(action)) {
+            uploadLesson(context, userUid, lesson_id);
+        }
+    }
 
-    private static void syncGroupTable(Context context) {
+    public static void executeTask(Context context, String action, String userUid, String databaseVisibility) {
+        if(ACTION_SYNC_GROUP_TABLE.equals(action)) {
+            syncGroupTable(context, userUid, databaseVisibility);
+        }
+    }
+
+
+    synchronized private static void syncGroupTable(Context context, String userUid, String databaseVisibility) {
         Log.v(TAG, "syncGroupTable: syncing group table");
+
+
+        try {
+            MyFirebaseFragment firebaseFragment = new MyFirebaseFragment();
+            firebaseFragment.setFirebase(userUid);
+            firebaseFragment.refreshDatabase(databaseVisibility);
+        } catch (Exception e) {
+            Log.e(TAG, e.getMessage());
+        }
+
+        // notify the user that the task (synchronized) has finished
         NotificationUtils.notifyUserBecauseSyncGroupFinished(context);
     }
 
-    private static void uploadLesson(Context context, Long lesson_id) {
+
+    synchronized private static void uploadLesson(Context context, String userUid, Long lesson_id) {
         if (lesson_id == null) {
             Log.v(TAG, "uploadLesson: no lesson selected!");
             return;
         }
         Log.v(TAG, "uploadLesson: uploading lesson id:" + lesson_id);
+
+        try {
+            MyFirebaseFragment firebaseFragment = new MyFirebaseFragment();
+            firebaseFragment.setFirebase(userUid);
+            firebaseFragment.uploadImagesAndDatabase(lesson_id);
+        } catch (Exception e) {
+            Log.e(TAG, e.getMessage());
+        }
+
+        // notify the user that the task (synchronized) has finished
         NotificationUtils.notifyUserBecauseUploadFinished(context);
     }
 

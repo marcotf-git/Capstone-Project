@@ -291,7 +291,7 @@ public class PartDetailActivity extends AppCompatActivity implements
         if (null != localVideoUri && !localVideoUri.equals("")) {
 
             Uri uri = Uri.parse(localVideoUri);
-            // // Refresh permissions (player will load a local file)
+            // Refresh permissions (player will load a local file)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 try {
                     Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -300,7 +300,7 @@ public class PartDetailActivity extends AppCompatActivity implements
                             | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                     getContentResolver().takePersistableUriPermission(uri, takeFlags);
                 } catch (Exception e) {
-                    Log.e(TAG, "updateView takePersistableUriPermission error:" + e.getMessage());
+                    Log.d(TAG, "updateView takePersistableUriPermission alert:" + e.getMessage());
                 }
             }
 
@@ -325,7 +325,7 @@ public class PartDetailActivity extends AppCompatActivity implements
                                 | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                         getContentResolver().takePersistableUriPermission(uri, takeFlags);
                     } catch (Exception e) {
-                        Log.d(TAG, "updateView takePersistableUriPermission Exception:" +
+                        Log.d(TAG, "updateView takePersistableUriPermission alert:" +
                                 e.getMessage());
                     }
                 }
@@ -635,7 +635,7 @@ public class PartDetailActivity extends AppCompatActivity implements
                 ContentResolver resolver = mContext.getContentResolver();
                 resolver.takePersistableUriPermission(uri, takeFlags);
             } catch (SecurityException e) {
-                Log.e(TAG, "onActivity takePersistableUriPermission error:" + e.getMessage());
+                Log.d(TAG, "onActivity takePersistableUriPermission alert:" + e.getMessage());
             }
         }
 

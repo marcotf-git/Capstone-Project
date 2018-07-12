@@ -30,6 +30,7 @@ public class NotificationUtils {
     private static final int ACTION_IGNORE_PENDING_INTENT_ID = 3000;
 
 
+    // method fo clear all the notification  (will be called by the SyncTasks)
     public static void clearAllNotifications(Context context) {
         NotificationManager notificationManager = (NotificationManager)
                 context.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -57,7 +58,7 @@ public class NotificationUtils {
                 .setColor(ContextCompat.getColor(context, R.color.colorPrimary))
                 .setContentTitle(context.getString(R.string.sync_group_notification_title))
                 .setContentText(context.getString(R.string.sync_group_notification_body))
-                .setSmallIcon(R.drawable.ic_cancel)
+                .setSmallIcon(R.mipmap.ic_learning_launcher_round)
                 .setLargeIcon(largeIcon(context))
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(
                         context.getString(R.string.sync_group_notification_body)))
@@ -76,6 +77,7 @@ public class NotificationUtils {
     }
 
     // Build a notification action PendingIntent to ignore the notification message
+    // This pending intent will be send in the notification
     private static NotificationCompat.Action ignorePendingIntent(Context context) {
 
         Intent ignoreReminderIntent = new Intent(context, LearningAppIntentService.class);
@@ -115,7 +117,7 @@ public class NotificationUtils {
                 .setColor(ContextCompat.getColor(context, R.color.colorPrimary))
                 .setContentTitle(context.getString(R.string.upload_notification_title))
                 .setContentText(context.getString(R.string.upload_notification_body))
-                .setSmallIcon(R.drawable.ic_cancel)
+                .setSmallIcon(R.mipmap.ic_learning_launcher_round)
                 .setLargeIcon(largeIcon(context))
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(
                         context.getString(R.string.upload_notification_body)))
@@ -156,7 +158,7 @@ public class NotificationUtils {
     // the bit map image for the large icon to display in notification
     private static Bitmap largeIcon(Context context) {
         Resources res = context.getResources();
-        Bitmap largeIcon = BitmapFactory.decodeResource(res, R.drawable.ic_arrow_back);
+        Bitmap largeIcon = BitmapFactory.decodeResource(res, R.mipmap.ic_learning_launcher_round);
         return largeIcon;
     }
 }

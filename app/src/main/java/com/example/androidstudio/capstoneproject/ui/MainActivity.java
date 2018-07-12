@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -15,7 +16,9 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.DialogFragment;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
@@ -35,6 +38,8 @@ import android.widget.Toast;
 import com.example.androidstudio.capstoneproject.IdlingResource.SimpleIdlingResource;
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
+import com.example.androidstudio.capstoneproject.sync.SyncGroupTableJobService;
+import com.example.androidstudio.capstoneproject.sync.SyncTasks;
 import com.example.androidstudio.capstoneproject.sync.SyncUtilities;
 import com.example.androidstudio.capstoneproject.utilities.MyFirebaseFragment;
 import com.example.androidstudio.capstoneproject.utilities.InsertTestDataUtil;
@@ -46,7 +51,10 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.storage.FirebaseStorage;
 
+import java.io.FileDescriptor;
+import java.io.PrintWriter;
 import java.util.Arrays;
+import java.util.List;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
@@ -106,6 +114,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final String LOADING_INDICATOR = "loadingIndicator";
     private static final String UPLOAD_COUNT = "uploadCount";
     private static final String UPLOAD_COUNT_FINAL = "uploadCountFinal";
+    private static final String RELEASE = "release";
 
     // Final strings
     private static final String USER_DATABASE = "userDatabase";
@@ -120,7 +129,7 @@ public class MainActivity extends AppCompatActivity implements
     private int mainVisibility;
     private int partsVisibility;
     private int logVisibility;
-    private String databaseVisibility;
+    private static String databaseVisibility;
     private String mUserUid; // The user's ID, unique to the Firebase project.
     private boolean loadingIndicator;
     private int uploadCount;
@@ -134,7 +143,6 @@ public class MainActivity extends AppCompatActivity implements
 
     // Firebase instance variables
     private FirebaseFirestore mFirebaseDatabase;
-    private FirebaseStorage mFirebaseStorage;
     private FirebaseAuth mFirebaseAuth;
     private FirebaseAuth.AuthStateListener mAuthStateListener;
 
@@ -154,11 +162,14 @@ public class MainActivity extends AppCompatActivity implements
     private TextView mUserEmailTextView;
     private AlertDialog dialog;
 
-
     // Fragments
     private MainFragment mainFragment;
     private PartsFragment partsFragment;
-    private MyFirebaseFragment firebaseFragment;
+    static private MyFirebaseFragment firebaseFragment;
+    private LogFragment logFragment;
+
+    private static AsyncTask mRefreshBackgroundTask;
+    private static AsyncTask mUploadBackgroundTask;
 
     // Context
     private Context mContext;
@@ -290,13 +301,17 @@ public class MainActivity extends AppCompatActivity implements
             Log.d(TAG, "creating firebaseFragment");
             firebaseFragment = new MyFirebaseFragment();
             fragmentManager.beginTransaction()
-                    .add(R.id.log_container, firebaseFragment, "MyFirebaseFragment")
+                    .add(firebaseFragment, "MyFirebaseFragment")
                     .commit();
 
         } else {
             mainFragment = (MainFragment) fragmentManager.findFragmentByTag("MainFragment");
             partsFragment = (PartsFragment) fragmentManager.findFragmentByTag("PartsFragment");
             firebaseFragment = (MyFirebaseFragment) fragmentManager.findFragmentByTag("MyFirebaseFragment");
+
+            if (logVisibility == VISIBLE) {
+                logFragment = (LogFragment) fragmentManager.findFragmentByTag("LogFragment");
+            }
         }
 
         // Set fragments database visibility
@@ -334,7 +349,6 @@ public class MainActivity extends AppCompatActivity implements
                 .setTimestampsInSnapshotsEnabled(true)
                 .build();
         mFirebaseDatabase.setFirestoreSettings(settings);
-        mFirebaseStorage = FirebaseStorage.getInstance();
 
         // Initialize the FirebaseAuth instance and the AuthStateListener method so
         // we can track whenever the user signs in or out.
@@ -437,7 +451,7 @@ public class MainActivity extends AppCompatActivity implements
                         Log.v(TAG, "onClick which:" + which);
                         switch (which) {
                             case 0:
-                                uploadImage();
+                                uploadImagesAndDatabase();
                                 break;
                             case 1:
                                 uploadDatabase();
@@ -457,7 +471,7 @@ public class MainActivity extends AppCompatActivity implements
 
     }
 
-    // Helper method to show the Log view
+    // Helper method to show the Log view (Log fragment)
     private void viewLog() {
         mainVisibility = GONE;
         lessonsContainer.setVisibility(mainVisibility);
@@ -465,8 +479,18 @@ public class MainActivity extends AppCompatActivity implements
         partsContainer.setVisibility(partsVisibility);
         logVisibility = VISIBLE;
         logContainer.setVisibility(logVisibility);
+
+        Log.d(TAG, "creating LogFragment");
+        logFragment = new LogFragment();
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        fragmentManager.beginTransaction()
+                .replace(R.id.log_container, logFragment, "LogFragment")
+                .commit();
+
         actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
+
     }
+
 
     // Helper method for Firebase login
     private void login() {
@@ -514,7 +538,8 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         // Set the firebaseFragment
-        firebaseFragment.setFirebase(mFirebaseDatabase, mFirebaseStorage, mUserUid);
+        //firebaseFragment.setFirebase(mFirebaseDatabase, mFirebaseStorage, mUserUid);
+        firebaseFragment.setFirebase(mUserUid);
 
         Log.d(TAG, "onSignedInInitialize mUsername:" + mUsername);
     }
@@ -619,6 +644,12 @@ public class MainActivity extends AppCompatActivity implements
                 } else if (logVisibility == VISIBLE) {
                     logVisibility = GONE;
                     logContainer.setVisibility(logVisibility);
+
+                    FragmentManager fragmentManager = getSupportFragmentManager();
+                    fragmentManager.beginTransaction()
+                            .remove(logFragment)
+                            .commit();
+
                     mainVisibility = VISIBLE;
                     lessonsContainer.setVisibility(mainVisibility);
                     actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
@@ -868,24 +899,69 @@ public class MainActivity extends AppCompatActivity implements
             Log.d(TAG, "cursor: getCount:" + cursor.getCount());
         }
 
+        if (cursor != null) {
+            cursor.close();
+        }
+
+        // stop if there are no images
+        if (downloadCountFinal == 0) {
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "There are no images to download!",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackBar.dismiss();
+                }
+            });
+            snackBar.show();
+
+            loadingIndicator = false;
+            mainFragment.setLoadingIndicator(false);
+            deselectViews();
+            return;
+        }
+
         // This will count the actual downloads
         downloadCount = 0;
 
         loadingIndicator = true;
         mainFragment.setLoadingIndicator(true);
+
         // Calls the refresh method
-        firebaseFragment.refreshDatabase(databaseVisibility);
+        //firebaseFragment.refreshDatabase(databaseVisibility);
+
+        mRefreshBackgroundTask = new RefreshTask(databaseVisibility);
+        mRefreshBackgroundTask.execute();
+
+        //SyncUtilities.startImmediateSyncGroupTable(this);
+
         deselectViews();
 
+    }
 
-        if (cursor != null) {
-            cursor.close();
+
+    // AsyncTask to process the refresh of the database in background
+    private static class RefreshTask extends AsyncTask<Object, Void, Void> {
+
+        private String databaseVisibility;
+
+        RefreshTask(String databaseVisibility) {
+            super();
+            this.databaseVisibility = databaseVisibility;
         }
+
+        @Override
+        protected Void doInBackground(Object... object) {
+            firebaseFragment.refreshDatabase(databaseVisibility);
+            return null;
+        }
+
     }
 
 
     // It will upload the images and videos, and after, upload the database
-    private void uploadImage() {
+    private void uploadImagesAndDatabase() {
 
         // Verify if there is a lesson selected
         if (selectedLesson_id == -1) {
@@ -930,6 +1006,10 @@ public class MainActivity extends AppCompatActivity implements
             Log.d(TAG, "cursor: getCount:" + cursor.getCount());
         }
 
+        if (cursor != null) {
+            cursor.close();
+        }
+
         // This will count the actual uploads
         uploadCount = 0;
 
@@ -939,13 +1019,10 @@ public class MainActivity extends AppCompatActivity implements
 
         loadingIndicator = true;
         mainFragment.setLoadingIndicator(true);
-        firebaseFragment.setFirebase(mFirebaseDatabase, mFirebaseStorage, mUserUid);
-        // After uploading images, this method will upload the database
-        firebaseFragment.uploadImages(selectedLesson_id);
 
-        if (cursor != null) {
-            cursor.close();
-        }
+        // After uploading images, this method will upload the database
+        firebaseFragment.uploadImagesAndDatabase(selectedLesson_id);
+
     }
 
 
@@ -964,9 +1041,29 @@ public class MainActivity extends AppCompatActivity implements
 
         loadingIndicator = true;
         mainFragment.setLoadingIndicator(true);
-        firebaseFragment.setFirebase(mFirebaseDatabase, mFirebaseStorage, mUserUid);
-        firebaseFragment.uploadLesson(selectedLesson_id);
+
+        mUploadBackgroundTask = new UploadTask(selectedLesson_id);
+        mUploadBackgroundTask.execute();
+
     }
+
+    // AsyncTask to process the upload of the lesson in background
+    private static class UploadTask extends AsyncTask<Object, Void, Void> {
+
+        private long selectedLesson_id;
+
+        UploadTask(long selectedLesson_id) {
+            super();
+            this.selectedLesson_id = selectedLesson_id;
+        }
+
+        @Override
+        protected Void doInBackground(Object... object) {
+            firebaseFragment.uploadLesson(selectedLesson_id);
+            return null;
+        }
+    }
+
 
     /**
      * Other helper methods. Handle for editing/deleting.
@@ -1262,6 +1359,7 @@ public class MainActivity extends AppCompatActivity implements
         firebaseFragment.addToLog("upload count " +
                 uploadCount + "/" + uploadCountFinal);
 
+
         if (uploadCount >= uploadCountFinal) {
 
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
@@ -1277,6 +1375,8 @@ public class MainActivity extends AppCompatActivity implements
             snackBar.show();
 
             uploadDatabase();
+
+            firebaseFragment.addToLog(RELEASE);
         }
     }
 
@@ -1308,12 +1408,13 @@ public class MainActivity extends AppCompatActivity implements
             });
             snackBar.show();
 
-
             uploadDatabase();
             loadingIndicator = false;
             mainFragment.setLoadingIndicator(false);
             mainFragment.deselectViews();
             selectedLesson_id = -1;
+
+            firebaseFragment.addToLog(RELEASE);
         }
     }
 
@@ -1336,10 +1437,13 @@ public class MainActivity extends AppCompatActivity implements
                 }
             });
             snackBar.show();
+
             loadingIndicator = false;
             mainFragment.setLoadingIndicator(false);
             mainFragment.deselectViews();
             selectedLesson_id = -1;
+
+            firebaseFragment.addToLog(RELEASE);
         }
     }
 
@@ -1365,26 +1469,25 @@ public class MainActivity extends AppCompatActivity implements
                     snackBar.dismiss();
                 }
             });
+            snackBar.show();
+
             loadingIndicator = false;
             mainFragment.setLoadingIndicator(false);
             mainFragment.deselectViews();
             selectedLesson_id = -1;
+
+            firebaseFragment.addToLog(RELEASE);
         }
     }
 
     @Override
-    public void onDownloadDatabaseComplete() {
+    public void onDownloadDatabaseSuccess() {
         final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                 "Download of text completed successfully." +
                         "\nNow downloading images...",
-                Snackbar.LENGTH_INDEFINITE);
-        snackBar.setAction("Dismiss", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                snackBar.dismiss();
-            }
-        });
+                Snackbar.LENGTH_SHORT);
         snackBar.show();
+        firebaseFragment.addToLog(RELEASE);
     }
 
     @Override
@@ -1405,12 +1508,18 @@ public class MainActivity extends AppCompatActivity implements
         snackBar.show();
 
         Log.e(TAG, "onDownloadFailure error:" + e.getMessage());
+
+        firebaseFragment.addToLog(RELEASE);
     }
 
     @Override
-    public void onDownloadImageComplete() {
+    public void onDownloadImageSuccess() {
 
         downloadCount++;
+
+        Log.d(TAG, "downloadCount:"  + downloadCount);
+        firebaseFragment.addToLog("download count " +
+                downloadCount + "/" + downloadCountFinal);
 
         if (downloadCount >= downloadCountFinal) {
 
@@ -1427,8 +1536,12 @@ public class MainActivity extends AppCompatActivity implements
 
             loadingIndicator = false;
             mainFragment.setLoadingIndicator(false);
+
+            firebaseFragment.addToLog(RELEASE);
         }
+
     }
+
 
     @Override
     public void onDownloadImageFailure(@NonNull Exception e) {
@@ -1451,6 +1564,8 @@ public class MainActivity extends AppCompatActivity implements
 
             loadingIndicator = false;
             mainFragment.setLoadingIndicator(false);
+
+            firebaseFragment.addToLog(RELEASE);
         }
     }
 
@@ -1458,6 +1573,7 @@ public class MainActivity extends AppCompatActivity implements
     public void onDeletedSuccess() {
         Toast.makeText(mContext,
                 "Lesson deleted from Cloud!", Toast.LENGTH_LONG).show();
+        firebaseFragment.addToLog(RELEASE);
         // Deselect the last view selected
         mainFragment.deselectViews();
         selectedLesson_id = -1;
@@ -1468,22 +1584,8 @@ public class MainActivity extends AppCompatActivity implements
         Toast.makeText(mContext,
                 "Error on deleting from Cloud:" + e.getMessage(), Toast.LENGTH_LONG).show();
         Log.e(TAG, "onDeleteFailure error:" + e.getMessage());
+        firebaseFragment.addToLog(RELEASE);
     }
-//
-//    private void addToLog(String logText) {
-//
-//        ContentValues contentValues = new ContentValues();
-//        contentValues.put(LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT, logText);
-//        // Insert the content values via a ContentResolver
-//        Uri uri = mContext.getContentResolver().insert(LessonsContract.MyLogEntry.CONTENT_URI, contentValues);
-//
-//        if (uri == null) {
-//            Log.e(TAG, "addToLog: error in inserting item on log",
-//                    new Exception("addToLog: error in inserting item on log"));
-//        }
-//
-//    }
-
 
     /**
      * Methods for handling the activity state change

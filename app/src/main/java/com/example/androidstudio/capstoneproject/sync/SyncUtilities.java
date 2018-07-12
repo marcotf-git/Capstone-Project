@@ -1,9 +1,11 @@
 package com.example.androidstudio.capstoneproject.sync;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.example.androidstudio.capstoneproject.ui.MainActivity;
 import com.firebase.jobdispatcher.Constraint;
 import com.firebase.jobdispatcher.Driver;
 import com.firebase.jobdispatcher.FirebaseJobDispatcher;
@@ -15,6 +17,8 @@ import com.firebase.jobdispatcher.Trigger;
 
 public class SyncUtilities {
 
+    private static final String TAG = SyncUtilities.class.getSimpleName();
+
     private static final int SYNC_INTERVAL_SECONDS = 60;
 
     private static final String SYNC_GROUP_TABLE_TAG = "sync_group_table_tag";
@@ -25,9 +29,11 @@ public class SyncUtilities {
     private static boolean uploadInitialized;
 
 
-    synchronized  public static void scheduleSyncGroupTable(final Context context) {
+    synchronized public static void scheduleSyncGroupTable(final Context context) {
 
-        //if (syncInitialized) return;
+        if (syncInitialized) {
+            Log.v(TAG, "scheduleUploadTable syncInitialized = true");
+        }
 
 
         Driver driver = new GooglePlayDriver(context);
@@ -90,9 +96,11 @@ public class SyncUtilities {
 
 
 
-    synchronized  public static void scheduleUploadTable(final Context context, long lesson_id) {
+    synchronized public static void scheduleUploadTable(final Context context, long lesson_id) {
 
-        //if (uploadInitialized) return;
+        if (uploadInitialized) {
+         Log.v(TAG, "scheduleUploadTable uploadInitialized = true");
+        }
 
         Bundle bundle = new Bundle();
         bundle.putLong(SELECTED_LESSON_ID, lesson_id);

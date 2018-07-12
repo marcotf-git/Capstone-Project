@@ -1,4 +1,4 @@
-package com.example.androidstudio.capstoneproject.utilities;
+package com.example.androidstudio.capstoneproject.ui;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -12,32 +12,29 @@ import android.widget.TextView;
 
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
-import com.example.androidstudio.capstoneproject.ui.PartsListAdapter;
 
 
-public class MyFirebaseLogListAdapter extends RecyclerView.Adapter<MyFirebaseLogListAdapter.LogItemViewHolder>{
+public class LogListAdapter extends RecyclerView.Adapter<LogListAdapter.LogItemViewHolder>{
 
 
-    private static final String TAG = MyFirebaseLogListAdapter.class.getSimpleName();
+    private static final String TAG = LogListAdapter.class.getSimpleName();
 
-    // Store the count of items to be displayed in the recycler view
-    //private static int viewHolderCount;
+
+    /* The context we use to utility methods, app resources and layout inflaters */
+    private final Context mContext;
 
     // Store the data to be displayed
     private Cursor mCursor;
 
 
-    MyFirebaseLogListAdapter() {
-        //viewHolderCount = 0;
+    public LogListAdapter(Context context) {
+        mContext = context;
     }
 
 
     public void swapCursor(Cursor newCursor){
-
         Log.d(TAG, "swapCursor");
-
         mCursor = newCursor;
-
         notifyDataSetChanged();
     }
 
@@ -58,16 +55,12 @@ public class MyFirebaseLogListAdapter extends RecyclerView.Adapter<MyFirebaseLog
     @Override
     public LogItemViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int viewType) {
 
-        Context context = viewGroup.getContext();
 
-        int layoutIdForListItem = R.layout.log_list_item;
-        LayoutInflater inflater = LayoutInflater.from(context);
-        final boolean shouldAttachToParentImmediately = false;
+        View view = LayoutInflater
+                .from(mContext)
+                .inflate(R.layout.log_list_item, viewGroup, false);
 
-        View view = inflater.inflate(layoutIdForListItem, viewGroup, shouldAttachToParentImmediately);
-
-        //viewHolderCount++;
-        //Log.d(TAG, "onCreateViewHolder: number of ViewHolders created: " + viewHolderCount);
+        view.setFocusable(true);
 
         return new LogItemViewHolder(view);
     }
@@ -85,8 +78,6 @@ public class MyFirebaseLogListAdapter extends RecyclerView.Adapter<MyFirebaseLog
      */
     @Override
     public void onBindViewHolder(@NonNull final LogItemViewHolder holder, int position) {
-
-        //Log.d(TAG, "#" + position);
 
         if(!mCursor.moveToPosition(position))
             return;
@@ -112,7 +103,6 @@ public class MyFirebaseLogListAdapter extends RecyclerView.Adapter<MyFirebaseLog
      */
     @Override
     public int getItemCount() {
-
         if (null == mCursor) return 0;
         return mCursor.getCount();
     }
@@ -123,7 +113,7 @@ public class MyFirebaseLogListAdapter extends RecyclerView.Adapter<MyFirebaseLog
      */
     class LogItemViewHolder extends RecyclerView.ViewHolder {
 
-        private TextView logTextView;
+        final TextView logTextView;
 
         /**
          * Constructor for our ViewHolder. Within this constructor, we get a reference to our

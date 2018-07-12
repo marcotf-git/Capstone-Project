@@ -126,7 +126,7 @@ public class MainFragment extends Fragment implements
         mLoadingIndicator = rootView.findViewById(R.id.pb_loading_indicator);
         mClassesList = rootView.findViewById(R.id.rv_lessons);
 
-        mLoadingIndicator.setVisibility(View.VISIBLE);
+        //mLoadingIndicator.setVisibility(View.VISIBLE);
 
         // Set the layout of the recycler view
         int nColumns = numberOfColumns();
@@ -338,7 +338,7 @@ public class MainFragment extends Fragment implements
         // Send to the main activity the order to setting the idling resource state
         mIdlingCallback.onIdlingResource(true);
 
-        mLoadingIndicator.setVisibility(View.INVISIBLE);
+        //mLoadingIndicator.setVisibility(View.INVISIBLE);
 
         // Pass the data to the adapter
         mAdapter.swapCursor(data, databaseVisibility);

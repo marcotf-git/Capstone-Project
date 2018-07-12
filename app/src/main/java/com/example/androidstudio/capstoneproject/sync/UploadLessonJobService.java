@@ -12,6 +12,7 @@ public class UploadLessonJobService extends JobService {
 
     private AsyncTask mBackgroundTask;
     private static final String SELECTED_LESSON_ID = "selectedLessonId";
+    private static final String USER_UID = "userUid";
 
 
     @Override
@@ -24,6 +25,7 @@ public class UploadLessonJobService extends JobService {
         }
 
         final long lesson_id = bundle.getLong(SELECTED_LESSON_ID);
+        final String userUid = bundle.getString(USER_UID);
 
         mBackgroundTask = new AsyncTask() {
 
@@ -31,7 +33,7 @@ public class UploadLessonJobService extends JobService {
             protected Object doInBackground(Object[] params) {
 
                 Context context = UploadLessonJobService.this;
-                SyncTasks.executeTask(context, SyncTasks.ACTION_UPLOAD_LESSON, lesson_id);
+                SyncTasks.executeTask(context, SyncTasks.ACTION_UPLOAD_LESSON, userUid, lesson_id);
                 return null;
             }
 

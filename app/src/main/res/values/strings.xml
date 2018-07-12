@@ -75,8 +75,8 @@
     <string name="log">Log</string>
     <string name="upload_type">Please, choose what to upload</string>
 
-    <string name="images">Images or Videos</string>
-    <string name="text">Text Content</string>
+    <string name="images">Images, Videos and Text</string>
+    <string name="text">Only Text</string>
     <string name="menu_action_sync_label">Job Sync</string>
     <string name="menu_action_job_upload_label">Job Upload</string>
     <string name="main_notification_channel_name">primary</string>

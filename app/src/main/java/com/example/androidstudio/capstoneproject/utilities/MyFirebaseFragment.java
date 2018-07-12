@@ -32,11 +32,13 @@ import com.example.androidstudio.capstoneproject.data.Lesson;
 import com.example.androidstudio.capstoneproject.data.LessonPart;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.example.androidstudio.capstoneproject.data.UploadingImage;
+import com.example.androidstudio.capstoneproject.ui.LogListAdapter;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FileDownloadTask;
@@ -57,8 +59,7 @@ import java.util.List;
 import java.util.Locale;
 
 
-public class MyFirebaseFragment extends Fragment implements
-        LoaderManager.LoaderCallbacks<Cursor>{
+public class MyFirebaseFragment extends Fragment {
 
 
     private static final String TAG = MyFirebaseFragment.class.getSimpleName();
@@ -69,6 +70,7 @@ public class MyFirebaseFragment extends Fragment implements
     private static final String USER_UID = "userUid";
     private static final String VIDEO = "video";
     private static final String IMAGE = "image";
+    private static final String RELEASE = "release";
 
     // static vars to handle saving the state of the task
     private static final String UPLOADING_REFERENCE = "uploadingReference";
@@ -94,24 +96,16 @@ public class MyFirebaseFragment extends Fragment implements
     // global ref to the storage
     private StorageReference storageRef;
 
-    // Loader id
-    private static final int ID_LOG_LOADER = 30;
-
     private String userUid;
     private Context mContext;
 
     private List<UploadingImage> uploadingImages;
     private List<DownloadingImage> downloadingImages;
 
-    // Views
-    private TextView mErrorMessageDisplay;
-    private ProgressBar mLoadingIndicator;
-    private RecyclerView mRecyclerView;
-
-    private MyFirebaseLogListAdapter mAdapter;
-
     private OnCloudListener mCallback;
 
+    // log buffer
+    List<String> logBuffer = new ArrayList<>();
 
 
 
@@ -123,9 +117,9 @@ public class MyFirebaseFragment extends Fragment implements
         void onUploadDatabaseSuccess();
         void onUploadDatabaseFailure(@NonNull Exception e);
 
-        void onDownloadDatabaseComplete();
+        void onDownloadDatabaseSuccess();
         void onDownloadDatabaseFailure(@NonNull Exception e);
-        void onDownloadImageComplete();
+        void onDownloadImageSuccess();
         void onDownloadImageFailure(@NonNull Exception e);
 
         void onDeletedSuccess();
@@ -154,11 +148,8 @@ public class MyFirebaseFragment extends Fragment implements
 
     }
 
-    // Get the values for Firebase variables
-    public void setFirebase(FirebaseFirestore firebaseDatabase,
-            FirebaseStorage firebaseStorage, String userUid) {
-        this.mFirebaseDatabase = firebaseDatabase;
-        this.mFirebaseStorage = firebaseStorage;
+    // Get the values for Firebase user
+    public void setFirebase(String userUid) {
         this.userUid = userUid;
     }
 
@@ -171,157 +162,23 @@ public class MyFirebaseFragment extends Fragment implements
             this.userUid  = savedInstanceState.getString(USER_UID);
         }
 
-        // Query the database and set the adapter with the cursor data for the log
-        if (null != getActivity()) {
-            // Get the support loader manager to init a new loader for this fragment, according to
-            // the table being queried
-            getActivity().getSupportLoaderManager().initLoader(ID_LOG_LOADER, null,
-                    this);
-        }
-
-    }
-
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
-
-        // Inflate the Ingredients fragment layout
-        View rootView = inflater.inflate(R.layout.fragment_my_firebase, container, false);
-
-        mErrorMessageDisplay = rootView.findViewById(R.id.tv_error_message_display);
-        mLoadingIndicator = rootView.findViewById(R.id.pb_loading_indicator);
-        mLoadingIndicator.setVisibility(View.VISIBLE);
-
-        mRecyclerView = rootView.findViewById(R.id.rv_log);
-        mRecyclerView.setHasFixedSize(true);
-
-        // Set the layout of the recycler view
-        LinearLayoutManager layoutManager = new LinearLayoutManager(mContext);
-        mRecyclerView.setLayoutManager(layoutManager);
-
-        // Set the adapter
-        mAdapter = new MyFirebaseLogListAdapter();
-        mRecyclerView.setAdapter(mAdapter);
+        // Initialize Firebase components
+        mFirebaseDatabase = FirebaseFirestore.getInstance();
+        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
+                .setTimestampsInSnapshotsEnabled(true)
+                .build();
+        mFirebaseDatabase.setFirestoreSettings(settings);
+        mFirebaseStorage = FirebaseStorage.getInstance();
 
         // This is loading the saved position of the recycler view.
         // There is also a call on the post execute method in the loader, for updating the view.
         if(savedInstanceState != null) {
             Log.d(TAG, "recovering savedInstanceState");
-            Parcelable recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
-            mRecyclerView.getLayoutManager().onRestoreInstanceState(recyclerViewState);
 
             processUploadingPendingTasks(savedInstanceState);
             processDownloadingPendingTasks(savedInstanceState);
-
         }
 
-        return rootView;
-    }
-
-    /**
-     * Called by the {@link android.support.v4.app.LoaderManagerImpl} when a new Loader needs to be
-     * created. This Activity only uses one loader, so we don't necessarily NEED to check the
-     * loaderId, but this is certainly best practice.
-     *
-     * @param loaderId The loader ID for which we need to create a loader
-     * @param bundle   Any arguments supplied by the caller
-     * @return A new Loader instance that is ready to start loading.
-     */
-    @NonNull
-    @Override
-    public Loader<Cursor> onCreateLoader(int loaderId, Bundle bundle) {
-
-        Log.d(TAG, "onCreateLoader loaderId:" + loaderId);
-
-        switch (loaderId) {
-
-            case ID_LOG_LOADER:
-                /* URI for all rows of lessons data in our "my_lessons" table */
-                Uri logQueryUri = LessonsContract.MyLogEntry.CONTENT_URI;
-                String sortOrder = LessonsContract.MyLogEntry._ID + " DESC ";
-                return new CursorLoader(mContext,
-                        logQueryUri,
-                        null,
-                        null,
-                        null,
-                        sortOrder);
-
-            default:
-                throw new RuntimeException("Loader Not Implemented: " + loaderId);
-        }
-    }
-
-    /**
-     * Called when a Loader has finished loading its data.
-     *
-     * @param loader The Loader that has finished.
-     * @param data   The data generated by the Loader.
-     */
-    @Override
-    public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
-
-
-        if (data != null) {
-            Log.d(TAG, "onLoadFinished cursor:" + data.toString());
-        } else {
-            Log.e(TAG, "onLoadFinished cursor: null");
-        }
-
-        // Pass the data to the adapter
-        mAdapter.swapCursor(data);
-
-        mLoadingIndicator.setVisibility(View.INVISIBLE);
-
-        if (data == null) {
-            showErrorMessage();
-        } else {
-            showLogDataView();
-        }
-
-    }
-
-    /**
-     * Called when a previously created loader is being reset, and thus making its data unavailable.
-     * The application should at this point remove any references it has to the Loader's data.
-     *
-     * @param loader The Loader that is being reset.
-     */
-    @Override
-    public void onLoaderReset(@NonNull Loader<Cursor> loader) {
-        /*
-         * Since this Loader's data is now invalid, we need to clear the Adapter that is
-         * displaying the data.
-         */
-        mAdapter.swapCursor(null);
-    }
-
-
-    /**
-     * This method will make the View for data visible and hide the error message.
-     * <p>
-     * Since it is okay to redundantly set the visibility of a View, we don't
-     * need to check whether each view is currently visible or invisible.
-     */
-    private void showLogDataView() {
-        // First, make sure the error is invisible
-        mErrorMessageDisplay.setVisibility(View.GONE);
-        // Then, make sure the JSON data is visible
-        mRecyclerView.setVisibility(View.VISIBLE);
-    }
-
-    /**
-     * This method will make the error message visible and hide data View.
-     *
-     * Since it is okay to redundantly set the visibility of a View, we don't
-     * need to check whether each view is currently visible or invisible.
-     */
-    private void showErrorMessage() {
-        Log.d(TAG, "showErrorMessage");
-        // First, hide the currently visible data
-        mRecyclerView.setVisibility(View.INVISIBLE);
-        // Then, show the error
-        mErrorMessageDisplay.setVisibility(View.VISIBLE);
     }
 
 
@@ -329,11 +186,10 @@ public class MyFirebaseFragment extends Fragment implements
     // First, upload the images
     // Then, get the uri's obtained from Storage and save in the lessons table
     // Finally, upload the lesson table
-    public void uploadImages(final Long lesson_id) {
-
+    public void uploadImagesAndDatabase(final Long lesson_id) {
 
         // First, upload the images
-        Log.d(TAG, "uploadImages lesson+_id:" + lesson_id);
+        Log.d(TAG, "uploadImagesAndDatabase lesson+_id:" + lesson_id);
 
         long mLessonId =lesson_id;
         String mUserUid = userUid;
@@ -351,7 +207,7 @@ public class MyFirebaseFragment extends Fragment implements
                 null);
 
         if (partsCursor == null) {
-            Log.e(TAG, "uploadImages: failed to get parts cursor (database error)");
+            Log.e(TAG, "uploadImagesAndDatabase: failed to get parts cursor (database error)");
             mCallback.onUploadImageFailure(new Exception("Failed to get parts cursor (database failure)"));
             return;
         }
@@ -359,7 +215,7 @@ public class MyFirebaseFragment extends Fragment implements
         long nRows = partsCursor.getCount();
 
         if (nRows == 0) {
-            Log.d(TAG, "uploadImages: no parts found in local database for the lesson _id:"
+            Log.d(TAG, "uploadImagesAndDatabase: no parts found in local database for the lesson _id:"
                     + mLessonId);
             //mCursor.close();
             mCallback.onUploadImageFailure(new Exception("Error: no parts in this lesson"));
@@ -411,12 +267,12 @@ public class MyFirebaseFragment extends Fragment implements
 
         // If there aren't images, go to upload lesson directly
         if (images.size() == 0) {
-            Log.d(TAG, "uploadImages: no images in the database");
+            Log.d(TAG, "uploadImagesAndDatabase: no images in the database");
             // Go directly to upload the lesson
             uploadLesson(lesson_id);
             return;
         } else {
-            Log.d(TAG, "uploadImages: uri's of the images stored in the Image array:" + images.toString());
+            Log.d(TAG, "uploadImagesAndDatabase: uri's of the images stored in the Image array:" + images.toString());
         }
 
         // Upload the uri's stored in the images array, and after, upload the lesson
@@ -461,7 +317,7 @@ public class MyFirebaseFragment extends Fragment implements
                             | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                     contentResolver.takePersistableUriPermission(uri, takeFlags);
                 } catch (Exception e) {
-                    Log.e(TAG, "uploadImages takePersistableUriPermission error:" + e.getMessage());
+                    Log.e(TAG, "uploadImagesAndDatabase takePersistableUriPermission error:" + e.getMessage());
                 }
             }
 
@@ -556,7 +412,7 @@ public class MyFirebaseFragment extends Fragment implements
                 null);
 
         if (cursorLesson == null) {
-            Log.e(TAG, "uploadImages failed to get cursor");
+            Log.e(TAG, "uploadImagesAndDatabase failed to get cursor");
             mCallback.onUploadImageFailure(new Exception("Failed to get cursor (database failure)"));
             return;
         }
@@ -564,7 +420,7 @@ public class MyFirebaseFragment extends Fragment implements
         int nRows = cursorLesson.getCount();
 
         if (nRows > 1) {
-            Log.e(TAG, "uploadImages local database inconsistency nRows:"
+            Log.e(TAG, "uploadImagesAndDatabase local database inconsistency nRows:"
                     + nRows + " with the _id:" + lesson_id);
         }
 
@@ -597,7 +453,7 @@ public class MyFirebaseFragment extends Fragment implements
 
         String jsonString = serialize(lesson);
 
-        Log.d(TAG, "uploadImages lesson jsonString:" + jsonString);
+        Log.d(TAG, "uploadImagesAndDatabase lesson jsonString:" + jsonString);
 
         // Load lesson parts from local database into the Lesson instance
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
@@ -667,7 +523,7 @@ public class MyFirebaseFragment extends Fragment implements
         final String documentName = String.format( Locale.US, "%s_%03d",
                 lesson.getUser_uid(), lesson.getLesson_id());
 
-        Log.d(TAG, "uploadImages documentName:" + documentName);
+        Log.d(TAG, "uploadImagesAndDatabase documentName:" + documentName);
 
         final String logText = lesson.getLesson_title();
         mFirebaseDatabase.collection("lessons").document(documentName)
@@ -680,6 +536,7 @@ public class MyFirebaseFragment extends Fragment implements
                                 .format(new Date());
                         addToLog(time_stamp + ":\nLesson " + logText +
                                 "\nDocumentSnapshot successfully written with name:" + documentName);
+
                         mCallback.onUploadDatabaseSuccess();
                     }
                 })
@@ -692,6 +549,7 @@ public class MyFirebaseFragment extends Fragment implements
                         addToLog(time_stamp + ":\nLesson " + logText +
                                 "\nError writing document on Firebase!" +
                                 "\nDocument name:" + documentName +"\n" + e.getMessage());
+
                         mCallback.onUploadDatabaseFailure(e);
                     }
                 });
@@ -700,7 +558,8 @@ public class MyFirebaseFragment extends Fragment implements
 
 
     // Helper method for refreshing the database from Cloud Firestore
-    // Do not delete if existing
+    // Do not delete if existing in user table
+    // Delete all in the group table (data and local files)
     public void refreshDatabase(final String databaseVisibility) {
 
         // Get multiple documents
@@ -712,7 +571,7 @@ public class MyFirebaseFragment extends Fragment implements
                 public void onComplete(@NonNull Task<QuerySnapshot> task) {
                     if (task.isSuccessful()) {
 
-                        mCallback.onDownloadDatabaseComplete();
+                        mCallback.onDownloadDatabaseSuccess();
 
                         if (databaseVisibility.equals(USER_DATABASE)) {
 
@@ -744,6 +603,7 @@ public class MyFirebaseFragment extends Fragment implements
                             mCallback.onDownloadDatabaseFailure(new Exception("Error in getting " +
                                     "documents from Firestore"));
                         }
+
                     }
                 }
             });
@@ -787,9 +647,7 @@ public class MyFirebaseFragment extends Fragment implements
             mCursor.close();
         }
 
-
         if (nRows > 0) {
-
             // first, delete the parts by the lesson id
             Uri deleteUri = ContentUris.withAppendedId(LessonsContract.MyLessonPartsEntry.CONTENT_URI_BY_LESSON_ID,
                     lesson.getLesson_id());
@@ -866,7 +724,6 @@ public class MyFirebaseFragment extends Fragment implements
                 }
             }
         }
-
     }
 
 
@@ -1009,51 +866,57 @@ public class MyFirebaseFragment extends Fragment implements
              return;
          }
 
+         int nRows = mCursor.getCount();
          mCursor.moveToFirst();
-
-         //int nRows = mCursor.getCount();
 
         // Get all the parts and sore all image cloud uri's in an array of Image instances
          List<Image> images = new ArrayList<>();
          Image image;
 
-         do {
+         if (nRows > 0) {
+             do {
 
-             Long item_id = mCursor.getLong(mCursor.
-                     getColumnIndex(LessonsContract.GroupLessonPartsEntry._ID));
-             Long lesson_id = mCursor.getLong(mCursor.
-                     getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_LESSON_ID));
-             String cloudImageUri = mCursor.getString(mCursor.
-                     getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
-             String cloudVideoUri = mCursor.getString(mCursor.
-                     getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
+                 Long item_id = mCursor.getLong(mCursor.
+                         getColumnIndex(LessonsContract.GroupLessonPartsEntry._ID));
+                 Long lesson_id = mCursor.getLong(mCursor.
+                         getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_LESSON_ID));
+                 String cloudImageUri = mCursor.getString(mCursor.
+                         getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
+                 String cloudVideoUri = mCursor.getString(mCursor.
+                         getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
 
-             if (cloudImageUri == null && cloudVideoUri == null) {
-                 mCursor.moveToNext();
-                 continue;
-             }
+                 if (cloudImageUri != null || cloudVideoUri != null) {
 
-             // Set the values in the Image instance
-             image = new Image();
-             image.setPart_id(item_id);
-             image.setLesson_id(lesson_id);
-             // The priority is the video
-             if (cloudVideoUri != null) {
-                 image.setCloud_uri(cloudVideoUri);
-                 image.setImageType(VIDEO);
-             } else {
-                 image.setCloud_uri(cloudImageUri);
-                 image.setImageType(IMAGE);
-             }
+                     // Set the values in the Image instance
+                     image = new Image();
+                     image.setPart_id(item_id);
+                     image.setLesson_id(lesson_id);
+                     // The priority is the video
+                     if (cloudVideoUri != null) {
+                         image.setCloud_uri(cloudVideoUri);
+                         image.setImageType(VIDEO);
+                     } else {
+                         image.setCloud_uri(cloudImageUri);
+                         image.setImageType(IMAGE);
+                     }
 
-             // Store the instance in the array
-             images.add(image);
+                     // Store the instance in the array
+                     images.add(image);
 
-             // get the next part
-             //mCursor.moveToNext();
-         } while (mCursor.moveToNext());
+                 }
 
-        mCursor.close();
+                 // get the next part
+             } while (mCursor.moveToNext());
+
+         } else {
+             Log.e(TAG, "downloadGroupImages error");
+             mCallback.onDownloadImageFailure(new Exception("Internal error!"));
+             mCursor.close();
+             return;
+         }
+
+         // close the cursor
+         mCursor.close();
 
          // Download the file with the uri's stored in the images array, and after,
          // updates the parts table with the local file path
@@ -1147,7 +1010,7 @@ public class MyFirebaseFragment extends Fragment implements
 
                      // we don't need the counter in main activity, because we already have
                      // downloaded the lesson table (but we will use for showing the message)
-                     mCallback.onDownloadImageComplete();
+                     mCallback.onDownloadImageSuccess();
 
                  }
              }).addOnFailureListener(new OnFailureListener() {
@@ -1169,7 +1032,6 @@ public class MyFirebaseFragment extends Fragment implements
                  }
              });
          }
-
      }
 
 
@@ -1280,9 +1142,6 @@ public class MyFirebaseFragment extends Fragment implements
     public void onSaveInstanceState(@NonNull Bundle outState) {
 
         Log.d(TAG, "onSaveInstanceState: saving instance state");
-
-        Parcelable recyclerViewState = mRecyclerView.getLayoutManager().onSaveInstanceState();
-        outState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
 
         outState.putString(USER_UID, this.userUid);
 
@@ -1444,7 +1303,6 @@ public class MyFirebaseFragment extends Fragment implements
                         Log.e(TAG, "Error: currentImg:" + currentImg + " finalImg:" + finalImg, exception);
 
                         mCallback.onUploadImageFailure(exception);
-
                     }
                 });
 
@@ -1592,7 +1450,7 @@ public class MyFirebaseFragment extends Fragment implements
 
                         Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
 
-                        mCallback.onDownloadImageComplete();
+                        mCallback.onDownloadImageSuccess();
 
                     }
                 }).addOnFailureListener(new OnFailureListener() {
@@ -1683,71 +1541,72 @@ public class MyFirebaseFragment extends Fragment implements
     // Add data to the log table and limit its size
     public void addToLog(String logText) {
 
-        // Limit the size of the log table
-        ContentResolver contentResolver = mContext.getContentResolver();
-        Cursor mCursor = contentResolver.query(LessonsContract.MyLogEntry.CONTENT_URI,
-                null,
-                null,
-                null,
-                null);
+        if(logText.equals(RELEASE)) {
 
-        // find the size of the table
-        int nRows = 0;
-        if (mCursor != null) {
-            nRows = mCursor.getCount();
-            mCursor.moveToFirst();
-        }
-
-        // limit the number of deletions
-        int maxToDelete = nRows / 5;
-
-        while (nRows > MAX_ROWS_LOG_TABLE && maxToDelete > 0) {
-
-            // Query the _id of the position to delete
-            long log_id = mCursor.getLong(mCursor.getColumnIndex(LessonsContract.MyLogEntry._ID));
-            // close the query
-            mCursor.close();
-            // delete the row with that _id
-            Uri uriToDelete = LessonsContract.MyLogEntry.CONTENT_URI.buildUpon()
-                    .appendPath(Long.toString(log_id)).build();
-            Log.d(TAG, "uriToDelete:" + uriToDelete.toString());
-            int nRowsDeleted = mContext.getContentResolver().delete(uriToDelete, null, null);
-            Log.d(TAG, "addToLog nRowsDeleted:" + nRowsDeleted);
-            // count the number of rows deleted
-            maxToDelete--;
-
-            // make new query
-            mCursor = contentResolver.query(LessonsContract.MyLogEntry.CONTENT_URI,
+            // Limit the size of the log table
+            ContentResolver contentResolver = mContext.getContentResolver();
+            Cursor mCursor = contentResolver.query(LessonsContract.MyLogEntry.CONTENT_URI,
                     null,
                     null,
                     null,
                     null);
 
-            if(mCursor == null) {
-                break;
-            } else {
-                // get the new size of the table
-                nRows = mCursor.getCount();
+            if (mCursor != null) {
+
+                // find the size of the table
+                int nRows = mCursor.getCount();
+                mCursor.moveToFirst();
+
+                // limit the number of deletions
+                int maxToDelete = nRows / 5;
+                List<Long> idsToDelete = new ArrayList<>();
+                // get the id_s of the rows to delete and save in the array
+                for (int i = 0; i < maxToDelete; i++) {
+                    idsToDelete.add(mCursor.getLong(mCursor.getColumnIndex(LessonsContract.MyLogEntry._ID)));
+                    mCursor.moveToNext();
+                }
+
+                mCursor.close();
+
+                // delete that rows
+                int count = 0;
+                while (nRows > MAX_ROWS_LOG_TABLE && count < idsToDelete.size()) {
+                    long log_id = idsToDelete.get(count);
+                    // delete the row with that log_id
+                    Uri uriToDelete = LessonsContract.MyLogEntry.CONTENT_URI.buildUpon()
+                            .appendPath(Long.toString(log_id)).build();
+                    if (uriToDelete != null) {
+                        Log.d(TAG, "uriToDelete:" + uriToDelete.toString());
+                        int nRowsDeleted = mContext.getContentResolver().delete(uriToDelete, null, null);
+                        Log.d(TAG, "addToLog nRowsDeleted:" + nRowsDeleted);
+                        nRows--;
+                    }
+                    // count the number of tries
+                    count++;
+                }
             }
-            // reposition to find the new _id of the row to delete
-            mCursor.moveToFirst();
-        }
 
-        // grants that the cursor is closed
-        if (mCursor != null) {
-            mCursor.close();
-        }
+            // write buffer to database
+            for (int j = 0; j < logBuffer.size(); j++) {
+                // Now add the new value to the log table
+                ContentValues contentValues = new ContentValues();
+                contentValues.put(LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT, logBuffer.get(j));
 
-        // Now add the new value to the log table
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT, logText);
+                // Insert the content values via a ContentResolver
+                Uri uri = contentResolver.insert(LessonsContract.MyLogEntry.CONTENT_URI, contentValues);
 
-        // Insert the content values via a ContentResolver
-        Uri uri = contentResolver.insert(LessonsContract.MyLogEntry.CONTENT_URI, contentValues);
+                if (uri == null) {
+                    Log.e(TAG, "addToLog: error in inserting item on log",
+                            new Exception("addToLog: error in inserting item on log"));
+                }
+            }
 
-        if (uri == null) {
-            Log.e(TAG, "addToLog: error in inserting item on log",
-                    new Exception("addToLog: error in inserting item on log"));
+            logBuffer.clear();
+
+        } else {
+
+            logBuffer.add(logText);
+
         }
 
     }
