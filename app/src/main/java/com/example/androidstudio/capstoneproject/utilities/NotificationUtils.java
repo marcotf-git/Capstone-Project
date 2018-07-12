@@ -21,11 +21,11 @@ public class NotificationUtils {
 
     private static final int SYNC_GROUP_NOTIFICATION_ID = 10;
     private static final int SYNC_GROUP_PENDING_INTENT_ID = 100;
-    private static final String SYNC_GROUP_NOTIFICATION_CHANNEL_ID = "sync_group_notification_channel";
 
     private static final int UPLOAD_LESSON_NOTIFICATION_ID = 20;
     private static final int UPLOAD_LESSON_PENDING_INTENT_ID = 200;
-    private static final String UPLOAD_LESSON_NOTIFICATION_CHANNEL_ID = "upload_lesson_notification_channel";
+
+    private static final String NOTIFICATION_CHANNEL_ID = "learning_app_notification_channel";
 
     private static final int ACTION_IGNORE_PENDING_INTENT_ID = 3000;
 
@@ -37,6 +37,7 @@ public class NotificationUtils {
     }
 
 
+    // Build a notification for notify the ending of the sync job
     public static void notifyUserBecauseSyncGroupFinished(Context context) {
 
         NotificationManager notificationManager = (NotificationManager)
@@ -44,14 +45,15 @@ public class NotificationUtils {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel mChannel = new NotificationChannel(
-                    SYNC_GROUP_NOTIFICATION_CHANNEL_ID,
+                    NOTIFICATION_CHANNEL_ID,
                     context.getString(R.string.main_notification_channel_name),
                     NotificationManager.IMPORTANCE_HIGH);
+
             notificationManager.createNotificationChannel(mChannel);
         }
 
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context,
-                SYNC_GROUP_NOTIFICATION_CHANNEL_ID)
+                NOTIFICATION_CHANNEL_ID)
                 .setColor(ContextCompat.getColor(context, R.color.colorPrimary))
                 .setContentTitle(context.getString(R.string.sync_group_notification_title))
                 .setContentText(context.getString(R.string.sync_group_notification_body))
@@ -60,7 +62,7 @@ public class NotificationUtils {
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(
                         context.getString(R.string.sync_group_notification_body)))
                 .setDefaults(Notification.DEFAULT_VIBRATE)
-                .setContentIntent(contentGroupIntent(context))
+                .setContentIntent(contentSyncGroupIntent(context))
                 .addAction(ignorePendingIntent(context))
                 .setAutoCancel(true);
 
@@ -73,22 +75,28 @@ public class NotificationUtils {
 
     }
 
+    // Build a notification action PendingIntent to ignore the notification message
     private static NotificationCompat.Action ignorePendingIntent(Context context) {
+
         Intent ignoreReminderIntent = new Intent(context, LearningAppIntentService.class);
         ignoreReminderIntent.setAction(SyncTasks.ACTION_DISMISS_NOTIFICATION);
+
         PendingIntent ignoreReminderPendingIntent = PendingIntent.getService(
                 context,
                 ACTION_IGNORE_PENDING_INTENT_ID,
                 ignoreReminderIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT);
+
         NotificationCompat.Action ignoreReminderAction =
-                new NotificationCompat.Action(R.drawable.ic_cancel,"OK.",
+                new NotificationCompat.Action(R.drawable.ic_cancel,
+                        context.getString(R.string.ignore_pending_intent_text),
                 ignoreReminderPendingIntent);
+
         return ignoreReminderAction;
     }
 
 
-
+    // build a notification to notify the ending of the upload job
     public static void notifyUserBecauseUploadFinished(Context context) {
 
         NotificationManager notificationManager = (NotificationManager)
@@ -96,14 +104,14 @@ public class NotificationUtils {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel mChannel = new NotificationChannel(
-                    UPLOAD_LESSON_NOTIFICATION_CHANNEL_ID,
+                   NOTIFICATION_CHANNEL_ID,
                     context.getString(R.string.main_notification_channel_name),
                     NotificationManager.IMPORTANCE_HIGH);
             notificationManager.createNotificationChannel(mChannel);
         }
 
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context,
-                UPLOAD_LESSON_NOTIFICATION_CHANNEL_ID)
+                NOTIFICATION_CHANNEL_ID)
                 .setColor(ContextCompat.getColor(context, R.color.colorPrimary))
                 .setContentTitle(context.getString(R.string.upload_notification_title))
                 .setContentText(context.getString(R.string.upload_notification_body))
@@ -112,7 +120,7 @@ public class NotificationUtils {
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(
                         context.getString(R.string.upload_notification_body)))
                 .setDefaults(Notification.DEFAULT_VIBRATE)
-                .setContentIntent(contentLessonIntent(context))
+                .setContentIntent(contentUploadLessonIntent(context))
                 .addAction(ignorePendingIntent(context))
                 .setAutoCancel(true);
 
@@ -125,7 +133,8 @@ public class NotificationUtils {
     }
 
 
-    private static PendingIntent contentGroupIntent(Context context) {
+    // the pending intent send in the sync job notification
+    private static PendingIntent contentSyncGroupIntent(Context context) {
         Intent startActivityIntent = new Intent(context, MainActivity.class);
         return PendingIntent.getActivity(
                 context,
@@ -134,7 +143,8 @@ public class NotificationUtils {
                 PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
-    private static PendingIntent contentLessonIntent(Context context) {
+    // the pending intent send in the upload job notification
+    private static PendingIntent contentUploadLessonIntent(Context context) {
         Intent startActivityIntent = new Intent(context, MainActivity.class);
         return PendingIntent.getActivity(
                 context,
@@ -143,6 +153,7 @@ public class NotificationUtils {
                 PendingIntent.FLAG_UPDATE_CURRENT);
     }
 
+    // the bit map image for the large icon to display in notification
     private static Bitmap largeIcon(Context context) {
         Resources res = context.getResources();
         Bitmap largeIcon = BitmapFactory.decodeResource(res, R.drawable.ic_arrow_back);
