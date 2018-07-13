@@ -143,7 +143,7 @@ import static android.view.View.VISIBLE;
  *
  * Finally, the cloud communication is saved in a log file, that can be viewed by an option in the
  * drawer menu.
- * 
+ *
  * So, we have Content Provider, Async Tasks, Firebase, Firebase JobDispatcher, Widget, thousands of
  * listeners... :-) and a complex task of handling with two databases in the cloud!
  * All trying to make an app that handle the creation of a small lesson by the user, with some parts,
@@ -1281,11 +1281,11 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     // Helper function to delete lesson data from cloud (delete the lesson document)
-    private void deleteLessonFromCloud(long _id) {
+    private void deleteLessonFromCloud(long lesson_id) {
 
         // query the images to delete
         String selection = LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID + "=?";
-        String selectionArgs[] = {Long.toString(_id)};
+        String selectionArgs[] = {Long.toString(lesson_id)};
         Cursor cursor = this.getContentResolver().query(
                 LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI,
                 null,
@@ -1304,12 +1304,12 @@ public class MainActivity extends AppCompatActivity implements
         imagesToDeleteCount = 0;
 
         // call the Dialog Fragment
-        Log.d(TAG, "deleteLessonFromCloudDatabase _id:" + _id);
+        Log.d(TAG, "deleteLessonFromCloudDatabase lesson_id:" + lesson_id);
         // Call the fragment for showing the delete uploadDialog
         DialogFragment deleteLessonCloudFragment = new DeleteLessonOnCloudDialogFragment();
         // Pass the _id of the lesson
         Bundle bundle = new Bundle();
-        bundle.putLong("_id", _id);
+        bundle.putLong("lesson_id", lesson_id);
         deleteLessonCloudFragment.setArguments(bundle);
         // Show the Dialog Fragment box
         deleteLessonCloudFragment.show(getSupportFragmentManager(), "DeleteLessonOnCloudDialogFragment");
@@ -1556,7 +1556,7 @@ public class MainActivity extends AppCompatActivity implements
         // First, save the cloud file reference in the form "images/001/file_name" or
         // "videos/001/file_name" where 001 is the lesson_id (not the part_id) in the
         // var fileReference
-        // This is necessary for be able to delete from Firebase Storage
+        // This is necessary to be able to delete from Firebase Storage
 
         String selection = LessonsContract.MyLessonPartsEntry._ID + "=?";
         String[] selectionArgs = {Long.toString(part_id)};

@@ -47,7 +47,7 @@ public class DeleteLessonOnCloudDialogFragment extends DialogFragment {
     @Override
     public void setArguments(@Nullable Bundle args) {
         if (null != args) {
-            this.lesson_id = args.getLong("_id");
+            this.lesson_id = args.getLong("lesson_id");
         }
     }
 

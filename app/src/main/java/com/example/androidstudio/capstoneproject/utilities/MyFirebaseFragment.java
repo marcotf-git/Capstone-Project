@@ -1024,8 +1024,70 @@ public class MyFirebaseFragment extends Fragment {
 
 
     // Helper function for deleting a lesson text from cloud database
-    public void deleteLessonFromCloudDatabase(Long lesson_id) {
+    public void deleteLessonFromCloudDatabase(long lesson_id) {
 
+        // First, save the cloud file reference in the form "images/001/file_name" or
+        // "videos/001/file_name" where 001 is the lesson_id (not the part_id) in the
+        // var fileReference
+        // This is necessary to be able to delete from Firebase Storage
+        ContentResolver contentResolver = mContext.getContentResolver();
+        String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
+        String[] selectionArgs = {Long.toString(lesson_id)};
+        Cursor cursor = null;
+        if (contentResolver != null) {
+            cursor = contentResolver.query(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
+                    null,
+                    selection,
+                    selectionArgs,
+                    null);
+        }
+
+        String fileReference;
+
+        if (cursor == null) { return; }  // no files in the table
+
+        cursor.moveToFirst();
+
+        do {
+            // get info to build the fileRef
+            String cloud_image_uri = cursor.getString(cursor.
+                    getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
+            String cloud_video_uri = cursor.getString(cursor.
+                    getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
+
+            // build the fileRef
+            if (cloud_image_uri != null) {
+                String[] filePathParts = cloud_image_uri.split("/");
+                fileReference = filePathParts[1] + "/" + filePathParts[2] + "/" + filePathParts[3];
+
+                // store the fileRef in the table my_cloud_files_to_delete
+                ContentValues content = new ContentValues();
+                content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE, fileReference);
+                content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID, lesson_id);
+                Uri uri = contentResolver.insert(LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI, content);
+                Log.d(TAG, "deleteLessonFromCloudDatabase inserted uri:" + uri);
+                Log.d(TAG, "deleteLessonFromCloudDatabase fileReference:" + fileReference);
+            }
+
+            if (cloud_video_uri != null) {
+                String[] filePathParts = cloud_video_uri.split("/");
+                fileReference = filePathParts[1] + "/" + filePathParts[2] + "/" + filePathParts[3];
+
+                // store the fileRef in the table my_cloud_files_to_delete
+                ContentValues content = new ContentValues();
+                content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE, fileReference);
+                content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID, lesson_id);
+                Uri uri = contentResolver.insert(LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI, content);
+                Log.d(TAG, "deleteLessonFromCloudDatabase inserted uri:" + uri);
+                Log.d(TAG, "deleteLessonFromCloudDatabase fileReference:" + fileReference);
+            }
+
+        } while (cursor.moveToNext());
+
+        cursor.close();
+
+
+        // Delete the text from Database
         final String documentName = String.format(Locale.US, "%s_%03d",
                 userUid, lesson_id);
 
@@ -1048,6 +1110,7 @@ public class MyFirebaseFragment extends Fragment {
                         mCallback.onDeleteCloudDatabaseFailure(e);
                     }
                 });
+
 
     }
 
