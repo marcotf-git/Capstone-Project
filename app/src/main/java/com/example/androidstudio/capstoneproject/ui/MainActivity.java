@@ -805,7 +805,7 @@ public class MainActivity extends AppCompatActivity implements
                 break;
 
             case R.id.action_refresh:
-                refreshDatabase();
+                optionRefresh();
                 break;
 
             case R.id.action_upload:
@@ -1050,63 +1050,9 @@ public class MainActivity extends AppCompatActivity implements
     // It will download the photos from Firebase Storage, but only for the group table (the user table
     // already has the images in the folder).
     // In case of the group, it will also delete the old files, and the old rows in the table.
-    private void refreshDatabase() {
+    private void optionRefresh() {
 
-        // query the group lesson parts table to count for the number of images to download
-        // for being able to control if all downloads succeed
-        Cursor cursor = this.getContentResolver().query(
-                LessonsContract.GroupLessonPartsEntry.CONTENT_URI,
-                null,
-                null,
-                null,
-                null);
-
-        downloadCountFinal = 0;
-
-        // Count the images
-        if (cursor != null) {
-            cursor.moveToFirst();
-            int nRows = cursor.getCount();
-            for (int i = 0; i < nRows; i++) {
-                Long part_id = cursor.getLong(cursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry._ID));
-                String cloud_video_uri = cursor.
-                        getString(cursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
-                String cloud_image_uri = cursor.
-                        getString(cursor.getColumnIndex(LessonsContract.GroupLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
-                Log.d(TAG, "part_id: " + part_id);
-                Log.d(TAG, "cloud_video_uri: " + cloud_video_uri);
-                Log.d(TAG, "cloud_image_uri: " + cloud_image_uri);
-                if (cloud_video_uri != null || cloud_image_uri != null ) {
-                    // Total number of images/videos to download
-                    downloadCountFinal++;
-                }
-                cursor.moveToNext();
-            }
-            Log.d(TAG, "cursor: getCount:" + cursor.getCount());
-        }
-
-        if (cursor != null) {
-            cursor.close();
-        }
-
-        // stop if there are no images
-        if (downloadCountFinal == 0) {
-            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                    "There are no images to download!",
-                    Snackbar.LENGTH_INDEFINITE);
-            snackBar.setAction("Dismiss", new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
-            });
-            snackBar.show();
-
-            loadingIndicator = false;
-            mainFragment.setLoadingIndicator(false);
-            deselectViews();
-            return;
-        }
+        downloadCountFinal = 1;
 
         // This will count the actual downloads
         downloadCount = 0;
@@ -1775,17 +1721,34 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onDownloadDatabaseSuccess() {
-        final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                "Download of text completed successfully." +
-                        "\nNow downloading images...",
-                Snackbar.LENGTH_SHORT);
-        snackBar.show();
+    public void onDownloadDatabaseSuccess(int nImagesToDownload) {
+
+        downloadCountFinal = nImagesToDownload;
+
+        if (nImagesToDownload == 0){
+            loadingIndicator = false;
+            mainFragment.setLoadingIndicator(false);
+
+            Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "Download completed.",
+                    Snackbar.LENGTH_SHORT);
+            snackBar.show();
+        } else {
+
+            Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "Download of text completed.\n" +
+                    "Now, downloading the images...",
+                    Snackbar.LENGTH_SHORT);
+            snackBar.show();
+        }
+
         firebaseFragment.addToLog(RELEASE);
     }
 
+
     @Override
     public void onDownloadDatabaseFailure(@NonNull Exception e) {
+
         loadingIndicator = false;
         mainFragment.setLoadingIndicator(false);
 
@@ -1861,7 +1824,9 @@ public class MainActivity extends AppCompatActivity implements
 
             firebaseFragment.addToLog(RELEASE);
         }
+
     }
+
 
     @Override
     public void onDeleteCloudDatabaseSuccess() {

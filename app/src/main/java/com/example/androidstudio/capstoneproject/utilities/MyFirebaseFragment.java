@@ -85,6 +85,8 @@ public class MyFirebaseFragment extends Fragment {
     private String userUid;
     private Context mContext;
 
+    private static ContentResolver contentResolver;
+
     private List<UploadingImage> uploadingImages;
     private List<DownloadingImage> downloadingImages;
 
@@ -103,7 +105,7 @@ public class MyFirebaseFragment extends Fragment {
         void onUploadDatabaseSuccess();
         void onUploadDatabaseFailure(@NonNull Exception e);
 
-        void onDownloadDatabaseSuccess();
+        void onDownloadDatabaseSuccess(int nImagesToDownload);
         void onDownloadDatabaseFailure(@NonNull Exception e);
         void onDownloadImageSuccess();
         void onDownloadImageFailure(@NonNull Exception e);
@@ -184,7 +186,7 @@ public class MyFirebaseFragment extends Fragment {
         String mUserUid = userUid;
 
         // Query the parts table with the same lesson_id
-        ContentResolver contentResolver = mContext.getContentResolver();
+        contentResolver = mContext.getContentResolver();
 
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
         String[] selectionArgs = {Long.toString(mLessonId)};
@@ -391,7 +393,7 @@ public class MyFirebaseFragment extends Fragment {
                 .format(new Date());
         addToLog( time_stamp + ":\nNow uploading lesson...");
 
-        ContentResolver contentResolver = mContext.getContentResolver();
+        contentResolver = mContext.getContentResolver();
         Uri lessonUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI, lesson_id);
         Cursor cursorLesson = contentResolver.query(lessonUri,
                 null,
@@ -552,7 +554,7 @@ public class MyFirebaseFragment extends Fragment {
     // Delete all in the group table (data and local files)
     public void refreshDatabase(final String databaseVisibility) {
 
-        // Get multiple documents
+        // Get multiple documents (all the data in the database)
         mFirebaseDatabase.collection("lessons")
             //.whereEqualTo("field_name", true)
             .get()
@@ -561,7 +563,7 @@ public class MyFirebaseFragment extends Fragment {
                 public void onComplete(@NonNull Task<QuerySnapshot> task) {
                     if (task.isSuccessful()) {
 
-                        mCallback.onDownloadDatabaseSuccess();
+                        //mCallback.onDownloadDatabaseSuccess();
 
                         if (databaseVisibility.equals(USER_DATABASE)) {
 
@@ -573,7 +575,8 @@ public class MyFirebaseFragment extends Fragment {
                                 Log.v(TAG, "refreshDatabase onComplete lesson jsonString:"
                                         + jsonString);
                                 // refresh the lessons of the local user on its separate table
-                                // this gives consistency to the database
+                                // this gives more security to the database
+                                // --> filter by the user uid of the lesson downloaded
                                 if (userUid.equals(lesson.getUser_uid())) {
                                     refreshUserLesson(lesson);
                                 }
@@ -581,8 +584,9 @@ public class MyFirebaseFragment extends Fragment {
 
                         } else if (databaseVisibility.equals(GROUP_DATABASE)) {
                             // refresh the lessons of the group table on its separate table
+                            // --> pass all the data
                             refreshGroupLessons(task);
-                            downloadGroupImages();
+                            downloadGroupImages(); // this will use the counter
                         }
 
                     } else {
@@ -600,25 +604,21 @@ public class MyFirebaseFragment extends Fragment {
 
     }
 
+
     // Helper method called by refreshDatabase
     private void refreshUserLesson(Lesson lesson) {
 
-        if (null == lesson) {
-            return;
-        }
         Log.v(TAG, "refreshUserLesson lesson_id:" + lesson.getLesson_id());
 
         // query the local database to see if find the lesson with the _id
-        // delete it and save another if found
-        // create if didn't exist
+        // delete it and save another if found; create if didn't exist
         Uri queryUri;
         queryUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI,
             lesson.getLesson_id());
 
         Cursor mCursor;
-        ContentResolver contentResolver = mContext.getContentResolver();
-        if (queryUri != null) {
-            mCursor = contentResolver.query(queryUri,
+        contentResolver = mContext.getContentResolver();
+        if (queryUri != null) {mCursor = contentResolver.query(queryUri,
                     null,
                     null,
                     null,
@@ -641,8 +641,7 @@ public class MyFirebaseFragment extends Fragment {
             // first, delete the parts by the lesson id
             Uri deleteUri = ContentUris.withAppendedId(LessonsContract.MyLessonPartsEntry.CONTENT_URI_BY_LESSON_ID,
                     lesson.getLesson_id());
-            int numberOfPartsDeleted = contentResolver.delete(
-                    deleteUri,
+            int numberOfPartsDeleted = contentResolver.delete(deleteUri,
                     null,
                     null);
             Log.v(TAG, "refreshUserLesson numberOfPartsDeleted:" + numberOfPartsDeleted);
@@ -650,70 +649,75 @@ public class MyFirebaseFragment extends Fragment {
             // second, delete the lesson itself
             Uri deleteLessonUri = ContentUris.withAppendedId(LessonsContract.MyLessonsEntry.CONTENT_URI,
                     lesson.getLesson_id());
-            int numberOfLessonsDeleted = contentResolver.delete(
-                    deleteLessonUri,
+            int numberOfLessonsDeleted = contentResolver.delete(deleteLessonUri,
                     null,
                     null);
             Log.v(TAG, "refreshLesson numberOfLessonsDeleted:" + numberOfLessonsDeleted);
+        }
 
-            // now, insert the new lesson
-            /* Create values to insert */
-            // insert with the same id (because it will make the consistency)
-            ContentValues insertLessonValues = new ContentValues();
-            insertLessonValues.put(LessonsContract.MyLessonsEntry._ID, lesson.getLesson_id());
-            insertLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, lesson.getLesson_title());
 
-            Uri lessonUri = contentResolver.insert(LessonsContract.MyLessonsEntry.CONTENT_URI, insertLessonValues);
+        // now, insert the new lesson
+        /* Create values to insert */
+        // insert with the same id (because it will make the consistency)
+        ContentValues insertLessonValues = new ContentValues();
+        insertLessonValues.put(LessonsContract.MyLessonsEntry._ID, lesson.getLesson_id());
+        insertLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, lesson.getLesson_title());
 
-            Long inserted_lesson_id;
+        Uri lessonUri = contentResolver.insert(LessonsContract.MyLessonsEntry.CONTENT_URI, insertLessonValues);
 
-            if (lessonUri == null) {
-                // Returns with error if was not succeeded
-                mCallback.onDownloadDatabaseFailure(new Exception("Error in saving documents downloaded from" +
-                        " Firestore.\nError in saving the lesson.\nNo part will be saved.\n" +
-                        "(no document inserted into local database)"));
-                return;
-            } else {
-                Log.v(TAG, "insert uri:" + lessonUri.toString());
-                // for inserting the parts, extract the _id of the uri!
-                inserted_lesson_id = Long.parseLong(lessonUri.getPathSegments().get(1));
-            }
+        Long inserted_lesson_id;
 
-            // insert all the parts of the lesson into the database in its table
-            ArrayList<LessonPart> lessonParts = lesson.getLesson_parts();
-            // Insert all the parts, with the lesson_id value of the last _id inserted in the local database
-            // This will give consistency and separates the local database consistency from the remote
-            if (null != lessonParts) {
-                for (LessonPart lessonPart : lessonParts) {
-                    ContentValues insertLessonPartValues = new ContentValues();
-                    insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID,
-                            inserted_lesson_id);
-                    insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE,
+        if (lessonUri == null) {
+            // Returns with error if was not succeeded
+            mCallback.onDownloadDatabaseFailure(new Exception("Error in saving documents downloaded from" +
+                    " Firestore.\nError in saving the lesson.\nNo part will be saved.\n" +
+                    "(no document inserted into local database)"));
+            Log.e(TAG, "refreshUserLesson insert uri:null");
+            return;
+        } else {
+            Log.v(TAG, "refreshUserLesson insert uri:" + lessonUri.toString());
+            // for inserting the parts, extract the _id of the uri!
+            inserted_lesson_id = Long.parseLong(lessonUri.getPathSegments().get(1));
+        }
+
+        // insert all the parts of the lesson into the database in its table
+        ArrayList<LessonPart> lessonParts = lesson.getLesson_parts();
+        // Insert all the parts, with the lesson_id value of the last _id inserted in the local database
+        // This will give consistency and separates the local database consistency from the remote
+        if (null != lessonParts) {
+            for (LessonPart lessonPart : lessonParts) {
+                ContentValues insertLessonPartValues = new ContentValues();
+                insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID,
+                        inserted_lesson_id);
+                insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TITLE,
+                        lessonPart.getTitle());
+                String text = lessonPart.getText();
+                insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TEXT,
+                        text);
+                insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI,
+                        lessonPart.getLocal_image_uri());
+                insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI,
+                        lessonPart.getCloud_image_uri());
+                insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI,
+                        lessonPart.getLocal_video_uri());
+                insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI,
+                        lessonPart.getCloud_video_uri());
+
+                Uri partUri = contentResolver.insert(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
+                        insertLessonPartValues);
+
+                if (partUri == null) {
+                    Log.e(TAG, "refreshUserLesson: Error on inserting part lessonPart.getTitle():" +
                             lessonPart.getTitle());
-                    String text = lessonPart.getText();
-                    insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_PART_TEXT,
-                            text);
-                    insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI,
-                            lessonPart.getLocal_image_uri());
-                    insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI,
-                            lessonPart.getCloud_image_uri());
-                    insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI,
-                            lessonPart.getLocal_video_uri());
-                    insertLessonPartValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI,
-                            lessonPart.getCloud_video_uri());
-
-                    Uri partUri = contentResolver.insert(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
-                            insertLessonPartValues);
-
-                    if (partUri == null) {
-                        Log.e(TAG, "Error on inserting part lessonPart.getTitle():" +
-                                lessonPart.getTitle());
-                    }
-
-                    Log.v(TAG, "refreshUserLesson partUri inserted:" + partUri);
                 }
+
+                Log.v(TAG, "refreshUserLesson partUri inserted:" + partUri);
             }
         }
+
+        // inform the main activity that the job finishes
+        mCallback.onDownloadDatabaseSuccess(0);
+
     }
 
 
@@ -724,7 +728,7 @@ public class MyFirebaseFragment extends Fragment {
         Log.v(TAG, "refreshGroupLesson");
 
         // first, delete the file images of each lesson
-        ContentResolver contentResolver = mContext.getContentResolver();
+        contentResolver = mContext.getContentResolver();
         Cursor mCursor = contentResolver.query(LessonsContract.GroupLessonsEntry.CONTENT_URI,
                 null,
                 null,
@@ -842,8 +846,12 @@ public class MyFirebaseFragment extends Fragment {
          // path stored in the cloud_video_uri or cloud_image_uri, saves the file into local directory
          // and write the file path uri into the local_video_uri or local_image_uri
 
+         // PREPARE TO DOWNLOAD THE FILES
+
+         int nImagesToDownload = 0;
+
          // Load the images uri's into the images array
-         ContentResolver contentResolver = mContext.getContentResolver();
+         contentResolver = mContext.getContentResolver();
          Cursor mCursor = contentResolver.query(
                  LessonsContract.GroupLessonPartsEntry.CONTENT_URI,
                  null,
@@ -853,6 +861,7 @@ public class MyFirebaseFragment extends Fragment {
 
          if (mCursor == null) {
              Log.d(TAG, "Failed to get cursor for group_lesson_parts");
+             mCallback.onDownloadDatabaseSuccess(0);
              return;
          }
 
@@ -892,23 +901,30 @@ public class MyFirebaseFragment extends Fragment {
 
                      // Store the instance in the array
                      images.add(image);
+
+                     // THE COUNTER OF IMAGES TO DOWNLOAD
+                     nImagesToDownload++;
                  }
                  // get the next part
              } while (mCursor.moveToNext());
 
          } else {
-             Log.e(TAG, "downloadGroupImages error");
-             mCallback.onDownloadImageFailure(new Exception("Internal error!"));
+             // return if there are no images to download
              mCursor.close();
+             mCallback.onDownloadDatabaseSuccess(0);
              return;
          }
 
          // close the cursor
          mCursor.close();
 
-         // Download the file with the uri's stored in the images array, and after,
-         // updates the parts table with the local file path
+         // tell to the main activity the state and the number of images to download for control
+         mCallback.onDownloadDatabaseSuccess(nImagesToDownload);
 
+         // BEGIN TO DOWNLOAD THE FILES
+
+         // Download the file from Cloud Storage, with the uri's stored in the images array, and after,
+         // updates the parts table with the local file path
          downloadingImages = new ArrayList<>();
 
          // This has an activity scope, so will unregister when the activity stops
@@ -1030,7 +1046,7 @@ public class MyFirebaseFragment extends Fragment {
         // "videos/001/file_name" where 001 is the lesson_id (not the part_id) in the
         // var fileReference
         // This is necessary to be able to delete from Firebase Storage
-        ContentResolver contentResolver = mContext.getContentResolver();
+        contentResolver = mContext.getContentResolver();
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
         String[] selectionArgs = {Long.toString(lesson_id)};
         Cursor cursor = null;
@@ -1122,7 +1138,7 @@ public class MyFirebaseFragment extends Fragment {
 
         Log.d(TAG, "deleteImageFilesFromStorage lesson_id:" + lesson_id);
 
-        ContentResolver contentResolver = mContext.getContentResolver();
+        contentResolver = mContext.getContentResolver();
         String selection = LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID + "=?";
         String selectionArgs[] = {Long.toString(lesson_id)};
         Cursor mCursor = contentResolver.query(
@@ -1230,7 +1246,7 @@ public class MyFirebaseFragment extends Fragment {
         // Query the parts table with the same lesson_id
         // find the uri's of the images to delete
         // delete the local files
-        ContentResolver contentResolver = mContext.getContentResolver();
+        contentResolver = mContext.getContentResolver();
 
         String selection = LessonsContract.GroupLessonPartsEntry.COLUMN_LESSON_ID + "=?";
         String[] selectionArgs = {Long.toString(lessonId)};
@@ -1510,7 +1526,7 @@ public class MyFirebaseFragment extends Fragment {
         }
 
         // Insert the content values via a ContentResolver
-        ContentResolver contentResolver = mContext.getContentResolver();
+        contentResolver = mContext.getContentResolver();
         Uri updateUri = ContentUris.withAppendedId(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                 partId);
         long numberOfImagesUpdated = contentResolver.update(
@@ -1669,7 +1685,7 @@ public class MyFirebaseFragment extends Fragment {
         }
 
         // Insert the content values via a ContentResolver
-        ContentResolver contentResolver = mContext.getContentResolver();
+        contentResolver = mContext.getContentResolver();
         Uri updateUri = ContentUris.withAppendedId(LessonsContract.GroupLessonPartsEntry.CONTENT_URI,
                 partId);
         long numberOfImagesUpdated = contentResolver.update(
@@ -1706,7 +1722,7 @@ public class MyFirebaseFragment extends Fragment {
         if(logText.equals(RELEASE)) {
 
             // Limit the size of the log table
-            ContentResolver contentResolver = mContext.getContentResolver();
+            contentResolver = mContext.getContentResolver();
             Cursor mCursor = contentResolver.query(LessonsContract.MyLogEntry.CONTENT_URI,
                     null,
                     null,
@@ -1746,6 +1762,10 @@ public class MyFirebaseFragment extends Fragment {
                     // count the number of tries
                     count++;
                 }
+            }
+
+            if (mCursor != null) {
+                mCursor.close();
             }
 
             // write buffer to database
