@@ -481,7 +481,10 @@ public class MainFragment extends Fragment implements
             mSelectedView.setSelected(false);
             mSelectedView = null;
         }
+
+        // change the state to deselected
         selectedLesson_id = -1;
+
         // Force deselecting all views
         int i = 0;
         while (mClassesList.getChildAt(i) != null) {

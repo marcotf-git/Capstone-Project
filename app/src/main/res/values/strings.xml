@@ -106,15 +106,8 @@
     <string name="widget_header">Learning App</string>
     <string name="widget_image">Widget Image</string>
 
-    <string name="refresh_job_type">
-        Start a background sync of these lessons?
-        The old data in the group lessons will be deleted,
-        but it will not delete the user lessons,
-        just will update what already exists and
-        download the new ones.</string>
+    <string name="refresh_job_type">Start a background sync of the lessons?</string>
 
-    <string name="upload_job_type">
-        Start a background upload of the selected user lesson
-        and all its content (images, videos and text)?</string>
+    <string name="upload_job_type">Start a background upload of the selected user lesson?</string>
 
 </resources>

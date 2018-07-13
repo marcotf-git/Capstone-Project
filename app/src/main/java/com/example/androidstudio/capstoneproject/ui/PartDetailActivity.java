@@ -152,6 +152,8 @@ public class PartDetailActivity extends AppCompatActivity implements
             this.getSupportLoaderManager().initLoader(ID_GROUP_LESSON_PARTS_LOADER, null, this);
         }
 
+
+        // This dialog will handle the adding of the image or video
         // Init a dialog menu for user to choose a file
         AlertDialog.Builder builder = new AlertDialog.Builder(PartDetailActivity.this);
         // Add the buttons
@@ -666,22 +668,34 @@ public class PartDetailActivity extends AppCompatActivity implements
             return;
         }
 
+        // First, save the cloud uri's references it in the
+        // my_cloud_files_to_delete table for future deletion from cloud (save in the lesson_id).
+        saveUrisForFutureCloudDeletion();
+
+        // Now, update the local and cloud uri's
         // Create new empty ContentValues object
         ContentValues contentValues = new ContentValues();
 
         if (type.equals("image")) {
             contentValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI,
                     selectedBlobUri.toString());
+            contentValues.putNull(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI);
         } else if (type.equals("video")) {
             contentValues.put(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI,
                     selectedBlobUri.toString());
+            contentValues.putNull(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI);
         }
+
+        contentValues.putNull(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI);
+        contentValues.putNull(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI);
+
 
         Uri updateUri = ContentUris.withAppendedId(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
                 clickedLessonPart_id);
 
-        int numberOfImagesUpdated = getContentResolver().update(updateUri,
-                contentValues, null, null);
+        // update the my_lesson_parts table with the new uri's
+        int numberOfImagesUpdated = getContentResolver().update(updateUri, contentValues,
+                null, null);
 
         if (numberOfImagesUpdated > 0) {
             Log.d(TAG, "Local Uri of added " + type + ":" + selectedBlobUri.toString());
@@ -691,6 +705,78 @@ public class PartDetailActivity extends AppCompatActivity implements
                     "Error on saving uri to local database", Toast.LENGTH_LONG).show();
         }
 
+    }
+
+
+    // save the cloud uri's references it in the
+    // my_cloud_files_to_delete table for future deletion from cloud (save in the lesson_id)
+    private void saveUrisForFutureCloudDeletion() {
+
+        // first, save the cloud file reference in the form "images/001/file_name" or
+        // "videos/001/file_name" where 001 is the lesson_id (not the part_id) in the
+        // var fileReference
+
+        ContentResolver contentResolver = this.getContentResolver();
+        String selection = LessonsContract.MyLessonPartsEntry._ID + "=?";
+        String[] selectionArgs = {Long.toString(clickedLessonPart_id)};
+        Cursor cursor = null;
+        if (contentResolver != null) {
+            cursor = contentResolver.query(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
+                    null,
+                    selection,
+                    selectionArgs,
+                    null);
+        }
+
+        String fileReference = null;
+
+        if (cursor != null) {
+            cursor.moveToLast();
+        }
+
+        if (cursor != null) {
+
+            // it will use the lesson_id to store in the my_cloud_files_to_delete
+            // when the lesson wll be deleted, its images will be deleted
+            long lesson_id = cursor.getLong(cursor.
+                    getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID));
+
+            String cloud_image_uri = cursor.getString(cursor.
+                    getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
+            String cloud_video_uri = cursor.getString(cursor.
+                    getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
+
+            cursor.close();
+
+
+            if (cloud_image_uri != null) {
+                String[] filePathParts = cloud_image_uri.split("/");
+                fileReference = filePathParts[1] + "/" + filePathParts[2] + "/" + filePathParts[3];
+
+                // Now, store the fileRef in the my_cloud_files_to_delete
+                // store the fileRef in the table my_cloud_files_to_delete
+                ContentValues content = new ContentValues();
+                content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE, fileReference);
+                content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID, lesson_id);
+                Uri uri = contentResolver.insert(LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI, content);
+                Log.d(TAG, "saveUrisForFutureCloudDeletion inserted uri:" + uri);
+
+            }
+
+            if (cloud_video_uri != null) {
+                String[] filePathParts = cloud_video_uri.split("/");
+                fileReference = filePathParts[1] + "/" + filePathParts[2] + "/" + filePathParts[3];
+
+                // Now, store the fileRef in the my_cloud_files_to_delete
+                // store the fileRef in the table my_cloud_files_to_delete
+                ContentValues content = new ContentValues();
+                content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE, fileReference);
+                content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID, lesson_id);
+                Uri uri = contentResolver.insert(LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI, content);
+                Log.d(TAG, "saveUrisForFutureCloudDeletion inserted uri:" + uri);
+
+            }
+        }
     }
 
 

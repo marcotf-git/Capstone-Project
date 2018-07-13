@@ -32,7 +32,6 @@ import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnPausedListener;
 import com.google.firebase.storage.OnProgressListener;
-import com.google.firebase.storage.StorageMetadata;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.google.gson.Gson;
@@ -84,7 +83,7 @@ public class MyFirebaseFragment extends Fragment {
     private StorageReference storageRef;
 
     private String userUid;
-    private static Context mContext;
+    private Context mContext;
 
     private List<UploadingImage> uploadingImages;
     private List<DownloadingImage> downloadingImages;
@@ -109,10 +108,10 @@ public class MyFirebaseFragment extends Fragment {
         void onDownloadImageSuccess();
         void onDownloadImageFailure(@NonNull Exception e);
 
-        void onDeleteDatabaseSuccess();
-        void onDeleteDatabaseFailure(@NonNull Exception e);
-        void onDeleteImagesSuccess();
-        void onDeleteImagesFailure(@NonNull Exception e);
+        void onDeleteCloudDatabaseSuccess();
+        void onDeleteCloudDatabaseFailure(@NonNull Exception e);
+        void onDeleteCloudImagesSuccess(int nRowsDeleted);
+        void onDeleteCloudImagesFailure(@NonNull Exception e);
 
     }
 
@@ -1024,38 +1023,50 @@ public class MyFirebaseFragment extends Fragment {
      }
 
 
-    // Helper function for deleting a lesson from cloud
-    public void deleteLessonFromCloud(Long lesson_id) {
+    // Helper function for deleting a lesson text from cloud database
+    public void deleteLessonFromCloudDatabase(Long lesson_id) {
 
-        final String documentName = String.format( Locale.US, "%s_%02d",
+        final String documentName = String.format(Locale.US, "%s_%03d",
                 userUid, lesson_id);
 
-        Log.v(TAG, "deleteLessonFromCloud documentName:" + documentName);
+        Log.v(TAG, "deleteLessonFromCloudDatabase documentName:" + documentName);
 
+        // Delete in the Firebase Database
         mFirebaseDatabase.collection("lessons").document(documentName)
                 .delete()
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-                        Log.d(TAG, "deleteLessonFromCloud: DocumentSnapshot successfully deleted!");
-                        mCallback.onDeleteDatabaseSuccess();
+                        Log.d(TAG, "deleteLessonFromCloudDatabase: DocumentSnapshot successfully deleted!");
+                        mCallback.onDeleteCloudDatabaseSuccess();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-                        Log.w(TAG, "deleteLessonFromCloud: Error deleting document", e);
-                        mCallback.onDeleteDatabaseFailure(e);
+                        Log.w(TAG, "deleteLessonFromCloudDatabase: Error deleting document", e);
+                        mCallback.onDeleteCloudDatabaseFailure(e);
                     }
                 });
 
-        // Load the images uri's from the files to delete cache table into the images array
+    }
+
+
+    // Process the deletion of the files in the Firebase Storage
+    // Load the images uri's from the table my_cloud_files_to_delete into the images array
+    // These uri's were stored when the part was locally deleted
+    public void deleteImageFilesFromStorage(long lesson_id) {
+
+        Log.d(TAG, "deleteImageFilesFromStorage lesson_id:" + lesson_id);
+
         ContentResolver contentResolver = mContext.getContentResolver();
+        String selection = LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID + "=?";
+        String selectionArgs[] = {Long.toString(lesson_id)};
         Cursor mCursor = contentResolver.query(
                 LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI,
                 null,
-                null,
-                null,
+                selection,
+                selectionArgs,
                 null);
 
         if (mCursor == null) {
@@ -1068,21 +1079,20 @@ public class MyFirebaseFragment extends Fragment {
 
         // Get all the parts and sore all image cloud uri's in an array of Image instances
         List<Image> images = new ArrayList<>();
-        Image image;
 
         if (nRows > 0) {
             do {
 
-                Long itemId = mCursor.getLong(mCursor.
+                long itemId = mCursor.getLong(mCursor.
                         getColumnIndex(LessonsContract.MyCloudFilesToDeleteEntry._ID));
-                Long lessonId = mCursor.getLong(mCursor.
+                long lessonId = mCursor.getLong(mCursor.
                         getColumnIndex(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID));
                 String cloudImageRef = mCursor.getString(mCursor.
                         getColumnIndex(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE));
 
                 if (cloudImageRef != null) {
                     // Set the values in the Image instance
-                    image = new Image();
+                    Image image = new Image();
                     image.setPart_id(itemId);
                     image.setLesson_id(lessonId);
                     image.setCloud_uri(cloudImageRef);
@@ -1096,7 +1106,12 @@ public class MyFirebaseFragment extends Fragment {
         // close the cursor
         mCursor.close();
 
-        Log.d(TAG, "deleteLessonFromCloud images to delete:" + images.toString());
+        if (!(nRows > 0)) {
+            mCallback.onDeleteCloudImagesSuccess(nRows);
+            return;
+        }
+
+        Log.d(TAG, "deleteImageFilesFromStorage images to delete:" + images.toString());
 
         // for each image, delete from cloud
 
@@ -1111,7 +1126,7 @@ public class MyFirebaseFragment extends Fragment {
             storageRef = mStorageReference.child(fileRef);
 
             // Create a reference to the file to delete
-            Log.d(TAG, "deleteLessonFromCloud storageRef:" + storageRef.toString());
+            Log.d(TAG, "deleteImageFilesFromStorage storageRef:" + storageRef.toString());
 
             // Delete the images
             storageRef.delete().addOnSuccessListener(new OnSuccessListener<Void>() {
@@ -1130,7 +1145,7 @@ public class MyFirebaseFragment extends Fragment {
 
                     addToLog("Image file " + fileRef + "deleted from cloud successfully!");
 
-                    mCallback.onDeleteImagesSuccess();
+                    mCallback.onDeleteCloudImagesSuccess(numberOfRowsDeleted);
                 }
             }).addOnFailureListener(new OnFailureListener() {
                 @Override
@@ -1139,7 +1154,7 @@ public class MyFirebaseFragment extends Fragment {
                     addToLog("Image file " + fileRef + " error while deleting from cloud:" +
                             "\n" + exception.getMessage());
 
-                    mCallback.onDeleteImagesFailure(exception);
+                    mCallback.onDeleteCloudImagesFailure(exception);
 
                 }
             });

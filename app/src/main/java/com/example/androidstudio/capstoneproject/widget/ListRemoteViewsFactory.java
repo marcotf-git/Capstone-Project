@@ -20,7 +20,7 @@ public class ListRemoteViewsFactory implements
     private static final String TAG = ListRemoteViewsFactory.class.getSimpleName();
 
     private static List<String> mCollection = new ArrayList<>();
-    
+
     private Context mContext;
 
 

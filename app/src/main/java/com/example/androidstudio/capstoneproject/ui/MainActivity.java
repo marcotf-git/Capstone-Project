@@ -61,22 +61,97 @@ import static android.view.View.VISIBLE;
  * This class will start showing the lessons' titles queried from a local database, which is a copy
  * of the remote database. This corresponds to the 'view' mode, which can be selected in the
  * overflow menu.
- * According to the modes of the app, the local database has two tables.
- * The table "group_content" is a copy of the remote database.
- * The table "my_content" is the content created by the user.
+ *
+ * According to the modes of the app, the local database has two types of tables.
+ * The table "group_ ... content" is a copy of the remote database.
+ * The table "my_ ... content" is the content created by the user.
+ *
  * The database and its tables are handled by a content provider LessonsContentProvider.
  * The provider is queried by a cursor loader, which returns a cursor object.
- * In the 'view' mode, the view layout will be the activity_main.xml, which has a RecyclerView,
+ *
+ * In the 'view' mode, the view layout will be the activity_main.xml, which has fragments containers.
+ * The fragment_main will have a RecyclerView,
  * populated with a GridLayoutManager and a custom adapter LessonsListAdapter.
  * The cursor provided by the loader is passed to the adapter with the data that will be shown.
- * In the 'view' mode, if the user shows the option to sync the database, it will call a task ....
- * In the 'create' mode, if the user selects the option to add a lesson title, it will open another
- * activity AddLessonActivity to add the title. If the user select to delete and then click on an item,
- * the item will be deleted after a confirmation. The confirmation is handled by a fragment.
- * If the user select to edit and then click, it will open an activity EditLessonActivity to edit that item.
  *
+ * In the 'view' mode, if the user shows the option to sync the database, it will call a job task,
+ * or an async task. There will have two options. The async task will be the immediate sync.
+ *
+ * In the 'create' mode, if the user selects the option to add a lesson title, it will open another
+ * activity AddLessonActivity to add the title. If the user select to delete and then click on an
+ * item, the item will be deleted after a confirmation. The confirmation is handled by a fragment.
+ * If the user select to edit and then click, it will open an activity EditLessonActivity to edit
+ * that item.
+ *
+ * The app has two main kinds of local tables: the USER tables and the GROUP tables. The user tables
+ * are for user data, and creation of new content. It is possible to use all of the resources from
+ * the device, like camera and video, selecting images from the device storage, using the device
+ * touch screen keyboard and edition resources to write text, etc.
+ *
+ * Then, the user creation can be uploaded to the cloud, and downloaded (in the GROUP table) by any
+ * person that have the same key (same root/project) in the Firebase. There are specific rules in
+ * the app and in Firebase protecting the data of one user from another.
+ *
+ * The user only can upload or download data from the cloud when logged. The login process is
+ * handled by the Firebase Authentication.
+ *
+ * The cloud data is divided between the Firebase Database Cloud Firestore (text), and the Firebase
+ * Storage (blob). The local data is divided between a table with the lesson data (text), and a
+ * table with the lesson parts data (text), and the local folders for file (blob) storage.
+ * The table with the lesson parts will store the uri's of the images or videos of that part.
+ *
+ * The upload of data has the following algorithm:
+ * 1) first, upload the images or videos to Storage
+ * 2) get the uri's info and save in the local database, in the table of the lesson parts
+ * 3) then, upload the two tables (lesson and parts) to the Firebase Database
+ *
+ * To download data from cloud, the app has the algorithm:
+ * 1) first, download the tables from Firebase Database
+ * 2) get the uri's and with them, download the files from Storage
+ * 3) write the file in the local folder, in the internal storage
+ * 4) save the path and filename (the local uri) in the table of the parts
+ * 5) when the user clicks on the part, the ExoPlayer or the Picasso will get that file uri,
+ * and load the file form local folder.
+ * 6) before the downloading, the table is deleted from local database, and the files are deleted
+ * from local folder (/data/user/0/appUri/files/...)
+ *
+ * To delete a user lesson (a complex task!), the app has the algorithm:
+ * a) it is possible to delete or locally, or in the cloud
+ * 1) only delete if there are no parts
+ * 2) when deleting the part, store the reference of the file, that will be used to delete the file
+ * in the cloud, when the user choose to do it
+ * 3) when the user choose to delete the lesson from the cloud, it won't be deleted locally
+ * 4) when the user choose to delete in the cloud, it will also delete the files in the Storage:
+ * 4.1) delete from cloud database and save the uri's of the files in a specific local table, that
+ * will store the files for future deletion
+ * 4.2) query that table, and with the information, delete from the Storage
+ *
+ * To edit the local data, the user can edit only their table my_...
+ * 1) choose what to edit and edit (select choose the option in the menu)
+ * 2) choose to pick another image
+ * 2.1) the old image, if has cloud uri, will be deleted but its reference will be saved in that
+ * specific table, for future deletion from Storage
+ * 2.2) the new one (or the new video) take the place
+ *
+ * So, the app implements CRUD on local user data, and in user cloud data, managing the deletion
+ * from Storage for when deleting the whole lesson from Database Firestore.
+ *
+ * And the app implements only QUERY from the cloud, in case of group data (inside the group will be
+ * also the user same lessons, but saved in the group table.
+ *
+ * The app menu is contextual: the options change according to the user actions.
+ *
+ * Finally, the cloud communication is saved in a log file, that can be viewed by an option in the
+ * drawer menu.
+ * 
+ * So, we have Content Provider, Async Tasks, Firebase, Firebase JobDispatcher, Widget, thousands of
+ * listeners... :-) and a complex task of handling with two databases in the cloud!
+ * All trying to make an app that handle the creation of a small lesson by the user, with some parts,
+ * with images and videos, storing and sharing in the cloud.
  *
  */
+
+
 public class MainActivity extends AppCompatActivity implements
         SharedPreferences.OnSharedPreferenceChangeListener,
         MainFragment.OnLessonListener,
@@ -467,6 +542,18 @@ public class MainActivity extends AppCompatActivity implements
         builder.setTitle(R.string.refresh_job_type)
                 .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
+                        final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                                "The app will start syncing in background!\n" +
+                                        "Please, wait a few minutes for the job...\n" +
+                                        "You will receive a notification when it finishes!",
+                                Snackbar.LENGTH_INDEFINITE);
+                        snackBar.setAction("Dismiss", new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                snackBar.dismiss();
+                            }
+                        });
+                        snackBar.show();
                         // call the job for sync the group table
                         SyncUtilities.scheduleSyncDatabase(mContext, databaseVisibility);
                     }
@@ -484,8 +571,33 @@ public class MainActivity extends AppCompatActivity implements
         builder.setTitle(R.string.upload_job_type)
                 .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-                        // call the job for upload the selected user lesson (images and text)
-                        SyncUtilities.scheduleUploadTable(mContext, selectedLesson_id);
+                        if (selectedLesson_id == -1) {
+                            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                                    "Please, select a lesson to upload the images or videos!",
+                                    Snackbar.LENGTH_INDEFINITE);
+                            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    snackBar.dismiss();
+                                }
+                            });
+                            snackBar.show();
+                        } else {
+                            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                                    "The app will start uploading in background!\n" +
+                                    "Please, wait a few minutes for the job...\n" +
+                                    "You will receive a notification when it finishes!",
+                                    Snackbar.LENGTH_INDEFINITE);
+                            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    snackBar.dismiss();
+                                }
+                            });
+                            snackBar.show();
+                            // call the job for upload the selected user lesson (images and text)
+                            SyncUtilities.scheduleUploadTable(mContext, selectedLesson_id);
+                        }
                     }
                 })
                 .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
@@ -1035,8 +1147,17 @@ public class MainActivity extends AppCompatActivity implements
 
         // Verify if there is a lesson selected
         if (selectedLesson_id == -1) {
-            Toast.makeText(this,
-                    "Please, select a lesson to upload the images or videos!", Toast.LENGTH_LONG).show();
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "Please, select a lesson to upload the images or videos!\n" +
+                    "Sorry,there isn't an option to upload just one part!",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackBar.dismiss();
+                }
+            });
+            snackBar.show();
             return;
         }
 
@@ -1099,8 +1220,16 @@ public class MainActivity extends AppCompatActivity implements
     private void uploadDatabase() {
 
         if (selectedLesson_id == -1) {
-            Toast.makeText(this,
-                    "Please, select a lesson to upload the text content!", Toast.LENGTH_LONG).show();
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "Please, select a lesson to upload the text content!",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackBar.dismiss();
+                }
+            });
+            snackBar.show();
             return;
         }
 
@@ -1174,15 +1303,15 @@ public class MainActivity extends AppCompatActivity implements
 
         imagesToDeleteCount = 0;
 
-        // call the uploadDialog
-        Log.d(TAG, "deleteLessonFromCloud _id:" + _id);
+        // call the Dialog Fragment
+        Log.d(TAG, "deleteLessonFromCloudDatabase _id:" + _id);
         // Call the fragment for showing the delete uploadDialog
         DialogFragment deleteLessonCloudFragment = new DeleteLessonOnCloudDialogFragment();
         // Pass the _id of the lesson
         Bundle bundle = new Bundle();
         bundle.putLong("_id", _id);
         deleteLessonCloudFragment.setArguments(bundle);
-        // Show the uploadDialog box
+        // Show the Dialog Fragment box
         deleteLessonCloudFragment.show(getSupportFragmentManager(), "DeleteLessonOnCloudDialogFragment");
     }
 
@@ -1234,15 +1363,26 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onLessonSelected(long _id) {
 
+        // change the state to selected
         selectedLesson_id = _id;
+
+        // clear the clicked state (this also happens in the main fragment, in deselectViews())
+        clickedLesson_id = -1;
 
     }
 
     // Method for receiving communication from the MainFragment
     @Override
     public void onLessonClicked(long _id) {
+
         Log.d(TAG, "onLessonClicked _id:" + _id);
+
+        // change the state to clicked
         clickedLesson_id = _id;
+
+        // change the state to deselected (this also happens in the main fragment, in deselectViews())
+        selectedLesson_id = -1;
+
         // Show the lesson parts fragment
         mainVisibility = GONE;
         lessonsContainer.setVisibility(mainVisibility);
@@ -1371,7 +1511,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onDialogDeleteLessonOnCloudPositiveClick(DialogFragment dialog, long lesson_id) {
 
-        firebaseFragment.deleteLessonFromCloud(selectedLesson_id);
+        firebaseFragment.deleteLessonFromCloudDatabase(selectedLesson_id);
 
     }
 
@@ -1404,17 +1544,22 @@ public class MainActivity extends AppCompatActivity implements
         startActivity(partDetailIntent);
     }
 
-    // Receive communication form DeleteDialogPartFragment
+    /**
+     * Receive communication form DeleteDialogPartFragment
+     * Delete the part lesson row by its _id.
+     */
     @Override
-    public void onDialogDeletePartPositiveClick(DialogFragment dialog, long _id) {
-        ContentResolver contentResolver = mContext.getContentResolver();
-        /* The delete method deletes the row by its _id */
+    public void onDialogDeletePartPositiveClick(DialogFragment dialog, long part_id) {
 
-        // first, save the cloud file reference in the form "images/001/file_name" or
+        ContentResolver contentResolver = mContext.getContentResolver();
+
+        // First, save the cloud file reference in the form "images/001/file_name" or
         // "videos/001/file_name" where 001 is the lesson_id (not the part_id) in the
         // var fileReference
+        // This is necessary for be able to delete from Firebase Storage
+
         String selection = LessonsContract.MyLessonPartsEntry._ID + "=?";
-        String[] selectionArgs = {Long.toString(_id)};
+        String[] selectionArgs = {Long.toString(part_id)};
         Cursor cursor = null;
         if (contentResolver != null) {
             cursor = contentResolver.query(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
@@ -1426,17 +1571,21 @@ public class MainActivity extends AppCompatActivity implements
 
         String fileReference = null;
 
-        if (cursor != null) {
-            cursor.moveToLast();
-        }
+        if (cursor == null) { return; }  // no files in the table
 
-        if (cursor != null) {
+        if (cursor.moveToLast()) {
 
+            // get info to build the fileRef
             String cloud_image_uri = cursor.getString(cursor.
                     getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
             String cloud_video_uri = cursor.getString(cursor.
                     getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
 
+            // get the lesson_id
+            long lesson_id = cursor.getLong(cursor.
+                    getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID));
+
+            // build the fileRef
             if (cloud_image_uri != null) {
                 String[] filePathParts = cloud_image_uri.split("/");
                 fileReference = filePathParts[1] + "/" + filePathParts[2] + "/" + filePathParts[3];
@@ -1448,45 +1597,45 @@ public class MainActivity extends AppCompatActivity implements
             Log.d(TAG, "onDialogDeletePartPositiveClick fileReference:" + fileReference);
 
             cursor.close();
-        }
 
-        // Now, delete that part from parts table, and in case of success
-        // store the fileRef in the my_cloud_files_to_delete
+            // Now, delete the part from lesson parts table, and in case of success
+            // store the fileRef (if it exists) in the my_cloud_files_to_delete
+            Uri uriToDelete = null;
 
-        Uri uriToDelete = null;
+            if (databaseVisibility.equals(USER_DATABASE)) {
+                uriToDelete = LessonsContract.MyLessonPartsEntry.CONTENT_URI.buildUpon()
+                        .appendPath("" + part_id + "").build();
+            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+                uriToDelete = LessonsContract.GroupLessonPartsEntry.CONTENT_URI.buildUpon()
+                        .appendPath("" + part_id + "").build();
+            }
 
-        if (databaseVisibility.equals(USER_DATABASE)) {
-            uriToDelete = LessonsContract.MyLessonPartsEntry.CONTENT_URI.buildUpon()
-                    .appendPath("" + _id + "").build();
-        } else if (databaseVisibility.equals(GROUP_DATABASE)) {
-            uriToDelete = LessonsContract.GroupLessonPartsEntry.CONTENT_URI.buildUpon()
-                    .appendPath("" + _id + "").build();
-        }
-
-        int numberOfPartsDeleted = 0;
-
-        if (uriToDelete != null) {
-            Log.d(TAG, "onDialogDeletePartPositiveClick: Uri to delete:" + uriToDelete.toString());
-            if (contentResolver != null) {
+            int numberOfPartsDeleted = 0;
+            if (uriToDelete != null) {
+                Log.d(TAG, "onDialogDeletePartPositiveClick: Uri to delete:" + uriToDelete.toString());
                 numberOfPartsDeleted = contentResolver.delete(uriToDelete, null, null);
+            }
+
+            // verify if there is a reference to the cloud (if the file has been uploaded before)
+            // and then save that reference in the my_cloud_files_to_delete for future deletion
+            if (numberOfPartsDeleted > 0 && fileReference != null) {
+                Toast.makeText(this,
+                        numberOfPartsDeleted + " item(s) removed!", Toast.LENGTH_LONG).show();
+
+                // store the fileRef in the table my_cloud_files_to_delete
+                ContentValues content = new ContentValues();
+                content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE, fileReference);
+                content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID, lesson_id);
+                Uri uri = contentResolver.insert(LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI, content);
+                Log.d(TAG, "onDialogDeletePartPositiveClick inserted uri:" + uri);
             }
         }
 
-        if (numberOfPartsDeleted > 0) {
-            Toast.makeText(this,
-                    numberOfPartsDeleted + " item(s) removed!", Toast.LENGTH_LONG).show();
-            // Deselect the last view selected
-            partsFragment.deselectViews();
-            selectedLessonPart_id = -1;
-            // store the fileRef in the table my_cloud_files_to_delete
-            ContentValues content = new ContentValues();
-            content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE, fileReference);
-            content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID, _id);
-            Uri uri = contentResolver.insert(LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI, content);
-            Log.d(TAG, "onDialogDeletePartPositiveClick inserted uri:" + uri);
-        }
-
+        // Deselect the last view selected
+        partsFragment.deselectViews();
+        selectedLessonPart_id = -1;
     }
+
 
     // Receive communication form DeleteDialogPartFragment
     @Override
@@ -1715,34 +1864,79 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onDeleteDatabaseSuccess() {
-        Toast.makeText(mContext,
-                "Lesson deleted from Cloud!", Toast.LENGTH_LONG).show();
+    public void onDeleteCloudDatabaseSuccess() {
+
         firebaseFragment.addToLog(RELEASE);
+
+        final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                "Lesson text deleted from cloud database!" +
+                        "\nNow, deleting the images/videos...",
+                Snackbar.LENGTH_INDEFINITE);
+        snackBar.setAction("Dismiss", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                snackBar.dismiss();
+            }
+        });
+        snackBar.show();
+
+        long lesson_id = selectedLesson_id;
+
+        firebaseFragment.deleteImageFilesFromStorage(lesson_id);
+
         // Deselect the last view selected
         mainFragment.deselectViews();
         selectedLesson_id = -1;
+
     }
 
     @Override
-    public void onDeleteDatabaseFailure(@NonNull Exception e) {
-        Toast.makeText(mContext,
-                "Error on deleting from Cloud:" + e.getMessage(), Toast.LENGTH_LONG).show();
-        Log.e(TAG, "onDeleteDatabaseFailure error:" + e.getMessage());
+    public void onDeleteCloudDatabaseFailure(@NonNull Exception e) {
+
         firebaseFragment.addToLog(RELEASE);
+
+        final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                "Error on deleting text from Cloud:" + e.getMessage() +
+                "\nNow it will try to delete the images/videos...",
+                Snackbar.LENGTH_INDEFINITE);
+        snackBar.setAction("Dismiss", new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                snackBar.dismiss();
+            }
+        });
+        snackBar.show();
+
+        long lesson_id = selectedLesson_id;
+
+        firebaseFragment.deleteImageFilesFromStorage(lesson_id);
     }
 
     @Override
-    public void onDeleteImagesSuccess() {
+    public void onDeleteCloudImagesSuccess(int nRowsDeleted) {
 
-        Log.d(TAG, "onDeleteImagesSuccess");
+        Log.d(TAG, "onDeleteCloudImagesSuccess");
 
         imagesToDeleteCount++;
 
-        if (imagesToDeleteCount >= totalImagesToDelete) {
+        if (!(nRowsDeleted > 0)) {
 
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                    "Deletion of images complete successfully!",
+                    "No images to delete!\n" +
+                    "The action finished successfully!",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackBar.dismiss();
+                }
+            });
+            snackBar.show();
+
+        } else  if (imagesToDeleteCount >= totalImagesToDelete) {
+
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "Deletion of images completed successfully!",
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
                 @Override
@@ -1757,9 +1951,9 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onDeleteImagesFailure(@NonNull Exception e) {
+    public void onDeleteCloudImagesFailure(@NonNull Exception e) {
 
-        Log.e(TAG, "onDeleteImagesFailure error:" + e.getMessage());
+        Log.e(TAG, "onDeleteCloudImagesFailure error:" + e.getMessage());
 
         final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                 "Error in deleting image!",
