@@ -21,7 +21,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
@@ -54,12 +53,12 @@ public class PartsFragment extends Fragment implements
     private String databaseVisibility;
 
     // Views
-    private TextView mErrorMessageDisplay;
     private ProgressBar mLoadingIndicator;
     private RecyclerView mPartsList;
 
     private PartsListAdapter mAdapter;
     private Context mContext;
+
 
 
     // Callbacks to send data to the main activity
@@ -95,6 +94,7 @@ public class PartsFragment extends Fragment implements
             selectedLessonPart_id = savedInstanceState.getLong(SELECTED_LESSON_PART_ID);
             databaseVisibility = savedInstanceState.getString(DATABASE_VISIBILITY);
             referenceLesson_id = savedInstanceState.getLong(REFERENCE_LESSON_ID);
+
         } else {
             // Initialize the state vars
             selectedLessonPart_id = -1;
@@ -113,22 +113,9 @@ public class PartsFragment extends Fragment implements
                         null, this);
             }
         }
+
     }
 
-
-//    @Override
-//    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-//        super.onActivityCreated(savedInstanceState);
-//
-//        // Query the database and set the adapter with the cursor data
-//        if (null != getActivity()) {
-//            if (databaseVisibility.equals(USER_DATABASE)) {
-//                getActivity().getSupportLoaderManager().initLoader(ID_LESSON_PARTS_LOADER, null, this);
-//            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
-//                getActivity().getSupportLoaderManager().initLoader(ID_GROUP_LESSON_PARTS_LOADER, null, this);
-//            }
-//        }
-//    }
 
     @Nullable
     @Override
@@ -139,7 +126,6 @@ public class PartsFragment extends Fragment implements
         // Inflate the fragment view
         View rootView = inflater.inflate(R.layout.fragment_parts, container, false);
 
-        mErrorMessageDisplay = rootView.findViewById(R.id.tv_error_message_display);
         mLoadingIndicator = rootView.findViewById(R.id.pb_loading_indicator);
         mPartsList = rootView.findViewById(R.id.rv_parts);
 
@@ -177,36 +163,16 @@ public class PartsFragment extends Fragment implements
         savedInstanceState.putLong(REFERENCE_LESSON_ID, referenceLesson_id);
         savedInstanceState.putString(DATABASE_VISIBILITY, databaseVisibility);
 
+
         super.onSaveInstanceState(savedInstanceState);
     }
 
-    /**
-     * This method will make the View for data visible and hide the error message.
-     * <p>
-     * Since it is okay to redundantly set the visibility of a View, we don't
-     * need to check whether each view is currently visible or invisible.
-     */
-    private void showPartsDataView() {
-        // First, make sure the error is invisible
-        mErrorMessageDisplay.setVisibility(View.GONE);
-        // Then, make sure the JSON data is visible
-        mPartsList.setVisibility(View.VISIBLE);
+    @Override
+    public void onDestroy() {
+
+        super.onDestroy();
     }
 
-
-    /**
-     * This method will make the error message visible and hide data View.
-     *
-     * Since it is okay to redundantly set the visibility of a View, we don't
-     * need to check whether each view is currently visible or invisible.
-     */
-    private void showErrorMessage() {
-        Log.v(TAG, "showErrorMessage");
-        // First, hide the currently visible data
-        mPartsList.setVisibility(View.INVISIBLE);
-        // Then, show the error
-        mErrorMessageDisplay.setVisibility(View.VISIBLE);
-    }
 
     /**
      * This is where we receive our callback from the classes list adapter
@@ -353,24 +319,12 @@ public class PartsFragment extends Fragment implements
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
 
-        if (data != null) {
-            Log.d(TAG, "onLoadFinished cursor:" + data.toString());
-        } else {
-            Log.e(TAG, "onLoadFinished cursor: null");
-        }
-
-        // Send to the main activity the order to setting the idling resource state
-        mIdlingCallback.onIdlingResource(true);
-
         // Pass the data to the adapter
         setCursor(data);
         mAdapter.setSelectedItemId(selectedLessonPart_id);
 
-        if (data == null) {
-            showErrorMessage();
-        } else {
-            showPartsDataView();
-        }
+        // Send to the main activity the order to setting the idling resource state
+        mIdlingCallback.onIdlingResource(true);
 
     }
 

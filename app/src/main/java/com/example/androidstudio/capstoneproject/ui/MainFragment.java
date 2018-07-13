@@ -1,5 +1,7 @@
 package com.example.androidstudio.capstoneproject.ui;
 
+import android.appwidget.AppWidgetManager;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
@@ -21,10 +23,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 
 import com.example.androidstudio.capstoneproject.R;
+import com.example.androidstudio.capstoneproject.data.Lesson;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
+import com.example.androidstudio.capstoneproject.widget.LessonsWidgetProvider;
+import com.example.androidstudio.capstoneproject.widget.ListRemoteViewsFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class MainFragment extends Fragment implements
@@ -42,6 +49,8 @@ public class MainFragment extends Fragment implements
     private static final String SELECTED_LESSON_ID = "selectedLessonId";
     private static final String DATABASE_VISIBILITY = "databaseVisibility";
 
+    //private static final String LESSON_TITLE = "lesson_title";
+
     // Loader id
     private static final int ID_LESSONS_LOADER = 1;
     private static final int ID_GROUP_LESSONS_LOADER = 10;
@@ -51,7 +60,6 @@ public class MainFragment extends Fragment implements
     private String databaseVisibility;
 
     // Views
-    private TextView mErrorMessageDisplay;
     private ProgressBar mLoadingIndicator;
     private RecyclerView mClassesList;
     private View mSelectedView;
@@ -63,6 +71,12 @@ public class MainFragment extends Fragment implements
     // Interfaces for communication with the main activity (sending data)
     OnLessonListener mLessonCallback;
     OnIdlingResourceListener mIdlingCallback;
+
+    // Interfaces for communication with the main activity (sending data)
+    public interface OnLessonListener {
+        void onLessonSelected(long _id, String lessonTitle);
+        void onLessonClicked(long _id, String lessonTitle);
+    }
 
 
     @Override
@@ -91,6 +105,7 @@ public class MainFragment extends Fragment implements
         if (savedInstanceState != null) {
             selectedLesson_id = savedInstanceState.getLong(SELECTED_LESSON_ID);
             databaseVisibility = savedInstanceState.getString(DATABASE_VISIBILITY);
+            //lessonTitle = savedInstanceState.getString(LESSON_TITLE);
         } else {
             // Initialize the state vars
             selectedLesson_id = -1;
@@ -122,11 +137,8 @@ public class MainFragment extends Fragment implements
         // Inflate the fragment view
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
-        mErrorMessageDisplay = rootView.findViewById(R.id.tv_error_message_display);
         mLoadingIndicator = rootView.findViewById(R.id.pb_loading_indicator);
         mClassesList = rootView.findViewById(R.id.rv_lessons);
-
-        //mLoadingIndicator.setVisibility(View.VISIBLE);
 
         // Set the layout of the recycler view
         int nColumns = numberOfColumns();
@@ -160,36 +172,11 @@ public class MainFragment extends Fragment implements
         savedInstanceState.putLong(SELECTED_LESSON_ID, selectedLesson_id);
         savedInstanceState.putString(DATABASE_VISIBILITY, databaseVisibility);
 
+        //savedInstanceState.putString(LESSON_TITLE, lessonTitle);
+
         super.onSaveInstanceState(savedInstanceState);
     }
 
-
-    /**
-     * This method will make the View for data visible and hide the error message.
-     * <p>
-     * Since it is okay to redundantly set the visibility of a View, we don't
-     * need to check whether each view is currently visible or invisible.
-     */
-    private void showLessonsDataView() {
-        // First, make sure the error is invisible
-        mErrorMessageDisplay.setVisibility(View.GONE);
-        // Then, make sure the JSON data is visible
-        mClassesList.setVisibility(View.VISIBLE);
-    }
-
-    /**
-     * This method will make the error message visible and hide data View.
-     *
-     * Since it is okay to redundantly set the visibility of a View, we don't
-     * need to check whether each view is currently visible or invisible.
-     */
-    private void showErrorMessage() {
-        Log.d(TAG, "showErrorMessage");
-        // First, hide the currently visible data
-        mClassesList.setVisibility(View.INVISIBLE);
-        // Then, show the error
-        mErrorMessageDisplay.setVisibility(View.VISIBLE);
-    }
 
     /**
      * This is where we receive our callback from the classes list adapter
@@ -212,7 +199,7 @@ public class MainFragment extends Fragment implements
         }
 
         // Inform the MainActivity
-        mLessonCallback.onLessonClicked(lesson_id);
+        mLessonCallback.onLessonClicked(lesson_id, lessonName);
 
     }
 
@@ -252,7 +239,7 @@ public class MainFragment extends Fragment implements
             // Save the _id of the lesson selected
             selectedLesson_id = lesson_id;
             // Save in Main Activity
-            mLessonCallback.onLessonSelected(selectedLesson_id);
+            mLessonCallback.onLessonSelected(selectedLesson_id, lessonName);
         }
 
     }
@@ -329,26 +316,15 @@ public class MainFragment extends Fragment implements
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
 
-        if (data != null) {
-            Log.d(TAG, "onLoadFinished cursor:" + data.toString());
-        } else {
-            Log.e(TAG, "onLoadFinished cursor: null");
-        }
-
-        // Send to the main activity the order to setting the idling resource state
-        mIdlingCallback.onIdlingResource(true);
-
-        //mLoadingIndicator.setVisibility(View.INVISIBLE);
+        // update the widget data
+        updateWidget(data);
 
         // Pass the data to the adapter
         mAdapter.swapCursor(data, databaseVisibility);
         mAdapter.setSelectedItemId(selectedLesson_id);
 
-        if (data == null) {
-            showErrorMessage();
-        } else {
-            showLessonsDataView();
-        }
+        // Send to the main activity the order to setting the idling resource state
+        mIdlingCallback.onIdlingResource(true);
 
     }
 
@@ -368,11 +344,66 @@ public class MainFragment extends Fragment implements
     }
 
 
-    // Interfaces for communication with the main activity (sending data)
-    public interface OnLessonListener {
-        void onLessonSelected(long _id);
-        void onLessonClicked(long _id);
+    // Helper function to update the widget
+    // It will make a JSON string with all the lesson titles and set the widget provider
+    private void updateWidget(Cursor mCursor) {
+
+        if (mCursor == null) {
+            Log.d(TAG, "updateWidget: Failed to get cursor");
+            return;
+        }
+
+        int nRows = mCursor.getCount();
+        mCursor.moveToFirst();
+
+        // Get all the parts and sore all image cloud uri's in an array of Image instances
+        List<Lesson> lessons = new ArrayList<>();
+        Lesson lesson;
+
+        if (nRows > 0) {
+            do {
+
+                Long lessonId = null;
+                String lessonTitle = null;
+
+                if (databaseVisibility.equals(USER_DATABASE)) {
+                    lessonId = mCursor.getLong(mCursor.
+                            getColumnIndex(LessonsContract.MyLessonsEntry._ID));
+                    lessonTitle = mCursor.getString(mCursor.
+                            getColumnIndex(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE));
+                } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+                    lessonId = mCursor.getLong(mCursor.
+                            getColumnIndex(LessonsContract.GroupLessonsEntry._ID));
+                    lessonTitle = mCursor.getString(mCursor.
+                            getColumnIndex(LessonsContract.GroupLessonsEntry.COLUMN_LESSON_TITLE));
+                }
+
+                if (lessonTitle != null) {
+                    // Set the values in the Image instance
+                    lesson = new Lesson();
+                    lesson.setLesson_id(lessonId);
+                    lesson.setLesson_title(lessonTitle);
+                    lessons.add(lesson);
+                }
+                // get the next image
+            } while (mCursor.moveToNext());
+            // don't close the cursor: it will be used by the adapter!
+        }
+
+        Log.d(TAG, "updateWidget lessons:" + lessons.toString());
+
+        // send the data
+        ListRemoteViewsFactory.setWidgetProviderData(lessons);
+
+        //Trigger data update to handle the View widgets and force a data refresh
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(mContext);
+        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(
+                new ComponentName(mContext, LessonsWidgetProvider.class));
+        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_list);
+        LessonsWidgetProvider.updateLessonsWidgets(mContext, appWidgetManager, appWidgetIds);
+
     }
+
 
     public interface OnIdlingResourceListener {
         void onIdlingResource(Boolean value);
@@ -426,6 +457,5 @@ public class MainFragment extends Fragment implements
             }
         }
     }
-
 
 }

@@ -49,10 +49,7 @@
                                     <map>
                                       <entry key="assetType" value="IMAGE" />
                                       <entry key="backgroundColor" value="00a1e6" />
-                                      <entry key="cropped" value="true" />
-                                      <entry key="iconShape" value="CIRCLE" />
                                       <entry key="imageAsset" value="E:\Udacity\Android_Developer_Nanodegree\references\learning_icon_round.bmp" />
-                                      <entry key="outputName" value="ic_learning_launcher_round" />
                                     </map>
                                   </option>
                                 </PersistentState>

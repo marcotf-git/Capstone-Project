@@ -17,9 +17,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.DialogFragment;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
@@ -39,8 +37,6 @@ import android.widget.Toast;
 import com.example.androidstudio.capstoneproject.IdlingResource.SimpleIdlingResource;
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
-import com.example.androidstudio.capstoneproject.sync.SyncGroupTableJobService;
-import com.example.androidstudio.capstoneproject.sync.SyncTasks;
 import com.example.androidstudio.capstoneproject.sync.SyncUtilities;
 import com.example.androidstudio.capstoneproject.utilities.MyFirebaseFragment;
 import com.example.androidstudio.capstoneproject.utilities.InsertTestDataUtil;
@@ -50,12 +46,8 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
-import com.google.firebase.storage.FirebaseStorage;
 
-import java.io.FileDescriptor;
-import java.io.PrintWriter;
 import java.util.Arrays;
-import java.util.List;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
@@ -471,6 +463,8 @@ public class MainActivity extends AppCompatActivity implements
                 });
 
         dialog = builder.create();
+
+
 
     }
 
@@ -1165,13 +1159,15 @@ public class MainActivity extends AppCompatActivity implements
 
     // Method for receiving communication from the MainFragment
     @Override
-    public void onLessonSelected(long _id) {
+    public void onLessonSelected(long _id, String lessonTitle) {
+
         selectedLesson_id = _id;
+
     }
 
     // Method for receiving communication from the MainFragment
     @Override
-    public void onLessonClicked(long _id) {
+    public void onLessonClicked(long _id, String lessonTitle) {
         Log.d(TAG, "onLessonClicked _id:" + _id);
         clickedLesson_id = _id;
         // Show the lesson parts fragment
@@ -1346,11 +1342,14 @@ public class MainActivity extends AppCompatActivity implements
         // var fileReference
         String selection = LessonsContract.MyLessonPartsEntry._ID + "=?";
         String[] selectionArgs = {Long.toString(_id)};
-        Cursor cursor = contentResolver.query(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
-                null,
-                selection,
-                selectionArgs,
-                null);
+        Cursor cursor = null;
+        if (contentResolver != null) {
+            cursor = contentResolver.query(LessonsContract.MyLessonPartsEntry.CONTENT_URI,
+                    null,
+                    selection,
+                    selectionArgs,
+                    null);
+        }
 
         String fileReference = null;
 
@@ -1374,8 +1373,9 @@ public class MainActivity extends AppCompatActivity implements
             }
 
             Log.d(TAG, "onDialogDeletePartPositiveClick fileReference:" + fileReference);
-        }
 
+            cursor.close();
+        }
 
         // Now, delete that part from parts table, and in case of success
         // store the fileRef in the my_cloud_files_to_delete
@@ -1394,7 +1394,9 @@ public class MainActivity extends AppCompatActivity implements
 
         if (uriToDelete != null) {
             Log.d(TAG, "onDialogDeletePartPositiveClick: Uri to delete:" + uriToDelete.toString());
-            numberOfPartsDeleted = contentResolver.delete(uriToDelete, null, null);
+            if (contentResolver != null) {
+                numberOfPartsDeleted = contentResolver.delete(uriToDelete, null, null);
+            }
         }
 
         if (numberOfPartsDeleted > 0) {

@@ -22,4 +22,7 @@
 
     <integer name="design_snackbar_text_max_lines" tools:ignore="PrivateResource">5</integer>
 
+    <dimen name="widget_margin">8dp</dimen>
+    <dimen name="widget_header_padding">8dp</dimen>
+
 </resources>

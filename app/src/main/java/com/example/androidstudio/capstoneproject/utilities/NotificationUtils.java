@@ -58,7 +58,7 @@ public class NotificationUtils {
                 .setColor(ContextCompat.getColor(context, R.color.colorPrimary))
                 .setContentTitle(context.getString(R.string.sync_group_notification_title))
                 .setContentText(context.getString(R.string.sync_group_notification_body))
-                .setSmallIcon(R.mipmap.ic_learning_launcher_round)
+                .setSmallIcon(R.mipmap.ic_launcher_round)
                 .setLargeIcon(largeIcon(context))
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(
                         context.getString(R.string.sync_group_notification_body)))
@@ -117,7 +117,7 @@ public class NotificationUtils {
                 .setColor(ContextCompat.getColor(context, R.color.colorPrimary))
                 .setContentTitle(context.getString(R.string.upload_notification_title))
                 .setContentText(context.getString(R.string.upload_notification_body))
-                .setSmallIcon(R.mipmap.ic_learning_launcher_round)
+                .setSmallIcon(R.mipmap.ic_launcher_round)
                 .setLargeIcon(largeIcon(context))
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(
                         context.getString(R.string.upload_notification_body)))
@@ -158,7 +158,7 @@ public class NotificationUtils {
     // the bit map image for the large icon to display in notification
     private static Bitmap largeIcon(Context context) {
         Resources res = context.getResources();
-        Bitmap largeIcon = BitmapFactory.decodeResource(res, R.mipmap.ic_learning_launcher_round);
+        Bitmap largeIcon = BitmapFactory.decodeResource(res, R.mipmap.ic_launcher_round);
         return largeIcon;
     }
 }
