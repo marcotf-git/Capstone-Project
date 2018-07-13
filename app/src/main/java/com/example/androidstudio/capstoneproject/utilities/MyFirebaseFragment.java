@@ -1032,24 +1032,22 @@ public class MyFirebaseFragment extends Fragment {
 
         Log.v(TAG, "deleteLessonFromCloud documentName:" + documentName);
 
-//        mFirebaseDatabase.collection("lessons").document(documentName)
-//                .delete()
-//                .addOnSuccessListener(new OnSuccessListener<Void>() {
-//                    @Override
-//                    public void onSuccess(Void aVoid) {
-//                        Log.d(TAG, "deleteLessonFromCloud: DocumentSnapshot successfully deleted!");
-//                        mCallback.onDeleteDatabaseSuccess();
-//                    }
-//                })
-//                .addOnFailureListener(new OnFailureListener() {
-//                    @Override
-//                    public void onFailure(@NonNull Exception e) {
-//                        Log.w(TAG, "deleteLessonFromCloud: Error deleting document", e);
-//                        mCallback.onDeleteDatabaseFailure(e);
-//                    }
-//                });
-
-
+        mFirebaseDatabase.collection("lessons").document(documentName)
+                .delete()
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        Log.d(TAG, "deleteLessonFromCloud: DocumentSnapshot successfully deleted!");
+                        mCallback.onDeleteDatabaseSuccess();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.w(TAG, "deleteLessonFromCloud: Error deleting document", e);
+                        mCallback.onDeleteDatabaseFailure(e);
+                    }
+                });
 
         // Load the images uri's from the files to delete cache table into the images array
         ContentResolver contentResolver = mContext.getContentResolver();

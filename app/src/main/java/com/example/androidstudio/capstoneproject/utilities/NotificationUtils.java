@@ -56,7 +56,7 @@ public class NotificationUtils {
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(context,
                 NOTIFICATION_CHANNEL_ID)
                 .setColor(ContextCompat.getColor(context, R.color.colorPrimary))
-                .setContentTitle(context.getString(R.string.sync_group_notification_title))
+                .setContentTitle(context.getString(R.string.sync_notification_title))
                 .setContentText(context.getString(R.string.sync_group_notification_body))
                 .setSmallIcon(R.mipmap.ic_launcher_round)
                 .setLargeIcon(largeIcon(context))

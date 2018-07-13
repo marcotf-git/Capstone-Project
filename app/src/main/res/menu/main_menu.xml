@@ -20,63 +20,61 @@
 
 
     <item
-        android:id="@+id/action_notification"
-        android:orderInCategory="13"
-        android:title="@string/menu_action_notification_test"
-        app:showAsAction="never" />
-
-
-    <item
-        android:id="@+id/action_job_upload"
-        android:orderInCategory="12"
-        android:title="@string/menu_action_job_upload_label"
-        app:showAsAction="never" />
-
-    <item
-        android:id="@+id/action_job_sync"
-        android:orderInCategory="11"
-        android:title="@string/menu_action_sync_label"
-        app:showAsAction="never" />
-
-
-    <item
         android:id="@+id/action_cancel"
-        android:orderInCategory="10"
+        android:orderInCategory="14"
         android:title="@string/menu_action_cancel_label"
         app:showAsAction="never" />
 
     <item
         android:id="@+id/action_insert_fake_data"
-        android:orderInCategory="8"
+        android:orderInCategory="13"
         android:title="@string/menu_action_insert_fake_label"
         app:showAsAction="never"/>
 
     <item
+        android:id="@+id/action_notification"
+        android:orderInCategory="12"
+        android:title="@string/menu_action_notification_test"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_delete_from_cloud"
-        android:orderInCategory="7"
+        android:orderInCategory="10"
         android:title="@string/menu_action_delete_from_cloud_label"
         app:showAsAction="never"/>
 
     <item
         android:id="@+id/action_delete"
         android:icon="@drawable/ic_action_delete"
-        android:orderInCategory="6"
+        android:orderInCategory="8"
         android:title="@string/menu_action_delete_label"
         app:showAsAction="never"/>
 
     <item
         android:id="@+id/action_refresh"
-        android:icon="@drawable/ic_action_refresh"
-        android:orderInCategory="5"
+        android:orderInCategory="7"
         android:title="@string/menu_action_refresh_label"
-        app:showAsAction="ifRoom"/>
+        app:showAsAction="never"/>
 
     <item
         android:id="@+id/action_upload"
+        android:orderInCategory="6"
+        android:title="@string/menu_action_upload_label"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/action_job_sync"
+        android:icon="@drawable/ic_action_refresh"
+        android:orderInCategory="5"
+        android:title="@string/menu_action_sync_label"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_job_upload"
         android:icon="@drawable/ic_action_upload"
         android:orderInCategory="4"
-        android:title="@string/menu_action_upload_label"
-        app:showAsAction="ifRoom"/>
+        android:title="@string/menu_action_job_upload_label"
+        app:showAsAction="ifRoom" />
 
     <item
         android:id="@+id/action_edit"

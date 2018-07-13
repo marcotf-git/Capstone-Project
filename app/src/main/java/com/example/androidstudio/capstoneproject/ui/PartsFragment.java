@@ -21,6 +21,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
@@ -53,6 +54,7 @@ public class PartsFragment extends Fragment implements
     private String databaseVisibility;
 
     // Views
+    private TextView mErrorMessageDisplay;
     private ProgressBar mLoadingIndicator;
     private RecyclerView mPartsList;
 
@@ -126,6 +128,7 @@ public class PartsFragment extends Fragment implements
         // Inflate the fragment view
         View rootView = inflater.inflate(R.layout.fragment_parts, container, false);
 
+        mErrorMessageDisplay = rootView.findViewById(R.id.tv_error_message_display);
         mLoadingIndicator = rootView.findViewById(R.id.pb_loading_indicator);
         mPartsList = rootView.findViewById(R.id.rv_parts);
 
@@ -319,13 +322,24 @@ public class PartsFragment extends Fragment implements
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
 
-        // Pass the data to the adapter
-        setCursor(data);
-        mAdapter.setSelectedItemId(selectedLessonPart_id);
+        if (data != null) {
+            Log.d(TAG, "onLoadFinished cursor:" + data.toString());
+        } else {
+            Log.e(TAG, "onLoadFinished cursor: null");
+        }
 
         // Send to the main activity the order to setting the idling resource state
         mIdlingCallback.onIdlingResource(true);
 
+        // Pass the data to the adapter
+        setCursor(data);
+        mAdapter.setSelectedItemId(selectedLessonPart_id);
+
+        if (data == null) {
+            showErrorMessage();
+        } else {
+            showPartsDataView();
+        }
     }
 
     /**
@@ -342,6 +356,35 @@ public class PartsFragment extends Fragment implements
          */
         setCursor(null);
     }
+
+    /**
+     * This method will make the View for data visible and hide the error message.
+     * <p>
+     * Since it is okay to redundantly set the visibility of a View, we don't
+     * need to check whether each view is currently visible or invisible.
+     */
+    private void showPartsDataView() {
+        // First, make sure the error is invisible
+        mErrorMessageDisplay.setVisibility(View.GONE);
+        // Then, make sure the JSON data is visible
+        mPartsList.setVisibility(View.VISIBLE);
+    }
+
+
+    /**
+     * This method will make the error message visible and hide data View.
+     *
+     * Since it is okay to redundantly set the visibility of a View, we don't
+     * need to check whether each view is currently visible or invisible.
+     */
+    private void showErrorMessage() {
+        Log.v(TAG, "showErrorMessage");
+        // First, hide the currently visible data
+        mPartsList.setVisibility(View.INVISIBLE);
+        // Then, show the error
+        mErrorMessageDisplay.setVisibility(View.VISIBLE);
+    }
+
 
 
     // Interfaces for communication with the main activity (sending data)

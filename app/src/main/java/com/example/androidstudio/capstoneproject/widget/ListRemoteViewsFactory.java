@@ -19,7 +19,8 @@ public class ListRemoteViewsFactory implements
 
     private static final String TAG = ListRemoteViewsFactory.class.getSimpleName();
 
-    private static final List<String> mCollection = new ArrayList<>();
+    private static List<String> mCollection = new ArrayList<>();
+    
     private Context mContext;
 
 
@@ -93,7 +94,5 @@ public class ListRemoteViewsFactory implements
 
         Log.d(TAG, "setWidgetProviderData mCollection:" + mCollection.toString());
     }
-
-
 
 }

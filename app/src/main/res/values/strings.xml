@@ -1,43 +1,35 @@
 <resources>
     <string name="app_name">Learning App</string>
+    <string name="up">Up Button</string>
+
     <string name="file_loading_error_message">Failed to load</string>
     <string name="illustration_not_available">Illustration Not Available</string>
     <string name="lesson_image">Class Image</string>
     <string name="lesson_name">Class Name</string>
-    <string name="menu_action_refresh_label">Refresh</string>
-
-    <string name="view">View</string>
-    <string name="create">Create</string>
 
     <string name="pref_mode_label">Mode Type</string>
     <string name="pref_mode_key" translatable="false">mode</string>
 
-    <string name="pref_view_label">View</string>
-    <string name="pref_mode_view" translatable="false">view</string>
-
-    <string name="pref_create_label">Create</string>
-    <string name="pref_mode_create" translatable="false">create</string>
-
-    <string name="menu_action_delete_label">Delete</string>
-    <string name="menu_action_upload_label">Upload</string>
-    <string name="menu_action_edit_label">Edit</string>
-    <string name="action_add">Action Add</string>
+    <!-- Add Activity -->
     <string name="title_activity_add_lesson">Add Lesson Activity</string>
     <string name="edit_lesson_description">Edit Lesson Description</string>
     <string name="add_button">Add</string>
     <string name="add_lesson_title">Please, add the Lesson Title!</string>
-    <string name="dialog_delete_lesson">Delete the lesson?</string>
-    <string name="dialog_delete_lesson_from_cloud">Delete the lesson and ALL ITS PARTS from Cloud?</string>
-    <string name="delete">Delete</string>
-    <string name="cancel">Cancel</string>
+
+    <!-- Edit Activity -->
     <string name="title_activity_edit_lesson">Edit Lesson Activity</string>
     <string name="edit_lesson_title">Please, edit the Lesson Title!</string>
     <string name="add_lesson_title_label">Add Lesson Title</string>
     <string name="edit_lesson_title_label">Edit Lesson Title</string>
     <string name="edit_button">Save</string>
     <string name="cancel_button">Cancel</string>
-    <string name="menu_action_insert_fake_label">Insert Fake Data</string>
-    <string name="up">Up Button</string>
+
+    <!-- Delete Dialog -->
+    <string name="dialog_delete_lesson">Delete the lesson?</string>
+    <string name="dialog_delete_lesson_from_cloud">Delete the lesson and ALL ITS PARTS from Cloud?</string>
+    <string name="delete">Delete</string>
+    <string name="cancel">Cancel</string>
+
     <string name="part_image">Lesson Part Image</string>
     <string name="lesson_part_name">Lesson Part Name</string>
     <string name="add_lesson_part_title_label">Add Part Title</string>
@@ -47,6 +39,7 @@
     <string name="edit_lesson_part_title_label">Edit Lesson Part</string>
     <string name="edit_lesson_part_title">Please, edit the Lesson Part Title!</string>
 
+    <!-- Drawer -->
     <string name="login">Login</string>
     <string name="logout">Logout</string>
     <string name="user_email">user email</string>
@@ -54,8 +47,30 @@
     <string name="username_hint">username</string>
     <string name="userEmail">Email:</string>
     <string name="userEmail_hint">email</string>
+
+    <!-- Menu -->
+    <string name="view">View</string>
+    <string name="create">Create</string>
+    <string name="menu_action_delete_label">Delete</string>
+    <string name="menu_action_upload_label">Upload Now!</string>
+    <string name="menu_action_refresh_label">Refresh Now!</string>
+    <string name="menu_action_edit_label">Edit</string>
     <string name="menu_action_cancel_label">Cancel</string>
     <string name="menu_action_delete_from_cloud_label">Delete from Cloud</string>
+    <string name="menu_action_sync_label">Refresh</string>
+    <string name="menu_action_job_upload_label">Upload</string>
+    <string name="menu_action_notification_test">Notification Test</string>
+    <string name="menu_action_insert_fake_label">Insert Fake Data</string>
+
+    <string name="pref_view_label">View</string>
+    <string name="pref_mode_view" translatable="false">view</string>
+
+    <string name="pref_create_label">Create</string>
+    <string name="pref_mode_create" translatable="false">create</string>
+
+    <!-- fab button -->
+    <string name="action_add">Action Add</string>
+
     <string name="my_lessons">My Lessons</string>
     <string name="group_lessons">Group Lessons</string>
     <string name="part_text">Part Text</string>
@@ -75,19 +90,31 @@
     <string name="log">Log</string>
     <string name="upload_type">Please, choose what to upload</string>
 
+    <!-- Upload Dialog -->
     <string name="images">Images, Videos and Text</string>
     <string name="text">Only Text</string>
-    <string name="menu_action_sync_label">Job Sync</string>
-    <string name="menu_action_job_upload_label">Job Upload</string>
+
+    <!-- Notification -->
     <string name="main_notification_channel_name">primary</string>
-    <string name="sync_group_notification_title">Sync Group has finished</string>
+    <string name="sync_notification_title">Finished refreshing the data</string>
     <string name="sync_group_notification_body">Please, verify the log!</string>
     <string name="upload_notification_title">Upload has finished</string>
     <string name="upload_notification_body">Please, see the log!</string>
-    <string name="menu_action_notification_test">Notification Test</string>
+
     <string name="ignore_pending_intent_text">OK</string>
 
     <string name="widget_header">Learning App</string>
     <string name="widget_image">Widget Image</string>
+
+    <string name="refresh_job_type">
+        Start a background sync of these lessons?
+        The old data in the group lessons will be deleted,
+        but it will not delete the user lessons,
+        just will update what already exists and
+        download the new ones.</string>
+
+    <string name="upload_job_type">
+        Start a background upload of the selected user lesson
+        and all its content (images, videos and text)?</string>
 
 </resources>

@@ -23,6 +23,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.Lesson;
@@ -60,6 +61,7 @@ public class MainFragment extends Fragment implements
     private String databaseVisibility;
 
     // Views
+    private TextView mErrorMessageDisplay;
     private ProgressBar mLoadingIndicator;
     private RecyclerView mClassesList;
     private View mSelectedView;
@@ -67,6 +69,7 @@ public class MainFragment extends Fragment implements
     private LessonsListAdapter mAdapter;
     private Context mContext;
 
+    AppWidgetManager appWidgetManager;
 
     // Interfaces for communication with the main activity (sending data)
     OnLessonListener mLessonCallback;
@@ -74,8 +77,8 @@ public class MainFragment extends Fragment implements
 
     // Interfaces for communication with the main activity (sending data)
     public interface OnLessonListener {
-        void onLessonSelected(long _id, String lessonTitle);
-        void onLessonClicked(long _id, String lessonTitle);
+        void onLessonSelected(long _id);
+        void onLessonClicked(long _id);
     }
 
 
@@ -137,6 +140,7 @@ public class MainFragment extends Fragment implements
         // Inflate the fragment view
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
+        mErrorMessageDisplay = rootView.findViewById(R.id.tv_error_message_display);
         mLoadingIndicator = rootView.findViewById(R.id.pb_loading_indicator);
         mClassesList = rootView.findViewById(R.id.rv_lessons);
 
@@ -172,35 +176,7 @@ public class MainFragment extends Fragment implements
         savedInstanceState.putLong(SELECTED_LESSON_ID, selectedLesson_id);
         savedInstanceState.putString(DATABASE_VISIBILITY, databaseVisibility);
 
-        //savedInstanceState.putString(LESSON_TITLE, lessonTitle);
-
         super.onSaveInstanceState(savedInstanceState);
-    }
-
-
-    /**
-     * This is where we receive our callback from the classes list adapter
-     * {@link com.example.androidstudio.capstoneproject.ui.LessonsListAdapter.ListItemClickListener}
-     *
-     * This callback is invoked when you click on an item in the list.
-     *
-     * @param clickedItemIndex Index in the list of the item that was clicked.
-     */
-    @Override
-    public void onListItemClick(View view, int clickedItemIndex, long lesson_id, String lessonName) {
-
-        Log.d(TAG, "onListItemClick lessonName:" + lessonName);
-
-        // If the actual or other view view is selected, deselect it and return
-        if (view.isSelected() || selectedLesson_id >= 0) {
-            view.setSelected(false);
-            deselectViews();
-            return;
-        }
-
-        // Inform the MainActivity
-        mLessonCallback.onLessonClicked(lesson_id, lessonName);
-
     }
 
 
@@ -239,7 +215,7 @@ public class MainFragment extends Fragment implements
             // Save the _id of the lesson selected
             selectedLesson_id = lesson_id;
             // Save in Main Activity
-            mLessonCallback.onLessonSelected(selectedLesson_id, lessonName);
+            mLessonCallback.onLessonSelected(selectedLesson_id);
         }
 
     }
@@ -316,15 +292,30 @@ public class MainFragment extends Fragment implements
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
 
-        // update the widget data
-        updateWidget(data);
+        //mCursor = data;
+
+        if (data != null) {
+            Log.d(TAG, "onLoadFinished cursor:" + data.toString());
+        } else {
+            Log.e(TAG, "onLoadFinished cursor: null");
+        }
+
+        // Send to the main activity the order to setting the idling resource state
+        mIdlingCallback.onIdlingResource(true);
+
+        //mLoadingIndicator.setVisibility(View.INVISIBLE);
 
         // Pass the data to the adapter
         mAdapter.swapCursor(data, databaseVisibility);
         mAdapter.setSelectedItemId(selectedLesson_id);
 
-        // Send to the main activity the order to setting the idling resource state
-        mIdlingCallback.onIdlingResource(true);
+        if (data == null) {
+            showErrorMessage();
+        } else {
+            showLessonsDataView();
+        }
+
+        updateWidget(data);
 
     }
 
@@ -343,13 +334,64 @@ public class MainFragment extends Fragment implements
         mAdapter.swapCursor(null, databaseVisibility);
     }
 
+    /**
+     * This method will make the View for data visible and hide the error message.
+     * <p>
+     * Since it is okay to redundantly set the visibility of a View, we don't
+     * need to check whether each view is currently visible or invisible.
+     */
+    private void showLessonsDataView() {
+        // First, make sure the error is invisible
+        mErrorMessageDisplay.setVisibility(View.GONE);
+        // Then, make sure the JSON data is visible
+        mClassesList.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * This method will make the error message visible and hide data View.
+     *
+     * Since it is okay to redundantly set the visibility of a View, we don't
+     * need to check whether each view is currently visible or invisible.
+     */
+    private void showErrorMessage() {
+        Log.d(TAG, "showErrorMessage");
+        // First, hide the currently visible data
+        mClassesList.setVisibility(View.INVISIBLE);
+        // Then, show the error
+        mErrorMessageDisplay.setVisibility(View.VISIBLE);
+    }
+
+    /**
+     * This is where we receive our callback from the classes list adapter
+     * {@link com.example.androidstudio.capstoneproject.ui.LessonsListAdapter.ListItemClickListener}
+     *
+     * This callback is invoked when you click on an item in the list.
+     *
+     * @param clickedItemIndex Index in the list of the item that was clicked.
+     */
+    @Override
+    public void onListItemClick(View view, int clickedItemIndex, long lesson_id, String lessonName) {
+
+        Log.d(TAG, "onListItemClick lessonName:" + lessonName);
+
+        // If the actual or other view view is selected, deselect it and return
+        if (view.isSelected() || selectedLesson_id >= 0) {
+            view.setSelected(false);
+            deselectViews();
+            return;
+        }
+
+        // Inform the MainActivity
+        mLessonCallback.onLessonClicked(lesson_id);
+
+    }
+
 
     // Helper function to update the widget
     // It will make a JSON string with all the lesson titles and set the widget provider
     private void updateWidget(Cursor mCursor) {
 
-        if (mCursor == null) {
-            Log.d(TAG, "updateWidget: Failed to get cursor");
+        if (!(mCursor != null && (mCursor.getCount() > 0)) ){
             return;
         }
 
@@ -395,8 +437,9 @@ public class MainFragment extends Fragment implements
         // send the data
         ListRemoteViewsFactory.setWidgetProviderData(lessons);
 
+
         //Trigger data update to handle the View widgets and force a data refresh
-        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(mContext);
+        appWidgetManager = AppWidgetManager.getInstance(mContext);
         int[] appWidgetIds = appWidgetManager.getAppWidgetIds(
                 new ComponentName(mContext, LessonsWidgetProvider.class));
         appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_list);

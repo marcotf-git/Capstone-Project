@@ -1,7 +1,6 @@
 package com.example.androidstudio.capstoneproject.sync;
 
 import android.content.Context;
-import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.example.androidstudio.capstoneproject.utilities.MyFirebaseFragment;
@@ -30,13 +29,13 @@ public class SyncTasks {
 
     public static void executeTask(Context context, String action, String userUid, String databaseVisibility) {
         if(ACTION_SYNC_GROUP_TABLE.equals(action)) {
-            syncGroupTable(context, userUid, databaseVisibility);
+            syncDatabase(context, userUid, databaseVisibility);
         }
     }
 
 
-    synchronized private static void syncGroupTable(Context context, String userUid, String databaseVisibility) {
-        Log.v(TAG, "syncGroupTable: syncing group table");
+    synchronized private static void syncDatabase(Context context, String userUid, String databaseVisibility) {
+        Log.v(TAG, "syncDatabase: syncing group table");
 
 
         try {

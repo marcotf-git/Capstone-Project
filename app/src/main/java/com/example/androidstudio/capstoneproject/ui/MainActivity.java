@@ -136,8 +136,6 @@ public class MainActivity extends AppCompatActivity implements
     private String mUsername;
     private String mUserEmail;
 
-    // Firebase instance variables
-    private FirebaseFirestore mFirebaseDatabase;
     private FirebaseAuth mFirebaseAuth;
     private FirebaseAuth.AuthStateListener mAuthStateListener;
 
@@ -155,16 +153,17 @@ public class MainActivity extends AppCompatActivity implements
     private FrameLayout logContainer;
     private TextView mUsernameTextView;
     private TextView mUserEmailTextView;
-    private AlertDialog dialog;
+
+    // Dialogs
+    private AlertDialog uploadDialog;
+    private AlertDialog refreshJobDialog;
+    private AlertDialog uploadJobDialog;
 
     // Fragments
     private MainFragment mainFragment;
     private PartsFragment partsFragment;
     static private MyFirebaseFragment firebaseFragment;
     private LogFragment logFragment;
-
-    private static AsyncTask mRefreshBackgroundTask;
-    private static AsyncTask mUploadBackgroundTask;
 
     // Context
     private Context mContext;
@@ -339,7 +338,7 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         // Initialize Firebase components
-        mFirebaseDatabase = FirebaseFirestore.getInstance();
+        FirebaseFirestore mFirebaseDatabase = FirebaseFirestore.getInstance();
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
                 .setTimestampsInSnapshotsEnabled(true)
                 .build();
@@ -435,7 +434,7 @@ public class MainActivity extends AppCompatActivity implements
         menuDrawer.findItem(R.id.nav_my_lessons).setChecked(databaseVisibility.equals(USER_DATABASE));
         menuDrawer.findItem(R.id.nav_group_lessons).setChecked(databaseVisibility.equals(GROUP_DATABASE));
 
-        // Init a dialog menu for user to choose the type of data to upload
+        // Init a uploadDialog menu for user to choose the type of data to upload
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         // Add the buttons
         builder.setTitle(R.string.upload_type)
@@ -462,11 +461,43 @@ public class MainActivity extends AppCompatActivity implements
                     }
                 });
 
-        dialog = builder.create();
+        uploadDialog = builder.create();
+
+        // Dialog for the refresh job service (that will run in background)
+        builder.setTitle(R.string.refresh_job_type)
+                .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // call the job for sync the group table
+                        SyncUtilities.scheduleSyncDatabase(mContext, databaseVisibility);
+                    }
+                })
+                .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                    }
+                });
+
+        refreshJobDialog = builder.create();
 
 
+        // Dialog for the upload job service (that will run in background)
+        builder.setTitle(R.string.upload_job_type)
+                .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        // call the job for upload the selected user lesson (images and text)
+                        SyncUtilities.scheduleUploadTable(mContext, selectedLesson_id);
+                    }
+                })
+                .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                    }
+                });
+
+        uploadJobDialog = builder.create();
 
     }
+
 
     // Helper method to show the Log view (Log fragment)
     private void viewLog() {
@@ -626,124 +657,58 @@ public class MainActivity extends AppCompatActivity implements
     public boolean onOptionsItemSelected(MenuItem item) {
 
         int itemThatWasClickedId = item.getItemId();
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
         switch (itemThatWasClickedId) {
 
             case android.R.id.home:
-                Log.d(TAG, "onOptionsItemSelected mainVisibility:" + mainVisibility);
-                // Set the action according to the views visibility
-                if (mainVisibility == VISIBLE) {
-                    mDrawerLayout.openDrawer(GravityCompat.START);
-                    return true;
-                } else if (mainVisibility == GONE && partsVisibility == VISIBLE){
-                    closePartsFragment();
-                } else if (logVisibility == VISIBLE) {
-                    logVisibility = GONE;
-                    logContainer.setVisibility(logVisibility);
-
-                    FragmentManager fragmentManager = getSupportFragmentManager();
-                    fragmentManager.beginTransaction()
-                            .remove(logFragment)
-                            .commit();
-
-                    mainVisibility = VISIBLE;
-                    lessonsContainer.setVisibility(mainVisibility);
-                    actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
-                    contextualizeMenu();
-                }
-                break;
+                optionHome();
+                return true;
 
             case R.id.select_view:
-                mMenu.findItem(R.id.select_view).setChecked(true);
-                sharedPreferences.edit()
-                        .putString(this.getString(R.string.pref_mode_key),
-                                this.getString(R.string.pref_mode_view)).apply();
-                // Set visibility of action icons
-                contextualizeMenu();
-                // Deselect the last view selected
-                mainFragment.deselectViews();
-                partsFragment.deselectViews();
-                selectedLesson_id = -1;
-                selectedLessonPart_id = -1;
-                Log.d(TAG, "View mode selected");
+                optionSelectView();
                 break;
 
             case R.id.select_create:
-                mMenu.findItem(R.id.select_create).setChecked(true);
-                sharedPreferences.edit()
-                        .putString(this.getString(R.string.pref_mode_key),
-                                this.getString(R.string.pref_mode_create)).apply();
-                // Set visibility of action icons
-                contextualizeMenu();
-                Log.v(TAG, "Create mode selected");
+                optionSelectCreate();
+                break;
+
+            case R.id.action_edit:
+                optionEdit();
+                break;
+
+            case R.id.action_job_sync:
+                refreshJobDialog.show();
+                break;
+
+            case R.id.action_job_upload:
+                uploadJobDialog.show();
+                break;
+
+            case R.id.action_delete:
+                optionDelete();
+                break;
+
+            case R.id.action_delete_from_cloud:
+                optionDeleteFromCloud();
                 break;
 
             case R.id.action_refresh:
                 refreshDatabase();
                 break;
 
-            case R.id.action_edit:
-                Log.d(TAG, "Deletion action selected");
-                // Try to action first on the more specific item
-                if (selectedLessonPart_id != -1) {
-                    editLessonPart(selectedLessonPart_id);
-                } else if (selectedLesson_id != -1) {
-                    editLesson(selectedLesson_id);
-                } else {
-                    Toast.makeText(this,
-                            "Please, select an item to delete!", Toast.LENGTH_LONG).show();
-                }
-                break;
-
             case R.id.action_upload:
-                dialog.show();
-                break;
-
-            case R.id.action_delete:
-                Log.d(TAG, "Deletion action selected");
-                // Try to action first on the more specific item
-                if (selectedLessonPart_id != -1) {
-                    deleteLessonPart(selectedLessonPart_id);
-                } else if (selectedLesson_id != -1) {
-                    deleteLesson(selectedLesson_id);
-                } else {
-                    Toast.makeText(this,
-                            "Please, select an item to delete!", Toast.LENGTH_LONG).show();
-                }
-                break;
-
-            case R.id.action_delete_from_cloud:
-                Log.d(TAG, "Delete from Cloud action selected");
-                // Try to action first on the more specific item
-                if  (selectedLesson_id != -1) {
-                    deleteLessonFromCloud(selectedLesson_id);
-                } else {
-                    Toast.makeText(this,
-                            "Please, select a lesson to delete from Cloud!", Toast.LENGTH_LONG).show();
-                }
-                break;
-
-            case R.id.action_insert_fake_data:
-                Log.d(TAG, "Insert fake data action selected");
-                InsertTestDataUtil.insertFakeData(this);
-                Toast.makeText(this,
-                        "Fake data inserted!", Toast.LENGTH_LONG).show();
-                break;
-
-            case R.id.action_cancel:
-               break;
-
-            case R.id.action_job_sync:
-                SyncUtilities.scheduleSyncGroupTable(this);
-                break;
-
-            case R.id.action_job_upload:
-                SyncUtilities.scheduleUploadTable(this, selectedLesson_id);
+                uploadDialog.show();
                 break;
 
             case R.id.action_notification:
                 NotificationUtils.notifyUserBecauseSyncGroupFinished(this);
+                break;
+
+            case R.id.action_insert_fake_data:
+                optionInsertFakeData();
+                break;
+
+            case R.id.action_cancel:
                 break;
 
             default:
@@ -754,7 +719,108 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
-    // Set the visibility of the options according to the app state
+    /**
+    * Helper functions for the menu
+    */
+    private void optionHome() {
+        Log.d(TAG, "onOptionsItemSelected mainVisibility:" + mainVisibility);
+        // Set the action according to the views visibility
+        if (mainVisibility == VISIBLE) {
+            mDrawerLayout.openDrawer(GravityCompat.START);
+        } else if (mainVisibility == GONE && partsVisibility == VISIBLE){
+            closePartsFragment();
+        } else if (logVisibility == VISIBLE) {
+            logVisibility = GONE;
+            logContainer.setVisibility(logVisibility);
+
+            FragmentManager fragmentManager = getSupportFragmentManager();
+            fragmentManager.beginTransaction()
+                    .remove(logFragment)
+                    .commit();
+
+            mainVisibility = VISIBLE;
+            lessonsContainer.setVisibility(mainVisibility);
+            actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
+            contextualizeMenu();
+        }
+    }
+
+    private void optionSelectView() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        mMenu.findItem(R.id.select_view).setChecked(true);
+        sharedPreferences.edit()
+                .putString(this.getString(R.string.pref_mode_key),
+                        this.getString(R.string.pref_mode_view)).apply();
+        // Set visibility of action icons
+        contextualizeMenu();
+        // Deselect the last view selected
+        mainFragment.deselectViews();
+        partsFragment.deselectViews();
+        selectedLesson_id = -1;
+        selectedLessonPart_id = -1;
+        Log.d(TAG, "View mode selected");
+
+    }
+
+    private void optionSelectCreate() {
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+        mMenu.findItem(R.id.select_create).setChecked(true);
+        sharedPreferences.edit()
+                .putString(this.getString(R.string.pref_mode_key),
+                        this.getString(R.string.pref_mode_create)).apply();
+        // Set visibility of action icons
+        contextualizeMenu();
+        Log.v(TAG, "Create mode selected");
+    }
+
+    private void optionEdit() {
+        Log.d(TAG, "Deletion action selected");
+        // Try to action first on the more specific item
+        if (selectedLessonPart_id != -1) {
+            editLessonPart(selectedLessonPart_id);
+        } else if (selectedLesson_id != -1) {
+            editLesson(selectedLesson_id);
+        } else {
+            Toast.makeText(this,
+                    "Please, select an item to delete!", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void optionDelete() {
+        Log.d(TAG, "Deletion action selected");
+        // Try to action first on the more specific item
+        if (selectedLessonPart_id != -1) {
+            deleteLessonPart(selectedLessonPart_id);
+        } else if (selectedLesson_id != -1) {
+            deleteLesson(selectedLesson_id);
+        } else {
+            Toast.makeText(this,
+                    "Please, select an item to delete!", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void optionDeleteFromCloud() {
+        Log.d(TAG, "Delete from Cloud action selected");
+        // Try to action first on the more specific item
+        if  (selectedLesson_id != -1) {
+            deleteLessonFromCloud(selectedLesson_id);
+        } else {
+            Toast.makeText(this,
+                    "Please, select a lesson to delete from Cloud!", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void optionInsertFakeData() {
+        Log.d(TAG, "Insert fake data action selected");
+        InsertTestDataUtil.insertFakeData(this);
+        Toast.makeText(this,
+                "Fake data inserted!", Toast.LENGTH_LONG).show();
+    }
+
+    /**
+     * Contextualize the menu.
+     * Set the visibility of the options according to the app state.
+     */
     private void contextualizeMenu() {
 
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
@@ -786,15 +852,19 @@ public class MainActivity extends AppCompatActivity implements
                 !mUsername.equals(ANONYMOUS)) {
             mMenu.findItem(R.id.action_delete_from_cloud).setVisible(true);
             mMenu.findItem(R.id.action_upload).setVisible(true);
+            mMenu.findItem(R.id.action_job_upload).setVisible(true);
         } else {
             mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
             mMenu.findItem(R.id.action_upload).setVisible(false);
+            mMenu.findItem(R.id.action_job_upload).setVisible(false);
         }
 
         if (!mUsername.equals(ANONYMOUS)) {
             mMenu.findItem(R.id.action_refresh).setVisible(true);
+            mMenu.findItem(R.id.action_job_sync).setVisible(true);
         } else {
             mMenu.findItem(R.id.action_refresh).setVisible(false);
+            mMenu.findItem(R.id.action_job_sync).setVisible(false);
         }
 
         if (databaseVisibility.equals(GROUP_DATABASE)) {
@@ -818,8 +888,10 @@ public class MainActivity extends AppCompatActivity implements
             mMenu.findItem(R.id.select_view).setVisible(false);
             mMenu.findItem(R.id.select_create).setVisible(false);
             mMenu.findItem(R.id.action_refresh).setVisible(false);
+            mMenu.findItem(R.id.action_job_sync).setVisible(false);
             mMenu.findItem(R.id.action_edit).setVisible(false);
             mMenu.findItem(R.id.action_upload).setVisible(false);
+            mMenu.findItem(R.id.action_job_upload).setVisible(false);
             mMenu.findItem(R.id.action_delete).setVisible(false);
             mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
             mMenu.findItem(R.id.action_insert_fake_data).setVisible(false);
@@ -859,12 +931,17 @@ public class MainActivity extends AppCompatActivity implements
 
 
     /**
-     * Methods for refreshing/uploading.
+     * Methods for refreshing/uploading the database.
      */
 
+    // This function will refresh all the database, of the user and the group.
+    // It will download the photos from Firebase Storage, but only for the group table (the user table
+    // already has the images in the folder).
+    // In case of the group, it will also delete the old files, and the old rows in the table.
     private void refreshDatabase() {
 
         // query the group lesson parts table to count for the number of images to download
+        // for being able to control if all downloads succeed
         Cursor cursor = this.getContentResolver().query(
                 LessonsContract.GroupLessonPartsEntry.CONTENT_URI,
                 null,
@@ -925,13 +1002,9 @@ public class MainActivity extends AppCompatActivity implements
         loadingIndicator = true;
         mainFragment.setLoadingIndicator(true);
 
-        // Calls the refresh method
-        //firebaseFragment.refreshDatabase(databaseVisibility);
-
-        mRefreshBackgroundTask = new RefreshTask(databaseVisibility);
+        // Calls the refresh method in another thread
+        AsyncTask mRefreshBackgroundTask = new RefreshTask(databaseVisibility);
         mRefreshBackgroundTask.execute();
-
-        //SyncUtilities.startImmediateSyncGroupTable(this);
 
         deselectViews();
 
@@ -1039,7 +1112,7 @@ public class MainActivity extends AppCompatActivity implements
         loadingIndicator = true;
         mainFragment.setLoadingIndicator(true);
 
-        mUploadBackgroundTask = new UploadTask(selectedLesson_id);
+        AsyncTask mUploadBackgroundTask = new UploadTask(selectedLesson_id);
         mUploadBackgroundTask.execute();
 
     }
@@ -1068,13 +1141,13 @@ public class MainActivity extends AppCompatActivity implements
     // Helper function to delete lesson data and update the view
     private void deleteLesson(long _id) {
         Log.d(TAG, "deleteLesson _id:" + _id);
-        // Call the fragment for showing the delete dialog
+        // Call the fragment for showing the delete uploadDialog
         DialogFragment deleteLessonFragment = new DeleteLessonLocallyDialogFragment();
         // Pass the _id of the lesson
         Bundle bundle = new Bundle();
         bundle.putLong("_id", _id);
         deleteLessonFragment.setArguments(bundle);
-         // Show the dialog box
+         // Show the uploadDialog box
         deleteLessonFragment.show(getSupportFragmentManager(), "DeleteLessonLocallyDialogFragment");
     }
 
@@ -1101,15 +1174,15 @@ public class MainActivity extends AppCompatActivity implements
 
         imagesToDeleteCount = 0;
 
-        // call the dialog
+        // call the uploadDialog
         Log.d(TAG, "deleteLessonFromCloud _id:" + _id);
-        // Call the fragment for showing the delete dialog
+        // Call the fragment for showing the delete uploadDialog
         DialogFragment deleteLessonCloudFragment = new DeleteLessonOnCloudDialogFragment();
         // Pass the _id of the lesson
         Bundle bundle = new Bundle();
         bundle.putLong("_id", _id);
         deleteLessonCloudFragment.setArguments(bundle);
-        // Show the dialog box
+        // Show the uploadDialog box
         deleteLessonCloudFragment.show(getSupportFragmentManager(), "DeleteLessonOnCloudDialogFragment");
     }
 
@@ -1129,13 +1202,13 @@ public class MainActivity extends AppCompatActivity implements
     // Helper function to delete lesson part
     private void deleteLessonPart(long _id) {
         Log.d(TAG, "deleteLessonPart _id:" + _id);
-        // Call the fragment for showing the delete dialog
+        // Call the fragment for showing the delete uploadDialog
         DialogFragment deleteLessonPartFragment = new DeletePartDialogFragment();
         // Pass the _id of the lesson
         Bundle bundle = new Bundle();
         bundle.putLong("_id", _id);
         deleteLessonPartFragment.setArguments(bundle);
-        // Show the dialog box
+        // Show the uploadDialog box
         deleteLessonPartFragment.show(getSupportFragmentManager(), "DeletePartDialogFragment");
     }
 
@@ -1159,7 +1232,7 @@ public class MainActivity extends AppCompatActivity implements
 
     // Method for receiving communication from the MainFragment
     @Override
-    public void onLessonSelected(long _id, String lessonTitle) {
+    public void onLessonSelected(long _id) {
 
         selectedLesson_id = _id;
 
@@ -1167,7 +1240,7 @@ public class MainActivity extends AppCompatActivity implements
 
     // Method for receiving communication from the MainFragment
     @Override
-    public void onLessonClicked(long _id, String lessonTitle) {
+    public void onLessonClicked(long _id) {
         Log.d(TAG, "onLessonClicked _id:" + _id);
         clickedLesson_id = _id;
         // Show the lesson parts fragment

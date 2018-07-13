@@ -1,11 +1,9 @@
 package com.example.androidstudio.capstoneproject.sync;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.example.androidstudio.capstoneproject.ui.MainActivity;
 import com.firebase.jobdispatcher.Constraint;
 import com.firebase.jobdispatcher.Driver;
 import com.firebase.jobdispatcher.FirebaseJobDispatcher;
@@ -24,27 +22,30 @@ public class SyncUtilities {
     private static final String SYNC_GROUP_TABLE_TAG = "sync_group_table_tag";
     private static final String UPLOAD_LESSON_TAG = "upload_lesson_tag";
     private static final String SELECTED_LESSON_ID = "selectedLessonId";
+    private static final String DATABASE_VISIBILITY = "databaseVisibility";
 
     private static boolean syncInitialized;
     private static boolean uploadInitialized;
 
 
-    synchronized public static void scheduleSyncGroupTable(final Context context) {
+    synchronized public static void scheduleSyncDatabase(final Context context, String databaseVisibility) {
 
         if (syncInitialized) {
             Log.v(TAG, "scheduleUploadTable syncInitialized = true");
         }
 
+        Bundle bundle = new Bundle();
+        bundle.putString(DATABASE_VISIBILITY, databaseVisibility);
 
         Driver driver = new GooglePlayDriver(context);
         FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(driver);
 
-        Log.v("SyncUtilities", "scheduleSyncGroupTable scheduling");
+        Log.v("SyncUtilities", "scheduleSyncDatabase scheduling");
 
         /* Create the Job to periodically create reminders to drink water */
         Job syncGroupTableJob = dispatcher.newJobBuilder()
                 /* The Service that will be used to write to preferences */
-                .setService(SyncGroupTableJobService.class)
+                .setService(SyncDatabaseService.class)
                 /*
                  * Set the UNIQUE tag used to identify this Job.
                  */
@@ -85,6 +86,7 @@ public class SyncUtilities {
                  */
                 .setReplaceCurrent(true)
                 /* Once the Job is ready, call the builder's build method to return the Job */
+                .setExtras(bundle)
                 .build();
 
         /* Schedule the Job with the dispatcher */
@@ -99,17 +101,16 @@ public class SyncUtilities {
     synchronized public static void scheduleUploadTable(final Context context, long lesson_id) {
 
         if (uploadInitialized) {
-         Log.v(TAG, "scheduleUploadTable uploadInitialized = true");
+            Log.v(TAG, "scheduleUploadTable uploadInitialized = true");
         }
 
         Bundle bundle = new Bundle();
         bundle.putLong(SELECTED_LESSON_ID, lesson_id);
 
-
         Driver driver = new GooglePlayDriver(context);
         FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(driver);
 
-        Log.v("SyncUtilities", "scheduleSyncGroupTable scheduling");
+        Log.v("SyncUtilities", "scheduleSyncDatabase scheduling");
 
         /* Create the Job to periodically create reminders to drink water */
         Job uploadTableJob = dispatcher.newJobBuilder()

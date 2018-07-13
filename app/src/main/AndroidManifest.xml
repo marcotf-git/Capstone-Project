@@ -89,7 +89,7 @@
         </activity>
 
         <service
-            android:name=".sync.SyncGroupTableJobService"
+            android:name=".sync.SyncDatabaseService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE"/>
