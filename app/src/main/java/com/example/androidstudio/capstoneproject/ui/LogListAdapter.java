@@ -33,7 +33,6 @@ public class LogListAdapter extends RecyclerView.Adapter<LogListAdapter.LogItemV
 
 
     public void swapCursor(Cursor newCursor){
-        Log.d(TAG, "swapCursor");
         mCursor = newCursor;
         notifyDataSetChanged();
     }

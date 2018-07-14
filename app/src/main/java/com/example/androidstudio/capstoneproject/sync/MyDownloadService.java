@@ -70,7 +70,7 @@ public class MyDownloadService extends IntentService {
     private List<String> messages = new ArrayList<>();
 
     // log buffer
-    private static List<String> logBuffer = new ArrayList<>();
+    //private static List<String> logBuffer = new ArrayList<>();
 
     private int nImagesToDownload;
     private int nImagesDownloaded;
@@ -306,8 +306,7 @@ public class MyDownloadService extends IntentService {
         }
 
         // inform the main activity that the job finishes
-        String message = "REFRESH USER LESSON FINISHED";
-        messages.add(message);
+        messages.add("REFRESH USER LESSON FINISHED");
         sendMessages();
 
     }
@@ -534,6 +533,7 @@ public class MyDownloadService extends IntentService {
         if (mCursor == null) {
             Log.d(TAG, "Failed to get cursor for group_lesson_parts");
             messages.add("Error: downloadGroupImages: Failed to get cursor for group_lesson_parts");
+            sendMessages();
             return;
         }
 
@@ -584,9 +584,9 @@ public class MyDownloadService extends IntentService {
         } else {
             // return if there are no images to download
             mCursor.close();
-            String message = "DOWNLOAD IMAGES/VIDEOS FINISHED";
-            addToLog(message);
-            messages.add(message);
+            addToLog("DOWNLOAD IMAGES/VIDEOS FINISHED");
+            messages.add("DOWNLOAD IMAGES/VIDEOS FINISHED");
+            sendMessages();
             return;
         }
 
@@ -636,6 +636,7 @@ public class MyDownloadService extends IntentService {
                 String message = "Error: downloadGroupImages error creating file: file not created";
                 addToLog(message);
                 messages.add(message);
+                sendMessages();
                 return;
             }
 
@@ -674,6 +675,9 @@ public class MyDownloadService extends IntentService {
             }).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
                 @Override
                 public void onSuccess(FileDownloadTask.TaskSnapshot state) {
+
+                    nImagesDownloaded++;
+
                     //call helper function to handle the event.
                     handleDownloadTaskSuccess(
                             imageToDownload.getPart_id(),
@@ -683,12 +687,14 @@ public class MyDownloadService extends IntentService {
 
                     Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
 
-                    nImagesDownloaded++;
 
                 }
             }).addOnFailureListener(new OnFailureListener() {
                 @Override
                 public void onFailure(@NonNull Exception exception) {
+
+                    nImagesDownloaded++;
+
                     // Handle unsuccessful downloads
                     handleDownloadTaskFailure(
                             exception,
@@ -701,8 +707,7 @@ public class MyDownloadService extends IntentService {
 
                     String message = "Error:" + exception.getMessage();
                     messages.add(message);
-
-                    nImagesDownloaded++;
+                    sendMessages();
 
                 }
             });
@@ -721,6 +726,8 @@ public class MyDownloadService extends IntentService {
         Log.d(TAG, "handleDownloadTaskSuccess complete. Downloaded " + imageType + " id:" +
                 partId + " of lesson id:" + lessonId);
         Log.d(TAG, "handleDownloadTaskSuccess fileUriString " + fileUriString);
+
+        addToLog( "download count:" + nImagesDownloaded + "/" + nImagesToDownload);
 
         String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                 .format(new Date());
@@ -760,7 +767,12 @@ public class MyDownloadService extends IntentService {
             String message = "ALL DOWNLOAD TASKS FINISHED";
             addToLog(message);
             messages.add(message);
-            messages.add("REFRESH FINISHED OK");
+            sendMessages();
+            if (databaseVisibility.equals(USER_DATABASE)) {
+                messages.add("REFRESH USER FINISHED OK");
+            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+                messages.add("REFRESH GROUP FINISHED OK");
+            }
             sendMessages();
         }
 
@@ -777,18 +789,25 @@ public class MyDownloadService extends IntentService {
         Log.e(TAG, "handleDownloadTaskFailure failure: " + imageType + " id:" +
                 partId + " of lesson id:" + lessonId + " fileUriString:" + fileUriString, e);
 
+        addToLog( "download count:" + nImagesDownloaded + "/" + nImagesToDownload);
+
         String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                 .format(new Date());
 
-        addToLog(time_stamp + ":\nLesson id:" + lessonId + "\nDownload failure " + imageType +
-                " part id: " + partId + "\nfile:" + fileUriString + "\nError:" + e.getMessage());
+        addToLog(time_stamp + ":\nError: lesson id:" + lessonId + "\nDownload failure " + imageType +
+                " part id: " + partId + "\nfile:" + fileUriString + "\nMessage:" + e.getMessage());
 
         if (nImagesToDownload == nImagesDownloaded) {
             // all tasks finished
             String message = "ALL DOWNLOAD TASKS FINISHED";
             addToLog(message);
             messages.add(message);
-            messages.add("REFRESH FINISHED WITH ERROR");
+            sendMessages();
+            if (databaseVisibility.equals(USER_DATABASE)) {
+                messages.add("REFRESH USER FINISHED WITH ERROR");
+            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+                messages.add("REFRESH GROUP FINISHED WITH ERROR");
+            }
             sendMessages();
         }
 
@@ -800,40 +819,34 @@ public class MyDownloadService extends IntentService {
     // Add data to the log table and limit its size
     public void addToLog(String logText) {
 
-
         ContentResolver contentResolver = mContext.getContentResolver();
 
         //if(logText.equals(RELEASE)) {
-
             // Limit the size of the log table
             Cursor mCursor = contentResolver.query(LessonsContract.MyLogEntry.CONTENT_URI,
                     null,
                     null,
                     null,
                     null);
+            int nRows = 0;
+            if (mCursor != null) { nRows = mCursor.getCount(); }
 
-            if (mCursor != null) {
+            if (nRows > MAX_ROWS_LOG_TABLE) {
 
-                // find the size of the table
-                int nRows = mCursor.getCount();
                 mCursor.moveToFirst();
-
                 // limit the number of deletions
                 int maxToDelete = nRows / 5;
-
                 List<Long> idsToDelete = new ArrayList<>();
-
                 // get the id_s of the rows to delete and save in the array
                 for (int i = 0; i < maxToDelete; i++) {
                     idsToDelete.add(mCursor.getLong(mCursor.getColumnIndex(LessonsContract.MyLogEntry._ID)));
                     mCursor.moveToNext();
                 }
-
                 mCursor.close();
 
                 // delete that rows
                 int count = 0;
-                while (nRows > MAX_ROWS_LOG_TABLE && count < idsToDelete.size()) {
+                while (count < idsToDelete.size()) {
                     long log_id = idsToDelete.get(count);
                     // delete the row with that log_id
                     Uri uriToDelete = LessonsContract.MyLogEntry.CONTENT_URI.buildUpon()
@@ -849,30 +862,28 @@ public class MyDownloadService extends IntentService {
                 }
             }
 
-            if (mCursor != null) {
-                mCursor.close();
-            }
+            if (mCursor != null) { mCursor.close(); }
 
             // write buffer to database
-            for (int j = 0; j < logBuffer.size(); j++) {
+            //for (int j = 0; j < logBuffer.size(); j++) {
+
                 // Now add the new value to the log table
                 ContentValues contentValues = new ContentValues();
-                contentValues.put(LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT, logBuffer.get(j));
-
+                //contentValues.put(LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT, logBuffer.get(j));
+                contentValues.put(LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT, logText);
                 // Insert the content values via a ContentResolver
                 Uri uri = contentResolver.insert(LessonsContract.MyLogEntry.CONTENT_URI, contentValues);
-
                 if (uri == null) {
                     Log.e(TAG, "addToLog: error in inserting item on log",
                             new Exception("addToLog: error in inserting item on log"));
                 }
-            }
+            //}
 
-            logBuffer.clear();
+            //logBuffer.clear();
 
         //} else {
 
-            logBuffer.add(logText);
+            //logBuffer.add(logText);
 
         //}
 
@@ -880,10 +891,15 @@ public class MyDownloadService extends IntentService {
 
 
     private void sendMessages() {
+
+        Log.d(TAG, "sendMessages messages:" + messages.toString());
+
         Intent in = new Intent(ACTION);
         in.putExtra("resultCode", Activity.RESULT_OK);
         in.putExtra("resultValue", messages.toString());
         LocalBroadcastManager.getInstance(mContext).sendBroadcast(in);
+
+        messages.clear();
     }
 
 

@@ -2119,24 +2119,70 @@ public class MainActivity extends AppCompatActivity implements
 
 
     private BroadcastReceiver myUtilReceiver = new BroadcastReceiver() {
+
         @Override
         public void onReceive(Context context, Intent intent) {
+
             int resultCode = intent.getIntExtra("resultCode", RESULT_CANCELED);
+
             if (resultCode == RESULT_OK) {
                 String resultValue = intent.getStringExtra("resultValue");
                 Log.d(TAG, "BroadcastReceiver onReceive:" + resultValue);
 
-                if (resultValue.equals("REFRESH FINISHED OK")) {
-                    Toast.makeText(MainActivity.this,
-                            "Refreshing of the database finished successfully",
-                            Toast.LENGTH_LONG).show();
+                if (resultValue.equals("[REFRESH USER FINISHED OK]")) {
+                    final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                            "Refreshing of the user database finished successfully!",
+                            Snackbar.LENGTH_INDEFINITE);
+                    snackBar.setAction("Dismiss", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            snackBar.dismiss();
+                        }
+                    });
+                    snackBar.show();
                 }
 
-                if (resultValue.equals("REFRESH FINISHED WITH ERROR")) {
-                    Toast.makeText(MainActivity.this,
-                            "Refreshing of the database finished, but with error" +
-                            "\nPlease, see the log!", Toast.LENGTH_LONG).show();
+                if (resultValue.equals("[REFRESH USER FINISHED WITH ERROR]")) {
+                    final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                            "Refreshing of the user database finished, but with error." +
+                                    "\nPlease, see the log!", Snackbar.LENGTH_INDEFINITE);
+                    snackBar.setAction("Dismiss", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            snackBar.dismiss();
+                        }
+                    });
+                    snackBar.show();
                 }
+
+
+                if (resultValue.equals("[REFRESH GROUP FINISHED OK]")) {
+                    final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                            "Refreshing of the group database finished successfully!",
+                            Snackbar.LENGTH_INDEFINITE);
+                    snackBar.setAction("Dismiss", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            snackBar.dismiss();
+                        }
+                    });
+                    snackBar.show();
+                }
+
+                if (resultValue.equals("[REFRESH GROUP FINISHED WITH ERROR]")) {
+                    final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                            "Refreshing of the group database finished, but with error." +
+                                    "\nPlease, see the log!", Snackbar.LENGTH_INDEFINITE);
+                    snackBar.setAction("Dismiss", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            snackBar.dismiss();
+                        }
+                    });
+                    snackBar.show();
+                }
+
+
 
             }
         }
