@@ -20,7 +20,6 @@ import com.example.androidstudio.capstoneproject.data.Image;
 import com.example.androidstudio.capstoneproject.data.Lesson;
 import com.example.androidstudio.capstoneproject.data.LessonPart;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
-import com.example.androidstudio.capstoneproject.utilities.MyRefreshUserDatabase;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -50,7 +49,7 @@ public class MyDownloadService extends IntentService {
     public static final String ACTION =
             "com.example.androidstudio.capstoneproject.sync.MyDownloadService";
 
-    private static final String TAG = MyRefreshUserDatabase.class.getSimpleName();
+    private static final String TAG = MyDownloadService.class.getSimpleName();
 
     private static final String DATABASE_VISIBILITY = "databaseVisibility";
     private static final String USER_DATABASE = "userDatabase";
@@ -306,7 +305,7 @@ public class MyDownloadService extends IntentService {
         }
 
         // inform the main activity that the job finishes
-        messages.add("REFRESH USER LESSON FINISHED");
+        messages.add("REFRESH USER FINISHED OK");
         sendMessages();
 
     }

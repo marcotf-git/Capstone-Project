@@ -39,6 +39,7 @@ import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 
 import static android.view.View.GONE;
+import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
 
 
@@ -109,7 +110,7 @@ public class PartDetailActivity extends AppCompatActivity implements
             }
         }
 
-        // Set the main view
+         // Set the main view
         setContentView(R.layout.activity_part_detail);
 
         mContext = this;
@@ -143,6 +144,10 @@ public class PartDetailActivity extends AppCompatActivity implements
             mPlayerView.setVisibility(mPlayerViewVisibility);
             imageView.setVisibility(imageViewVisibility);
             errorMessageView.setVisibility(errorMessageViewVisibility);
+        } else {
+            mPlayerView.setVisibility(View.INVISIBLE);
+            imageView.setVisibility(View.INVISIBLE);
+            errorMessageView.setVisibility(View.INVISIBLE);
         }
 
         // Query the database and set the view with the cursor data
@@ -229,9 +234,10 @@ public class PartDetailActivity extends AppCompatActivity implements
         Log.v(TAG, "updateView");
 
         // Set initial state of the player and thumbnail views (this method is only called in two pane)
-        errorMessageView.setVisibility(View.GONE);
-        mPlayerView.setVisibility(View.GONE);
-        imageView.setVisibility(View.GONE);
+        errorMessageView.setVisibility(View.INVISIBLE);
+        mPlayerView.setVisibility(View.INVISIBLE);
+        imageView.setVisibility(View.INVISIBLE);
+
 
         String partText = null;
         String localImageUri = null;
@@ -349,8 +355,8 @@ public class PartDetailActivity extends AppCompatActivity implements
                                 Log.e(TAG, "Picasso error in loading image:" + e.getMessage());
                                 Toast.makeText(mContext, "Error in loading image:" + e.getMessage(),
                                         Toast.LENGTH_LONG).show();
-                                imageView.setVisibility(View.GONE);
-                                if(mPlayerView.getVisibility() == View.GONE) {
+                                imageView.setVisibility(View.INVISIBLE);
+                                if(mPlayerView.getVisibility() == INVISIBLE) {
                                     errorMessageView.setVisibility(View.VISIBLE);
                                 }
                             }
@@ -427,10 +433,12 @@ public class PartDetailActivity extends AppCompatActivity implements
      */
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
-        Log.d(TAG, "onLoadFinished cursor:" + data.toString());
-        // Pass the data to the view
+
         mLoadingIndicator.setVisibility(View.INVISIBLE);
+
+        // Pass the data to the view
         updateView(data);
+
     }
 
     /**
@@ -728,7 +736,7 @@ public class PartDetailActivity extends AppCompatActivity implements
                     null);
         }
 
-        String fileReference = null;
+        String fileReference;
 
         if (cursor != null) {
             cursor.moveToLast();
@@ -793,5 +801,4 @@ public class PartDetailActivity extends AppCompatActivity implements
         super.onSaveInstanceState(outState);
     }
 
-
-}
+ }

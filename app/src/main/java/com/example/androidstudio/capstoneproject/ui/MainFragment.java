@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
@@ -22,6 +23,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -145,6 +147,7 @@ public class MainFragment extends Fragment implements
 
         // Inflate the fragment view
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
+
 
         mErrorMessageDisplay = rootView.findViewById(R.id.tv_error_message_display);
         mLoadingIndicatorView = rootView.findViewById(R.id.pb_loading_indicator);
@@ -313,19 +316,6 @@ public class MainFragment extends Fragment implements
      */
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
-
-        //mCursor = data;
-
-        if (data != null) {
-            Log.d(TAG, "onLoadFinished cursor:" + data.toString());
-        } else {
-            Log.e(TAG, "onLoadFinished cursor: null");
-        }
-
-        // Send to the main activity the order to setting the idling resource state
-        //mIdlingCallback.onIdlingResource(true);
-
-        //mLoadingIndicatorView.setVisibility(View.INVISIBLE);
 
         // Pass the data to the adapter
         mAdapter.swapCursor(data, databaseVisibility);

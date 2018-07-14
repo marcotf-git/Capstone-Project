@@ -53,7 +53,7 @@
     <string name="create">Create</string>
     <string name="menu_action_delete_label">Delete</string>
     <string name="menu_action_upload_label">Upload Now!</string>
-    <string name="menu_action_refresh_label">Refresh Now!</string>
+    <string name="menu_action_refresh_label">Refresh</string>
     <string name="menu_action_edit_label">Edit</string>
     <string name="menu_action_cancel_label">Cancel</string>
     <string name="menu_action_delete_from_cloud_label">Delete from Cloud</string>

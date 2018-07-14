@@ -26,16 +26,16 @@
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/action_insert_fake_data"
+        android:id="@+id/action_notification"
         android:orderInCategory="13"
-        android:title="@string/menu_action_insert_fake_label"
+        android:title="@string/menu_action_notification_test"
         app:showAsAction="never"/>
 
     <item
-        android:id="@+id/action_notification"
+        android:id="@+id/action_insert_fake_data"
         android:orderInCategory="12"
-        android:title="@string/menu_action_notification_test"
-        app:showAsAction="never" />
+        android:title="@string/menu_action_insert_fake_label"
+        app:showAsAction="never"/>
 
     <item
         android:id="@+id/action_delete_from_cloud"
@@ -51,10 +51,10 @@
         app:showAsAction="never"/>
 
     <item
-        android:id="@+id/action_refresh"
+        android:id="@+id/action_job_sync"
         android:orderInCategory="7"
-        android:title="@string/menu_action_refresh_label"
-        app:showAsAction="never"/>
+        android:title="@string/menu_action_sync_label"
+        app:showAsAction="never" />
 
     <item
         android:id="@+id/action_upload"
@@ -63,11 +63,11 @@
         app:showAsAction="never"/>
 
     <item
-        android:id="@+id/action_job_sync"
+        android:id="@+id/action_refresh"
         android:icon="@drawable/ic_action_refresh"
         android:orderInCategory="5"
-        android:title="@string/menu_action_sync_label"
-        app:showAsAction="ifRoom" />
+        android:title="@string/menu_action_refresh_label"
+        app:showAsAction="ifRoom"/>
 
     <item
         android:id="@+id/action_job_upload"

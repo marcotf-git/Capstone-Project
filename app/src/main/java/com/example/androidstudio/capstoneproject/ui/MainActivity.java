@@ -1,6 +1,6 @@
 package com.example.androidstudio.capstoneproject.ui;
 
-import android.app.Activity;
+import android.app.ActivityOptions;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -12,11 +12,10 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Handler;
+import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.annotation.VisibleForTesting;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
@@ -36,6 +35,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -46,9 +46,6 @@ import com.example.androidstudio.capstoneproject.sync.MyDownloadService;
 import com.example.androidstudio.capstoneproject.sync.SyncUtilities;
 import com.example.androidstudio.capstoneproject.utilities.MyFirebaseFragment;
 import com.example.androidstudio.capstoneproject.utilities.InsertTestDataUtil;
-import com.example.androidstudio.capstoneproject.utilities.MyReceiver;
-import com.example.androidstudio.capstoneproject.utilities.MyRefreshUserDatabase;
-import com.example.androidstudio.capstoneproject.utilities.NotificationUtils;
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -56,11 +53,10 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 
 import java.util.Arrays;
-import java.util.List;
 
 import static android.view.View.GONE;
+import static android.view.View.INVISIBLE;
 import static android.view.View.VISIBLE;
-import static android.view.View.inflate;
 
 
 /**
@@ -171,8 +167,7 @@ public class MainActivity extends AppCompatActivity implements
         DeleteLessonLocallyDialogFragment.DeleteLessonDialogListener,
         DeletePartDialogFragment.DeletePartDialogListener,
         MyFirebaseFragment.OnCloudListener,
-        DeleteLessonOnCloudDialogFragment.DeleteLessonCloudDialogListener,
-        MyRefreshUserDatabase.OnRefreshUserListener{
+        DeleteLessonOnCloudDialogFragment.DeleteLessonCloudDialogListener {
 
 
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -241,6 +236,7 @@ public class MainActivity extends AppCompatActivity implements
     private FrameLayout logContainer;
     private TextView mUsernameTextView;
     private TextView mUserEmailTextView;
+    private LinearLayout listContainer;
 
     // Dialogs
     private AlertDialog uploadDialog;
@@ -255,9 +251,6 @@ public class MainActivity extends AppCompatActivity implements
 
     // Context
     private Context mContext;
-
-    // Receiver
-    public MyReceiver myReceiver;
 
 
 
@@ -317,6 +310,9 @@ public class MainActivity extends AppCompatActivity implements
         // Init the main view
         setContentView(R.layout.activity_main);
 
+        listContainer = findViewById(R.id.linear_layout);
+        listContainer.setVisibility(INVISIBLE);
+
         // Init another member variables
         mContext = this;
         mUsername = ANONYMOUS;
@@ -367,6 +363,7 @@ public class MainActivity extends AppCompatActivity implements
         lessonsContainer = findViewById(R.id.lessons_container);
         partsContainer = findViewById(R.id.parts_container);
         logContainer = findViewById(R.id.log_container);
+
 
         // Initialize the fragments
         FragmentManager fragmentManager = getSupportFragmentManager();
@@ -630,6 +627,7 @@ public class MainActivity extends AppCompatActivity implements
 
         //setupServiceReceiver();
 
+        listContainer.setVisibility(VISIBLE);
     }
 
 
@@ -795,7 +793,7 @@ public class MainActivity extends AppCompatActivity implements
         switch (itemThatWasClickedId) {
 
             case android.R.id.home:
-                optionHome();
+                actionHome();
                 return true;
 
             case R.id.select_view:
@@ -807,7 +805,15 @@ public class MainActivity extends AppCompatActivity implements
                 break;
 
             case R.id.action_edit:
-                optionEdit();
+                actionEdit();
+                break;
+
+            case R.id.action_refresh:
+                actionRefresh();
+                break;
+
+            case R.id.action_upload:
+                uploadDialog.show();
                 break;
 
             case R.id.action_job_sync:
@@ -819,30 +825,20 @@ public class MainActivity extends AppCompatActivity implements
                 break;
 
             case R.id.action_delete:
-                optionDelete();
+                actionDelete();
                 break;
 
             case R.id.action_delete_from_cloud:
-                optionDeleteFromCloud();
-                break;
-
-            case R.id.action_refresh:
-                optionRefresh();
-                break;
-
-            case R.id.action_upload:
-                uploadDialog.show();
+                actionDeleteFromCloud();
                 break;
 
             case R.id.action_notification:
                 //NotificationUtils.notifyUserBecauseSyncGroupFinished(this);
-
                 testUtil();
-
                 break;
 
             case R.id.action_insert_fake_data:
-                optionInsertFakeData();
+                actionInsertFakeData();
                 break;
 
             case R.id.action_cancel:
@@ -859,7 +855,7 @@ public class MainActivity extends AppCompatActivity implements
     /**
     * Helper functions for the menu
     */
-    private void optionHome() {
+    private void actionHome() {
         Log.d(TAG, "onOptionsItemSelected mainVisibility:" + mainVisibility);
         // Set the action according to the views visibility
         if (mainVisibility == VISIBLE) {
@@ -910,7 +906,7 @@ public class MainActivity extends AppCompatActivity implements
         Log.v(TAG, "Create mode selected");
     }
 
-    private void optionEdit() {
+    private void actionEdit() {
         Log.d(TAG, "Deletion action selected");
         // Try to action first on the more specific item
         if (selectedLessonPart_id != -1) {
@@ -923,7 +919,27 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private void optionDelete() {
+    // This function will refresh the database, of the user or the group.
+    // It will download the photos from Firebase Storage, but only for the group table (the user table
+    // already has the images in the folder).
+    // In case of the group, it will also delete the old files, and the old rows in the table.
+    private void actionRefresh() {
+        Intent downloadIntent = new Intent(this, MyDownloadService.class);
+        downloadIntent.putExtra(DATABASE_VISIBILITY, databaseVisibility);
+        downloadIntent.putExtra(LOCAL_USER_UID, mUserUid);
+        startService(downloadIntent);
+        if (databaseVisibility.equals(GROUP_DATABASE)) {
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "Refreshing of the group database has started...", Snackbar.LENGTH_LONG);
+            snackBar.show();
+        } else if (databaseVisibility.equals(USER_DATABASE)) {
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "Refreshing of the user database has started...", Snackbar.LENGTH_LONG);
+            snackBar.show();
+        }
+    }
+
+    private void actionDelete() {
         Log.d(TAG, "Deletion action selected");
         // Try to action first on the more specific item
         if (selectedLessonPart_id != -1) {
@@ -936,7 +952,7 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private void optionDeleteFromCloud() {
+    private void actionDeleteFromCloud() {
         Log.d(TAG, "Delete from Cloud action selected");
         // Try to action first on the more specific item
         if  (selectedLesson_id != -1) {
@@ -947,7 +963,7 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private void optionInsertFakeData() {
+    private void actionInsertFakeData() {
         Log.d(TAG, "Insert fake data action selected");
         InsertTestDataUtil.insertFakeData(this);
         Toast.makeText(this,
@@ -1071,27 +1087,7 @@ public class MainActivity extends AppCompatActivity implements
      * Methods for refreshing/uploading the database.
      */
 
-    // This function will refresh all the database, of the user and the group.
-    // It will download the photos from Firebase Storage, but only for the group table (the user table
-    // already has the images in the folder).
-    // In case of the group, it will also delete the old files, and the old rows in the table.
-    private void optionRefresh() {
 
-        downloadCountFinal = 1;
-
-        // This will count the actual downloads
-        downloadCount = 0;
-
-        loadingIndicator = true;
-        mainFragment.setLoadingIndicator(true);
-
-        // Calls the refresh method in another thread
-        AsyncTask mRefreshBackgroundTask = new RefreshTask(databaseVisibility);
-        mRefreshBackgroundTask.execute();
-
-        deselectViews();
-
-    }
 
 
 
@@ -1517,7 +1513,16 @@ public class MainActivity extends AppCompatActivity implements
         Intent partDetailIntent = new Intent(mContext, destinationActivity);
         partDetailIntent.putExtra(CLICKED_LESSON_PART_ID, _id);
         partDetailIntent.putExtra(DATABASE_VISIBILITY, databaseVisibility);
-        startActivity(partDetailIntent);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            // Apply activity transition
+            startActivity(partDetailIntent,
+                    ActivityOptions.makeSceneTransitionAnimation(this).toBundle());
+        } else {
+            // Swap without transition
+            startActivity(partDetailIntent);
+        }
+
     }
 
     /**
@@ -2053,53 +2058,9 @@ public class MainActivity extends AppCompatActivity implements
 
 
     private void testUtil() {
-        Toast.makeText(this, "testUtil", Toast.LENGTH_LONG).show();
-
-//        MyRefreshUserDatabase refreshUserDatabase = new MyRefreshUserDatabase(this);
-//        String[] params = {databaseVisibility, mUserUid};
-//        refreshUserDatabase.execute(params);
-
-        Intent downloadIntent = new Intent(this, MyDownloadService.class);
-        downloadIntent.putExtra(DATABASE_VISIBILITY, databaseVisibility);
-        downloadIntent.putExtra(LOCAL_USER_UID, mUserUid);
-        //downloadIntent.putExtra("receiver", myReceiver);
-        startService(downloadIntent);
 
     }
 
-
-    @Override
-    public void onRefreshUserSuccess(List<String> messages) {
-        Log.d(TAG, "onRefreshUserSuccess messages:" + messages.toString());
-        Toast.makeText(this, "onRefreshUserSuccess:" + messages.toString(),
-                Toast.LENGTH_LONG).show();
-    }
-
-    @Override
-    public void onRefreshUserFailure(Exception e) {
-        Log.d(TAG, "onRefreshUserFailure exception:" + e.toString());
-        Toast.makeText(this, "onRefreshUserFailure " +
-                e.getMessage(), Toast.LENGTH_LONG).show();
-    }
-
-
-    // Setup the callback for when data is received from the service
-//    public void setupServiceReceiver() {
-//
-//        myReceiver = new MyReceiver(new Handler());
-//
-//        // Specify what happens when data is received from the service
-//        myReceiver.setReceiver(new MyReceiver.Receiver() {
-//            @Override
-//            public void onReceiveResult(int resultCode, Bundle resultData) {
-//                if (resultCode == RESULT_OK) {
-//                    String resultValue = resultData.getString("resultValue");
-//                    Log.d(TAG, "MyReceiver onReceiveResult:" + resultValue);
-//                    Toast.makeText(MainActivity.this, resultValue, Toast.LENGTH_LONG).show();
-//                }
-//            }
-//        });
-//    }
 
     @Override
     protected void onStart() {
