@@ -120,6 +120,10 @@
             android:name=".widget.ListWidgetService"
             android:permission="android.permission.BIND_REMOTEVIEWS" />
 
+        <service
+            android:name=".sync.MyDownloadService"
+            android:exported="false"/>
+
     </application>
 
 </manifest>

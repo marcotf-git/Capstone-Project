@@ -1,14 +1,18 @@
 package com.example.androidstudio.capstoneproject.ui;
 
+import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -18,6 +22,7 @@ import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
@@ -37,9 +42,12 @@ import android.widget.Toast;
 import com.example.androidstudio.capstoneproject.IdlingResource.SimpleIdlingResource;
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
+import com.example.androidstudio.capstoneproject.sync.MyDownloadService;
 import com.example.androidstudio.capstoneproject.sync.SyncUtilities;
 import com.example.androidstudio.capstoneproject.utilities.MyFirebaseFragment;
 import com.example.androidstudio.capstoneproject.utilities.InsertTestDataUtil;
+import com.example.androidstudio.capstoneproject.utilities.MyReceiver;
+import com.example.androidstudio.capstoneproject.utilities.MyRefreshUserDatabase;
 import com.example.androidstudio.capstoneproject.utilities.NotificationUtils;
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
@@ -48,9 +56,11 @@ import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static android.view.View.GONE;
 import static android.view.View.VISIBLE;
+import static android.view.View.inflate;
 
 
 /**
@@ -161,7 +171,8 @@ public class MainActivity extends AppCompatActivity implements
         DeleteLessonLocallyDialogFragment.DeleteLessonDialogListener,
         DeletePartDialogFragment.DeletePartDialogListener,
         MyFirebaseFragment.OnCloudListener,
-        DeleteLessonOnCloudDialogFragment.DeleteLessonCloudDialogListener {
+        DeleteLessonOnCloudDialogFragment.DeleteLessonCloudDialogListener,
+        MyRefreshUserDatabase.OnRefreshUserListener{
 
 
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -244,6 +255,11 @@ public class MainActivity extends AppCompatActivity implements
 
     // Context
     private Context mContext;
+
+    // Receiver
+    public MyReceiver myReceiver;
+
+
 
     // The Idling Resource which will be null in production.
     @Nullable
@@ -611,6 +627,9 @@ public class MainActivity extends AppCompatActivity implements
 
         uploadJobDialog = builder.create();
 
+
+        //setupServiceReceiver();
+
     }
 
 
@@ -816,7 +835,10 @@ public class MainActivity extends AppCompatActivity implements
                 break;
 
             case R.id.action_notification:
-                NotificationUtils.notifyUserBecauseSyncGroupFinished(this);
+                //NotificationUtils.notifyUserBecauseSyncGroupFinished(this);
+
+                testUtil();
+
                 break;
 
             case R.id.action_insert_fake_data:
@@ -1070,6 +1092,8 @@ public class MainActivity extends AppCompatActivity implements
         deselectViews();
 
     }
+
+
 
 
     // AsyncTask to process the refresh of the database in background
@@ -2023,5 +2047,100 @@ public class MainActivity extends AppCompatActivity implements
         PreferenceManager.getDefaultSharedPreferences(this)
                 .unregisterOnSharedPreferenceChangeListener(this);
     }
+
+
+
+
+
+    private void testUtil() {
+        Toast.makeText(this, "testUtil", Toast.LENGTH_LONG).show();
+
+//        MyRefreshUserDatabase refreshUserDatabase = new MyRefreshUserDatabase(this);
+//        String[] params = {databaseVisibility, mUserUid};
+//        refreshUserDatabase.execute(params);
+
+        Intent downloadIntent = new Intent(this, MyDownloadService.class);
+        downloadIntent.putExtra(DATABASE_VISIBILITY, databaseVisibility);
+        downloadIntent.putExtra(LOCAL_USER_UID, mUserUid);
+        //downloadIntent.putExtra("receiver", myReceiver);
+        startService(downloadIntent);
+
+    }
+
+
+    @Override
+    public void onRefreshUserSuccess(List<String> messages) {
+        Log.d(TAG, "onRefreshUserSuccess messages:" + messages.toString());
+        Toast.makeText(this, "onRefreshUserSuccess:" + messages.toString(),
+                Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onRefreshUserFailure(Exception e) {
+        Log.d(TAG, "onRefreshUserFailure exception:" + e.toString());
+        Toast.makeText(this, "onRefreshUserFailure " +
+                e.getMessage(), Toast.LENGTH_LONG).show();
+    }
+
+
+    // Setup the callback for when data is received from the service
+//    public void setupServiceReceiver() {
+//
+//        myReceiver = new MyReceiver(new Handler());
+//
+//        // Specify what happens when data is received from the service
+//        myReceiver.setReceiver(new MyReceiver.Receiver() {
+//            @Override
+//            public void onReceiveResult(int resultCode, Bundle resultData) {
+//                if (resultCode == RESULT_OK) {
+//                    String resultValue = resultData.getString("resultValue");
+//                    Log.d(TAG, "MyReceiver onReceiveResult:" + resultValue);
+//                    Toast.makeText(MainActivity.this, resultValue, Toast.LENGTH_LONG).show();
+//                }
+//            }
+//        });
+//    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        IntentFilter filter = new IntentFilter(MyDownloadService.ACTION);
+        LocalBroadcastManager.getInstance(this).registerReceiver(myUtilReceiver, filter);
+
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(myUtilReceiver);
+    }
+
+
+    private BroadcastReceiver myUtilReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int resultCode = intent.getIntExtra("resultCode", RESULT_CANCELED);
+            if (resultCode == RESULT_OK) {
+                String resultValue = intent.getStringExtra("resultValue");
+                Log.d(TAG, "BroadcastReceiver onReceive:" + resultValue);
+
+                if (resultValue.equals("REFRESH FINISHED OK")) {
+                    Toast.makeText(MainActivity.this,
+                            "Refreshing of the database finished successfully",
+                            Toast.LENGTH_LONG).show();
+                }
+
+                if (resultValue.equals("REFRESH FINISHED WITH ERROR")) {
+                    Toast.makeText(MainActivity.this,
+                            "Refreshing of the database finished, but with error" +
+                            "\nPlease, see the log!", Toast.LENGTH_LONG).show();
+                }
+
+            }
+        }
+    };
+
 
 }
