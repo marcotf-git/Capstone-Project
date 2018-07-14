@@ -182,6 +182,8 @@ public class MainActivity extends AppCompatActivity implements
     private static final String LOADING_INDICATOR = "loadingIndicator";
     private static final String UPLOAD_COUNT = "uploadCount";
     private static final String UPLOAD_COUNT_FINAL = "uploadCountFinal";
+    private static final String DOWNLOAD_COUNT = "downloadCount";
+    private static final String DOWNLOAD_COUNT_FINAL = "downloadCountFinal";
     private static final String RELEASE = "release";
 
     // Final strings
@@ -251,12 +253,12 @@ public class MainActivity extends AppCompatActivity implements
     /**
      * Only called from test, creates and returns a new {@link SimpleIdlingResource}.
      */
-    @VisibleForTesting
-    public void getIdlingResource() {
-        if (mIdlingResource == null) {
-            mIdlingResource = new SimpleIdlingResource();
-        }
-    }
+//    @VisibleForTesting
+//    public void getIdlingResource() {
+//        if (mIdlingResource == null) {
+//            mIdlingResource = new SimpleIdlingResource();
+//        }
+//    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -276,6 +278,8 @@ public class MainActivity extends AppCompatActivity implements
             loadingIndicator = savedInstanceState.getBoolean(LOADING_INDICATOR);
             uploadCount = savedInstanceState.getInt(UPLOAD_COUNT);
             uploadCountFinal = savedInstanceState.getInt(UPLOAD_COUNT_FINAL);
+            downloadCount = savedInstanceState.getInt(DOWNLOAD_COUNT);
+            downloadCountFinal = savedInstanceState.getInt(DOWNLOAD_COUNT_FINAL);
 
         } else {
             // Initialize the state vars
@@ -292,8 +296,6 @@ public class MainActivity extends AppCompatActivity implements
             mUserUid = sharedPreferences.getString(LOCAL_USER_UID,"");
             databaseVisibility = sharedPreferences.getString(DATABASE_VISIBILITY, USER_DATABASE);
             loadingIndicator = false;
-            uploadCount = 0;
-            uploadCountFinal = 0;
         }
 
         // Init the main view
@@ -391,6 +393,7 @@ public class MainActivity extends AppCompatActivity implements
         lessonsContainer.setVisibility(mainVisibility);
         partsContainer.setVisibility(partsVisibility);
         logContainer.setVisibility(logVisibility);
+
         mainFragment.setLoadingIndicator(loadingIndicator);
 
         Log.d(TAG, "lessonsContainer visibility:" + lessonsContainer.getVisibility());
@@ -398,7 +401,7 @@ public class MainActivity extends AppCompatActivity implements
         Log.d(TAG, "logContainer visibility:" + logContainer.getVisibility());
 
         // Get the IdlingResource instance for testing
-        getIdlingResource();
+        //getIdlingResource();
 
         /*
          * The IdlingResource is null in production as set by the @Nullable annotation which means
@@ -523,7 +526,7 @@ public class MainActivity extends AppCompatActivity implements
                                 uploadImagesAndDatabase();
                                 break;
                             case 1:
-                                uploadDatabase();
+                                uploadLesson();
                                 break;
                             default:
                                 break;
@@ -1135,6 +1138,8 @@ public class MainActivity extends AppCompatActivity implements
                 Log.d(TAG, "local_image_uri: " + local_image_uri);
                 if (local_image_uri != null || local_video_uri != null ) {
                     // Total number of images/videos to upload
+
+                    // SET THE INITIAL STATE
                     uploadCountFinal++;
                 }
 
@@ -1147,7 +1152,7 @@ public class MainActivity extends AppCompatActivity implements
             cursor.close();
         }
 
-        // This will count the actual uploads
+        // SET THE INITIAL STATE
         uploadCount = 0;
 
         Log.d(TAG, "uploadCountFinal:" + uploadCountFinal + " images to upload");
@@ -1157,13 +1162,14 @@ public class MainActivity extends AppCompatActivity implements
         loadingIndicator = true;
         mainFragment.setLoadingIndicator(true);
 
-        // After uploading images, this method will upload the database
+        // After uploading images, this method (in the call back) will trigger the upload of the
+        // database
         firebaseFragment.uploadImagesAndDatabase(selectedLesson_id);
 
     }
 
 
-    private void uploadDatabase() {
+    private void uploadLesson() {
 
         if (selectedLesson_id == -1) {
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
@@ -1179,8 +1185,8 @@ public class MainActivity extends AppCompatActivity implements
             return;
         }
 
-        uploadCount = 0;
-        uploadCountFinal = 1;
+
+        Log.d(TAG, "uploadLesson: uploadCountFinal:" + uploadCountFinal);
 
         firebaseFragment.addToLog("STARTING UPLOAD TEXT: " + uploadCountFinal + " files to upload.");
 
@@ -1590,6 +1596,9 @@ public class MainActivity extends AppCompatActivity implements
                 "Canceled!", Toast.LENGTH_LONG).show();
     }
 
+    /**
+     * Manage the upload of images
+     */
     // Receive communication form MyFirebaseFragment instance
     @Override
     public void onUploadImageSuccess() {
@@ -1615,7 +1624,10 @@ public class MainActivity extends AppCompatActivity implements
 
             firebaseFragment.addToLog(RELEASE);
 
-            uploadDatabase();
+            // NOW UPLOAD THE DATABASE
+
+            // --> CALL THE FUNCTION
+            uploadLesson();
 
         }
     }
@@ -1648,18 +1660,17 @@ public class MainActivity extends AppCompatActivity implements
             });
             snackBar.show();
 
-            uploadDatabase();
-            loadingIndicator = false;
-            mainFragment.setLoadingIndicator(false);
-            mainFragment.deselectViews();
-            selectedLesson_id = -1;
-
             firebaseFragment.addToLog(RELEASE);
+
+            // NOW UPLOAD THE DATABASE
+            uploadLesson();
+
         }
     }
 
+
     @Override
-    public void onUploadDatabaseSuccess() {
+    public void onUploadLessonSuccess() {
 
         uploadCount++;
 
@@ -1688,7 +1699,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onUploadDatabaseFailure(@NonNull Exception e) {
+    public void onUploadLessonFailure(@NonNull Exception e) {
         Toast.makeText(mContext,
                 "Error on uploading:" + e.getMessage(), Toast.LENGTH_LONG).show();
         Log.e(TAG, "onUploadDatabaseFailure error:" + e.getMessage());
@@ -1720,12 +1731,17 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
+
+    /**
+     * Manage the database download
+     */
     @Override
     public void onDownloadDatabaseSuccess(int nImagesToDownload) {
 
         downloadCountFinal = nImagesToDownload;
 
         if (nImagesToDownload == 0){
+
             loadingIndicator = false;
             mainFragment.setLoadingIndicator(false);
 
@@ -1733,6 +1749,7 @@ public class MainActivity extends AppCompatActivity implements
                     "Download completed.",
                     Snackbar.LENGTH_SHORT);
             snackBar.show();
+
         } else {
 
             Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
@@ -1774,9 +1791,8 @@ public class MainActivity extends AppCompatActivity implements
 
         downloadCount++;
 
-        Log.d(TAG, "downloadCount:"  + downloadCount);
-        firebaseFragment.addToLog("download count " +
-                downloadCount + "/" + downloadCountFinal);
+        Log.d(TAG, "downloadCount:"  + downloadCount + "/" + downloadCountFinal);
+        firebaseFragment.addToLog("download count " + downloadCount + "/" + downloadCountFinal);
 
         if (downloadCount >= downloadCountFinal) {
 
@@ -1791,6 +1807,7 @@ public class MainActivity extends AppCompatActivity implements
             });
             snackBar.show();
 
+            // FINISHED DOWNLOADING
             loadingIndicator = false;
             mainFragment.setLoadingIndicator(false);
 
@@ -1819,6 +1836,7 @@ public class MainActivity extends AppCompatActivity implements
             });
             snackBar.show();
 
+            // FINISHED DOWNLOADING
             loadingIndicator = false;
             mainFragment.setLoadingIndicator(false);
 
@@ -1969,6 +1987,8 @@ public class MainActivity extends AppCompatActivity implements
         outState.putBoolean(LOADING_INDICATOR, loadingIndicator);
         outState.putInt(UPLOAD_COUNT, uploadCount);
         outState.putInt(UPLOAD_COUNT_FINAL, uploadCountFinal);
+        outState.putInt(DOWNLOAD_COUNT, downloadCount);
+        outState.putInt(DOWNLOAD_COUNT_FINAL, downloadCountFinal);
 
         super.onSaveInstanceState(outState);
     }

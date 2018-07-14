@@ -50,7 +50,8 @@ public class MainFragment extends Fragment implements
     private static final String SELECTED_LESSON_ID = "selectedLessonId";
     private static final String DATABASE_VISIBILITY = "databaseVisibility";
 
-    //private static final String LESSON_TITLE = "lesson_title";
+    private static final String LOADING_INDICATOR = "loadingIndicator";
+
 
     // Loader id
     private static final int ID_LESSONS_LOADER = 1;
@@ -59,10 +60,11 @@ public class MainFragment extends Fragment implements
     // State vars
     private long selectedLesson_id;
     private String databaseVisibility;
+    private boolean loadingIndicator;
 
     // Views
     private TextView mErrorMessageDisplay;
-    private ProgressBar mLoadingIndicator;
+    private ProgressBar mLoadingIndicatorView;
     private RecyclerView mClassesList;
     private View mSelectedView;
 
@@ -108,6 +110,7 @@ public class MainFragment extends Fragment implements
         if (savedInstanceState != null) {
             selectedLesson_id = savedInstanceState.getLong(SELECTED_LESSON_ID);
             databaseVisibility = savedInstanceState.getString(DATABASE_VISIBILITY);
+            loadingIndicator = savedInstanceState.getBoolean(LOADING_INDICATOR);
             //lessonTitle = savedInstanceState.getString(LESSON_TITLE);
         } else {
             // Initialize the state vars
@@ -115,7 +118,10 @@ public class MainFragment extends Fragment implements
             // Recover the local user uid for handling the database global consistency
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
             databaseVisibility = sharedPreferences.getString(DATABASE_VISIBILITY, USER_DATABASE);
+            loadingIndicator = false;
         }
+
+
 
         // Query the database and set the adapter with the cursor data
         if (null != getActivity()) {
@@ -141,8 +147,21 @@ public class MainFragment extends Fragment implements
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
 
         mErrorMessageDisplay = rootView.findViewById(R.id.tv_error_message_display);
-        mLoadingIndicator = rootView.findViewById(R.id.pb_loading_indicator);
+        mLoadingIndicatorView = rootView.findViewById(R.id.pb_loading_indicator);
         mClassesList = rootView.findViewById(R.id.rv_lessons);
+
+        // recovering the instance state
+        if (savedInstanceState != null) {
+            loadingIndicator = savedInstanceState.getBoolean(LOADING_INDICATOR);
+        } else {
+            loadingIndicator = false;
+        }
+
+        if (loadingIndicator) {
+            mLoadingIndicatorView.setVisibility(View.VISIBLE);
+        } else {
+            mLoadingIndicatorView.setVisibility(View.GONE);
+        }
 
         // Set the layout of the recycler view
         int nColumns = numberOfColumns();
@@ -161,6 +180,7 @@ public class MainFragment extends Fragment implements
             mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
         }
 
+
         // Return root view
         return rootView;
     }
@@ -175,6 +195,8 @@ public class MainFragment extends Fragment implements
 
         savedInstanceState.putLong(SELECTED_LESSON_ID, selectedLesson_id);
         savedInstanceState.putString(DATABASE_VISIBILITY, databaseVisibility);
+
+        savedInstanceState.putBoolean(LOADING_INDICATOR, loadingIndicator);
 
         super.onSaveInstanceState(savedInstanceState);
     }
@@ -301,9 +323,9 @@ public class MainFragment extends Fragment implements
         }
 
         // Send to the main activity the order to setting the idling resource state
-        mIdlingCallback.onIdlingResource(true);
+        //mIdlingCallback.onIdlingResource(true);
 
-        //mLoadingIndicator.setVisibility(View.INVISIBLE);
+        //mLoadingIndicatorView.setVisibility(View.INVISIBLE);
 
         // Pass the data to the adapter
         mAdapter.swapCursor(data, databaseVisibility);
@@ -495,11 +517,13 @@ public class MainFragment extends Fragment implements
 
     public void setLoadingIndicator(Boolean value) {
 
-        if (mLoadingIndicator != null) {
+        loadingIndicator = value;
+
+        if (mLoadingIndicatorView != null) {
             if (value) {
-                mLoadingIndicator.setVisibility(View.VISIBLE);
+                mLoadingIndicatorView.setVisibility(View.VISIBLE);
             } else {
-                mLoadingIndicator.setVisibility(View.INVISIBLE);
+                mLoadingIndicatorView.setVisibility(View.INVISIBLE);
             }
         }
     }

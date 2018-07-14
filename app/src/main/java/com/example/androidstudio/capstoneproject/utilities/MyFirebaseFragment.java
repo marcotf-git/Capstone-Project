@@ -93,7 +93,7 @@ public class MyFirebaseFragment extends Fragment {
     private OnCloudListener mCallback;
 
     // log buffer
-    List<String> logBuffer = new ArrayList<>();
+    private static List<String> logBuffer = new ArrayList<>();
 
 
 
@@ -102,8 +102,8 @@ public class MyFirebaseFragment extends Fragment {
 
         void onUploadImageSuccess();
         void onUploadImageFailure(@NonNull Exception e);
-        void onUploadDatabaseSuccess();
-        void onUploadDatabaseFailure(@NonNull Exception e);
+        void onUploadLessonSuccess();
+        void onUploadLessonFailure(@NonNull Exception e);
 
         void onDownloadDatabaseSuccess(int nImagesToDownload);
         void onDownloadDatabaseFailure(@NonNull Exception e);
@@ -385,7 +385,7 @@ public class MyFirebaseFragment extends Fragment {
 
     // Helper method to upload the lesson text to
     // Firebase Database
-    public void uploadLesson(Long lesson_id) {
+    public void uploadLesson(long lesson_id) {
 
         Log.d(TAG, "uploadLesson lesson_id:" + lesson_id);
 
@@ -529,7 +529,7 @@ public class MyFirebaseFragment extends Fragment {
                         addToLog(time_stamp + ":\nLesson " + logText +
                                 "\nDocumentSnapshot successfully written with name:" + documentName);
 
-                        mCallback.onUploadDatabaseSuccess();
+                        mCallback.onUploadLessonSuccess();
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -542,7 +542,7 @@ public class MyFirebaseFragment extends Fragment {
                                 "\nError writing document on Firebase!" +
                                 "\nDocument name:" + documentName +"\n" + e.getMessage());
 
-                        mCallback.onUploadDatabaseFailure(e);
+                        mCallback.onUploadLessonFailure(e);
                     }
                 });
 
@@ -848,8 +848,6 @@ public class MyFirebaseFragment extends Fragment {
 
          // PREPARE TO DOWNLOAD THE FILES
 
-         int nImagesToDownload = 0;
-
          // Load the images uri's into the images array
          contentResolver = mContext.getContentResolver();
          Cursor mCursor = contentResolver.query(
@@ -867,6 +865,7 @@ public class MyFirebaseFragment extends Fragment {
 
          int nRows = mCursor.getCount();
          mCursor.moveToFirst();
+        int nImagesToDownload = 0;
 
         // Get all the parts and sore all image cloud uri's in an array of Image instances
          List<Image> images = new ArrayList<>();
@@ -920,6 +919,9 @@ public class MyFirebaseFragment extends Fragment {
 
          // tell to the main activity the state and the number of images to download for control
          mCallback.onDownloadDatabaseSuccess(nImagesToDownload);
+         if (nImagesToDownload == 0) {
+             return;
+         }
 
          // BEGIN TO DOWNLOAD THE FILES
 
@@ -1755,7 +1757,7 @@ public class MyFirebaseFragment extends Fragment {
                             .appendPath(Long.toString(log_id)).build();
                     if (uriToDelete != null) {
                         Log.d(TAG, "uriToDelete:" + uriToDelete.toString());
-                        int nRowsDeleted = mContext.getContentResolver().delete(uriToDelete, null, null);
+                        int nRowsDeleted = contentResolver.delete(uriToDelete, null, null);
                         Log.d(TAG, "addToLog nRowsDeleted:" + nRowsDeleted);
                         nRows--;
                     }
