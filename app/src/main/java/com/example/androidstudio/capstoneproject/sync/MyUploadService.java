@@ -20,6 +20,7 @@ import com.example.androidstudio.capstoneproject.data.Lesson;
 import com.example.androidstudio.capstoneproject.data.LessonPart;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.example.androidstudio.capstoneproject.data.UploadingImage;
+import com.example.androidstudio.capstoneproject.utilities.NotificationUtils;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -163,6 +164,8 @@ public class MyUploadService extends IntentService {
             sendMessages();
             messages.add("UPLOAD LESSON FINISHED WITH ERROR");
             sendMessages();
+            // notify the user that the task (synchronized) has finished
+            NotificationUtils.notifyUserBecauseUploadFinished(mContext);
             return;
         }
 
@@ -171,11 +174,13 @@ public class MyUploadService extends IntentService {
         if (nRows == 0) {
             Log.d(TAG, "uploadImagesAndDatabase: no parts found in local database for the" +
                     " lesson _id:" + lesson_id);
-            partsCursor.close();
+
             messages.add("Error: no parts in this lesson");
             sendMessages();
             messages.add("UPLOAD LESSON FINISHED WITH ERROR");
             sendMessages();
+            // notify the user that the task (synchronized) has finished
+            NotificationUtils.notifyUserBecauseUploadFinished(mContext);
             return;
         }
 
@@ -218,8 +223,6 @@ public class MyUploadService extends IntentService {
             // get the next part
         } while (partsCursor.moveToNext());
 
-        partsCursor.close();
-
 
         // If there aren't images, go to upload lesson directly
         if (images.size() == 0) {
@@ -229,6 +232,8 @@ public class MyUploadService extends IntentService {
             myLog.addToLog ("uploadImagesAndDatabase: no images in the database");
             messages.add("UPLOAD LESSON FINISHED OK");
             sendMessages();
+            // notify the user that the task (synchronized) has finished
+            NotificationUtils.notifyUserBecauseUploadFinished(mContext);
             return;
         } else {
             Log.d(TAG, "uploadImagesAndDatabase: uri's of the images stored in the Image array:" + images.toString());
@@ -401,8 +406,6 @@ public class MyUploadService extends IntentService {
         time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                 .format(new Date());
 
-        // Close the lesson cursor
-        cursorLesson.close();
 
         // Construct a Lesson instance and set with the data from database
         Lesson lesson = new Lesson();
@@ -474,7 +477,6 @@ public class MyUploadService extends IntentService {
 
             } while (cursorParts.moveToNext());
 
-            cursorParts.close();
         }
 
 
@@ -591,6 +593,9 @@ public class MyUploadService extends IntentService {
             messages.add(message);
             sendMessages();
             uploadLesson(lesson_id);
+
+            // notify the user that the task (synchronized) has finished
+            NotificationUtils.notifyUserBecauseUploadFinished(mContext);
         }
 
 
@@ -627,6 +632,9 @@ public class MyUploadService extends IntentService {
             sendMessages();
             messages.add("UPLOAD LESSON FINISHED WITH ERROR");
             sendMessages();
+
+            // notify the user that the task (synchronized) has finished
+            NotificationUtils.notifyUserBecauseUploadFinished(mContext);
         }
 
     }

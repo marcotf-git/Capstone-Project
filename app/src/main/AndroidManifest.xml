@@ -128,6 +128,10 @@
             android:name=".sync.MyUploadService"
             android:exported="false"/>
 
+        <service
+            android:name=".utilities.LearningAppIntentService"
+            android:exported="false"/>
+
     </application>
 
 </manifest>

@@ -19,6 +19,7 @@ import com.example.androidstudio.capstoneproject.data.Image;
 import com.example.androidstudio.capstoneproject.data.Lesson;
 import com.example.androidstudio.capstoneproject.data.LessonPart;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
+import com.example.androidstudio.capstoneproject.utilities.NotificationUtils;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -601,6 +602,8 @@ public class MyDownloadService extends IntentService {
             myLog.addToLog("DOWNLOAD IMAGES/VIDEOS FINISHED");
             messages.add("DOWNLOAD IMAGES/VIDEOS FINISHED");
             sendMessages();
+            // notify the user that the task (synchronized) has finished
+            NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
             return;
         }
 
@@ -650,6 +653,8 @@ public class MyDownloadService extends IntentService {
                 sendMessages();
                 messages.add("REFRESH USER FINISHED WITH ERROR");
                 sendMessages();
+                // notify the user that the task (synchronized) has finished
+                NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
                 return;
             }
 
@@ -785,6 +790,9 @@ public class MyDownloadService extends IntentService {
                 messages.add("REFRESH GROUP FINISHED OK");
             }
             sendMessages();
+
+            // notify the user that the task (synchronized) has finished
+            NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
         }
 
     }
@@ -821,6 +829,9 @@ public class MyDownloadService extends IntentService {
                 messages.add("REFRESH GROUP FINISHED WITH ERROR");
             }
             sendMessages();
+
+            // notify the user that the task (synchronized) has finished
+            NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
         }
 
     }

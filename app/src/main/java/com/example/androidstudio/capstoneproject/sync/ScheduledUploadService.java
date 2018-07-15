@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
+import com.example.androidstudio.capstoneproject.utilities.NotificationUtils;
 import com.firebase.jobdispatcher.JobParameters;
 import com.firebase.jobdispatcher.JobService;
 
@@ -38,6 +39,7 @@ public class ScheduledUploadService extends JobService {
 
             @Override
             protected void onPostExecute(Object o) {
+
                 jobFinished(jobParameters, false);
             }
         };
@@ -49,6 +51,9 @@ public class ScheduledUploadService extends JobService {
     @Override
     public boolean onStopJob(JobParameters jobParameters) {
         if (mBackgroundTask != null) mBackgroundTask.cancel(true);
+
+
+
         return true; // retry the job as soon as possible
     }
 }

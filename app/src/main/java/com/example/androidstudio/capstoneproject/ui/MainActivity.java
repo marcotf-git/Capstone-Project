@@ -578,8 +578,7 @@ public class MainActivity extends AppCompatActivity implements
 
                         final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                                 "The app will start downloading in background!\n" +
-                                        "Only on un-metered networks.\n " +
-                                        "Please, see the log...\n",
+                                        "Only on un-metered networks. Please, see the log...\n",
                                 Snackbar.LENGTH_INDEFINITE);
                         snackBar.setAction("Dismiss", new View.OnClickListener() {
                             @Override
@@ -634,8 +633,7 @@ public class MainActivity extends AppCompatActivity implements
 
                             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                                     "The app will start uploading in background!\n" +
-                                    "Only on un-metered networks.\n " +
-                                    "Please, see the log...",
+                                    "Only on un-metered networks. Please, see the log...",
                                     Snackbar.LENGTH_INDEFINITE);
                             snackBar.setAction("Dismiss", new View.OnClickListener() {
                                 @Override

@@ -3,17 +3,28 @@ package com.example.androidstudio.capstoneproject.sync;
 import android.content.Context;
 import android.util.Log;
 
+import com.example.androidstudio.capstoneproject.utilities.NotificationUtils;
 
 
 // called by ScheduledDownloadService and ScheduledUploadService
 public class ScheduledTasks {
 
     private static final String TAG = ScheduledTasks.class.getSimpleName();
+
     public static final String ACTION_SYNC_GROUP_TABLE = "sync-group-database";
     public static final String ACTION_UPLOAD_LESSON = "upload-lesson";
+    public static final String ACTION_DISMISS_NOTIFICATION = "dismiss_notification";
+
+    private static final int ACTION_IGNORE_PENDING_INTENT_ID = 3000;
 
 
     // Entry points
+    public static void executeTask(Context context, String action) {
+        if (ACTION_DISMISS_NOTIFICATION.equals(action)) {
+            NotificationUtils.clearAllNotifications(context);
+        }
+    }
+
     public static void executeTask(Context context, String action, String userUid, Long lesson_id) {
         if (ACTION_UPLOAD_LESSON.equals(action)) {
             uploadLesson(context, userUid, lesson_id);
@@ -25,6 +36,8 @@ public class ScheduledTasks {
             syncDatabase(context, userUid, databaseVisibility);
         }
     }
+
+
 
 
     // Helper methods 
