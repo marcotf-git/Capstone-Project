@@ -23,7 +23,7 @@ public class MyLog {
     private Context mContext;
 
 
-    MyLog(Context mContext) {
+    public MyLog(Context mContext) {
         this.mContext = mContext;
     }
 

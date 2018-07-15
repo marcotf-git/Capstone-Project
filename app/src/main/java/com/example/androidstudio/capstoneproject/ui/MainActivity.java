@@ -37,12 +37,10 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.androidstudio.capstoneproject.IdlingResource.SimpleIdlingResource;
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
-import com.example.androidstudio.capstoneproject.sync.MyDownload;
 import com.example.androidstudio.capstoneproject.sync.MyDownloadService;
-import com.example.androidstudio.capstoneproject.sync.MyUpload;
+import com.example.androidstudio.capstoneproject.sync.MyLog;
 import com.example.androidstudio.capstoneproject.sync.MyUploadService;
 import com.example.androidstudio.capstoneproject.sync.ScheduledUtilities;
 import com.example.androidstudio.capstoneproject.utilities.MyFirebaseFragment;
@@ -157,9 +155,7 @@ import static android.view.View.VISIBLE;
 public class MainActivity extends AppCompatActivity implements
         SharedPreferences.OnSharedPreferenceChangeListener,
         MainFragment.OnLessonListener,
-        //MainFragment.OnIdlingResourceListener,
         PartsFragment.OnLessonPartListener,
-        //PartsFragment.OnIdlingResourceListener,
         DeleteLessonLocallyDialogFragment.DeleteLessonDialogListener,
         DeletePartDialogFragment.DeletePartDialogListener,
         MyFirebaseFragment.OnCloudListener,
@@ -244,25 +240,12 @@ public class MainActivity extends AppCompatActivity implements
     static private MyFirebaseFragment firebaseFragment;
     private LogFragment logFragment;
 
+    private MyLog myLog;
+
     // Context
     private Context mContext;
 
 
-
-    // The Idling Resource which will be null in production.
-    //@Nullable
-    //private SimpleIdlingResource mIdlingResource;
-
-
-    /**
-     * Only called from test, creates and returns a new {@link SimpleIdlingResource}.
-     */
-//    @VisibleForTesting
-//    public void getIdlingResource() {
-//        if (mIdlingResource == null) {
-//            mIdlingResource = new SimpleIdlingResource();
-//        }
-//    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -408,20 +391,8 @@ public class MainActivity extends AppCompatActivity implements
         Log.d(TAG, "partsContainer visibility:" + partsContainer.getVisibility());
         Log.d(TAG, "logContainer visibility:" + logContainer.getVisibility());
 
-        // Get the IdlingResource instance for testing
-        //getIdlingResource();
 
-        /*
-         * The IdlingResource is null in production as set by the @Nullable annotation which means
-         * the value is allowed to be null.
-         *
-         * If the idle state is true, Espresso can perform the next action.
-         * If the idle state is false, Espresso will wait until it is true before
-         * performing the next action.
-         */
-//        if (mIdlingResource != null) {
-//            mIdlingResource.setIdleState(false);
-//        }
+        myLog = new MyLog(mContext);
 
         // Initialize Firebase components
         FirebaseFirestore mFirebaseDatabase = FirebaseFirestore.getInstance();
@@ -654,9 +625,6 @@ public class MainActivity extends AppCompatActivity implements
 
         uploadJobDialog = builder.create();
 
-
-        //setupServiceReceiver();
-
         listContainer.setVisibility(VISIBLE);
     }
 
@@ -727,8 +695,7 @@ public class MainActivity extends AppCompatActivity implements
             contextualizeMenu();
         }
 
-        // Set the firebaseFragment
-        //firebaseFragment.setFirebase(mFirebaseDatabase, mFirebaseStorage, mUserUid);
+        // Setup the firebaseFragment
         firebaseFragment.setFirebase(mUserUid);
 
         Log.d(TAG, "onSignedInInitialize mUsername:" + mUsername);
@@ -774,7 +741,7 @@ public class MainActivity extends AppCompatActivity implements
     /**
      * The following methods handle menu creation and setting the menu according to the app state
      */
-    // Inflate the menu
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
@@ -1175,139 +1142,6 @@ public class MainActivity extends AppCompatActivity implements
         actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
     }
 
-//    private void deselectViews() {
-//        // Deselect the last view selected
-//        mainFragment.deselectViews();
-//        selectedLesson_id = -1;
-//        partsFragment.deselectViews();
-//        selectedLessonPart_id = -1;
-//    }
-
-
-//    /**
-//     * Methods for refreshing/uploading the database.
-//     */
-
-
-
-
-
-
-    // AsyncTask to process the refresh of the database in background
-//    private static class RefreshTask extends AsyncTask<Object, Void, Void> {
-//
-//        private String databaseVisibility;
-//
-//        RefreshTask(String databaseVisibility) {
-//            super();
-//            this.databaseVisibility = databaseVisibility;
-//        }
-//
-//        @Override
-//        protected Void doInBackground(Object... object) {
-//            //firebaseFragment.downloadDatabase(databaseVisibility);
-//            return null;
-//        }
-//
-//    }
-
-
-    // It will upload the images and videos, and after, upload the database
-//    private void uploadImagesAndDatabase() {
-//
-//        // Verify if there is a lesson selected
-//        if (selectedLesson_id == -1) {
-//            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-//                    "Please, select a lesson to upload the images or videos!\n" +
-//                    "Sorry,there isn't an option to upload just one part!",
-//                    Snackbar.LENGTH_INDEFINITE);
-//            snackBar.setAction("Dismiss", new View.OnClickListener() {
-//                @Override
-//                public void onClick(View v) {
-//                    snackBar.dismiss();
-//                }
-//            });
-//            snackBar.show();
-//            return;
-//        }
-
-        // query the parts table to count for the number of images to upload
-        /* Perform the ContentProvider query for the lesson parts */
-//        String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + " =? ";
-//        String[] selectionArgs = {Long.toString(selectedLesson_id)};
-//        Cursor cursor = this.getContentResolver().query(
-//                LessonsContract.MyLessonPartsEntry.CONTENT_URI,
-//                null,
-//                selection,
-//                selectionArgs,
-//                null);
-//
-//        uploadCountFinal = 0;
-//
-//        // Count the images
-//        if (cursor != null) {
-//            cursor.moveToFirst();
-//
-//            do {
-//                long part_id = cursor.getLong(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
-//                String local_video_uri = cursor.
-//                        getString(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
-//                String local_image_uri = cursor.
-//                        getString(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
-//                Log.d(TAG, "part_id: " + part_id);
-//                Log.d(TAG, "local_video_uri: " + local_video_uri);
-//                Log.d(TAG, "local_image_uri: " + local_image_uri);
-//                if (local_image_uri != null || local_video_uri != null ) {
-//                    // Total number of images/videos to upload
-//
-//                    // SET THE INITIAL STATE
-//                    uploadCountFinal++;
-//                }
-//
-//            } while (cursor.moveToNext());
-//
-//            Log.d(TAG, "cursor: getCount:" + cursor.getCount());
-//        }
-//
-//        if (cursor != null) {
-//            cursor.close();
-//        }
-//
-//        // SET THE INITIAL STATE
-//        uploadCount = 0;
-
-        //Log.d(TAG, "uploadCountFinal:" + uploadCountFinal + " images to upload");
-//        firebaseFragment.addToLog("STARTING UPLOAD IMAGES/VIDEOS: " +
-//                uploadCountFinal + " files to upload.");
-
-//        loadingIndicator = true;
-//        mainFragment.setLoadingIndicator(true);
-
-        // After uploading images, this method (in the call back) will trigger the upload of the
-        // database
-        //firebaseFragment.uploadImagesAndDatabase(selectedLesson_id);
-
-//    }
-
-
-    // AsyncTask to process the upload of the lesson in background
-//    private static class UploadTask extends AsyncTask<Object, Void, Void> {
-//
-//        private long selectedLesson_id;
-//
-//        UploadTask(long selectedLesson_id) {
-//            super();
-//            this.selectedLesson_id = selectedLesson_id;
-//        }
-//
-//        @Override
-//        protected Void doInBackground(Object... object) {
-//            //firebaseFragment.uploadLesson(selectedLesson_id);
-//            return null;
-//        }
-//    }
-
-
     /**
      * Other helper methods. Handle for editing/deleting.
      */
@@ -1539,7 +1373,6 @@ public class MainActivity extends AppCompatActivity implements
             selectedLesson_id = -1;
         }
 
-        //cursor.close();
     }
 
 
@@ -1565,14 +1398,13 @@ public class MainActivity extends AppCompatActivity implements
                 "Canceled!", Toast.LENGTH_LONG).show();
     }
 
-    // Receive from the MainFragment and PartsFragment the order to setting the idling resource
-
 
     // Receive communication from the PartsFragment
     @Override
     public void onPartSelected(long _id) {
         selectedLessonPart_id = _id;
     }
+
 
     // Receive communication from the PartsFragment
     @Override
@@ -1697,260 +1529,10 @@ public class MainActivity extends AppCompatActivity implements
                 "Canceled!", Toast.LENGTH_LONG).show();
     }
 
-    /**
-     * Manage the upload of images
-     */
-    // Receive communication form MyFirebaseFragment instance
-    @Override
-    public void onUploadImageSuccess() {
-
-        uploadCount++;
-
-        Log.d(TAG, "uploadCount:"  + uploadCount);
-        firebaseFragment.addToLog("upload count " +  uploadCount + "/" + uploadCountFinal);
-
-        if (uploadCount >= uploadCountFinal) {
-
-            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                    "Upload of images complete successfully!" +
-                            "\nNow uploading the lesson text...",
-                    Snackbar.LENGTH_INDEFINITE);
-            snackBar.setAction("Dismiss", new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
-            });
-            snackBar.show();
-
-            firebaseFragment.addToLog(RELEASE);
-
-            // NOW UPLOAD THE DATABASE
-
-            // --> CALL THE FUNCTION
-            uploadLesson();
-
-        }
-    }
-
-
-    @Override
-    public void onUploadImageFailure(@NonNull Exception e) {
-
-        Toast.makeText(mContext,
-                "Error on uploading:" + e.getMessage(), Toast.LENGTH_LONG).show();
-        Log.e(TAG, "onUploadImageFailure error:" + e.getMessage());
-
-        uploadCount++;
-
-        Log.d(TAG, "uploadCount:"  + uploadCount);
-        firebaseFragment.addToLog("upload count " + uploadCount +
-                "/" + uploadCountFinal);
-
-        if (uploadCount >= uploadCountFinal) {
-
-            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                    "Upload of images complete, but " +
-                            "with error!" + "\nPlease, see the log!\nNow uploading the text...",
-                    Snackbar.LENGTH_INDEFINITE);
-            snackBar.setAction("Dismiss", new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
-            });
-            snackBar.show();
-
-            firebaseFragment.addToLog(RELEASE);
-
-            // NOW UPLOAD THE DATABASE
-            uploadLesson();
-
-        }
-    }
-
-
-    @Override
-    public void onUploadLessonSuccess() {
-
-        uploadCount++;
-
-        Log.d(TAG, "uploadCount:"  + uploadCount);
-        firebaseFragment.addToLog("upload count " + uploadCount);
-
-        if (uploadCount >= uploadCountFinal) {
-            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                    "Upload of text complete successfully!",
-                    Snackbar.LENGTH_INDEFINITE);
-            snackBar.setAction("Dismiss", new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
-            });
-            snackBar.show();
-
-            loadingIndicator = false;
-            mainFragment.setLoadingIndicator(false);
-            mainFragment.deselectViews();
-            selectedLesson_id = -1;
-
-            firebaseFragment.addToLog(RELEASE);
-        }
-    }
-
-    @Override
-    public void onUploadLessonFailure(@NonNull Exception e) {
-        Toast.makeText(mContext,
-                "Error on uploading:" + e.getMessage(), Toast.LENGTH_LONG).show();
-        Log.e(TAG, "onUploadDatabaseFailure error:" + e.getMessage());
-
-        uploadCount++;
-
-        Log.d(TAG, "uploadCount:"  + uploadCount);
-        firebaseFragment.addToLog("upload count " + uploadCount);
-
-        if (uploadCount >= uploadCountFinal) {
-            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                    "Upload of text complete, but " +
-                            "with error!" + "\nPlease, see the log!",
-                    Snackbar.LENGTH_INDEFINITE);
-            snackBar.setAction("Dismiss", new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
-            });
-            snackBar.show();
-
-            loadingIndicator = false;
-            mainFragment.setLoadingIndicator(false);
-            mainFragment.deselectViews();
-            selectedLesson_id = -1;
-
-            firebaseFragment.addToLog(RELEASE);
-        }
-    }
-
-
-    /**
-     * Manage the database download
-     */
-    @Override
-    public void onDownloadDatabaseSuccess(int nImagesToDownload) {
-
-        downloadCountFinal = nImagesToDownload;
-
-        if (nImagesToDownload == 0){
-
-            loadingIndicator = false;
-            mainFragment.setLoadingIndicator(false);
-
-            Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                    "Download completed.",
-                    Snackbar.LENGTH_SHORT);
-            snackBar.show();
-
-        } else {
-
-            Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                    "Download of text completed.\n" +
-                    "Now, downloading the images...",
-                    Snackbar.LENGTH_SHORT);
-            snackBar.show();
-        }
-
-        firebaseFragment.addToLog(RELEASE);
-    }
-
-
-    @Override
-    public void onDownloadDatabaseFailure(@NonNull Exception e) {
-
-        loadingIndicator = false;
-        mainFragment.setLoadingIndicator(false);
-
-        final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                "Error in downloading the database:" + "\n" + e.getMessage() +
-                "\nPlease, see the log!",
-                Snackbar.LENGTH_INDEFINITE);
-        snackBar.setAction("Dismiss", new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                snackBar.dismiss();
-            }
-        });
-        snackBar.show();
-
-        Log.e(TAG, "onDownloadFailure error:" + e.getMessage());
-
-        firebaseFragment.addToLog(RELEASE);
-    }
-
-    @Override
-    public void onDownloadImageSuccess() {
-
-        downloadCount++;
-
-        Log.d(TAG, "downloadCount:"  + downloadCount + "/" + downloadCountFinal);
-        firebaseFragment.addToLog("download count " + downloadCount + "/" + downloadCountFinal);
-
-        if (downloadCount >= downloadCountFinal) {
-
-            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                    "Download of images complete successfully!",
-                    Snackbar.LENGTH_INDEFINITE);
-            snackBar.setAction("Dismiss", new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
-            });
-            snackBar.show();
-
-            // FINISHED DOWNLOADING
-            loadingIndicator = false;
-            mainFragment.setLoadingIndicator(false);
-
-            firebaseFragment.addToLog(RELEASE);
-        }
-
-    }
-
-
-    @Override
-    public void onDownloadImageFailure(@NonNull Exception e) {
-
-        downloadCount++;
-
-        if (downloadCount >= downloadCountFinal) {
-
-            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                    "Download of images complete with error!" + "\n" + e.getMessage() +
-                            "\nPlease, see the log!",
-                    Snackbar.LENGTH_INDEFINITE);
-            snackBar.setAction("Dismiss", new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
-            });
-            snackBar.show();
-
-            // FINISHED DOWNLOADING
-            loadingIndicator = false;
-            mainFragment.setLoadingIndicator(false);
-
-            firebaseFragment.addToLog(RELEASE);
-        }
-
-    }
 
 
     @Override
     public void onDeleteCloudDatabaseSuccess() {
-
-        firebaseFragment.addToLog(RELEASE);
 
         final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                 "Lesson text deleted from cloud database!" +
@@ -1976,8 +1558,6 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onDeleteCloudDatabaseFailure(@NonNull Exception e) {
-
-        firebaseFragment.addToLog(RELEASE);
 
         final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                 "Error on deleting text from Cloud:" + e.getMessage() +
@@ -2031,7 +1611,7 @@ public class MainActivity extends AppCompatActivity implements
             snackBar.show();
         }
 
-        firebaseFragment.addToLog(RELEASE);
+        myLog.addToLog(RELEASE);
     }
 
     @Override
@@ -2050,20 +1630,13 @@ public class MainActivity extends AppCompatActivity implements
         });
         snackBar.show();
 
-        firebaseFragment.addToLog(RELEASE);
+        myLog.addToLog(RELEASE);
     }
 
 
     /**
      * Methods for handling the activity state change
      */
-
-//    @Override
-//    public void onIdlingResource(Boolean value) {
-//        if (mIdlingResource != null) {
-//            mIdlingResource.setIdleState(value);
-//        }
-//    }
 
     // This method is saving the visibility of the fragments in static vars
     @Override
@@ -2149,7 +1722,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
-    // define a receiver to listen for communication from the services
+    // define a receiver to listen for communication from the services (upload and download services)
     private BroadcastReceiver myDownloadReceiver = new BroadcastReceiver() {
 
         @Override
@@ -2256,7 +1829,6 @@ public class MainActivity extends AppCompatActivity implements
                     });
                     snackBar.show();
                 }
-
             }
         }
     };

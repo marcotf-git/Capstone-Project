@@ -46,12 +46,9 @@ public class MainFragment extends Fragment implements
     private static final String RECYCLER_VIEW_STATE = "recyclerViewState";
     private static final String USER_DATABASE = "userDatabase";
     private static final String GROUP_DATABASE = "groupDatabase";
-
     private static final String SELECTED_LESSON_ID = "selectedLessonId";
     private static final String DATABASE_VISIBILITY = "databaseVisibility";
-
     private static final String LOADING_INDICATOR = "loadingIndicator";
-
 
     // Loader id
     private static final int ID_LESSONS_LOADER = 1;
@@ -75,7 +72,7 @@ public class MainFragment extends Fragment implements
 
     // Interfaces for communication with the main activity (sending data)
     OnLessonListener mLessonCallback;
-    //OnIdlingResourceListener mIdlingCallback;
+
 
     // Interfaces for communication with the main activity (sending data)
     public interface OnLessonListener {
@@ -88,12 +85,6 @@ public class MainFragment extends Fragment implements
     public void onAttach(Context context) {
         super.onAttach(context);
         mContext = context;
-//        try {
-//            mIdlingCallback = (OnIdlingResourceListener) context;
-//        } catch (ClassCastException e) {
-//            throw new ClassCastException(context.toString()
-//                    + " must implement OnIdlingResourceListener");
-//        }
         try {
             mLessonCallback = (OnLessonListener) context;
         } catch (ClassCastException e) {
@@ -436,7 +427,7 @@ public class MainFragment extends Fragment implements
                 }
                 // get the next image
             } while (mCursor.moveToNext());
-            // don't close the cursor: it will be used by the adapter!
+
         }
 
         Log.d(TAG, "updateWidget lessons:" + lessons.toString());
@@ -454,10 +445,6 @@ public class MainFragment extends Fragment implements
 
     }
 
-
-//    public interface OnIdlingResourceListener {
-//        void onIdlingResource(Boolean value);
-//    }
 
 
     public void setDatabaseVisibility(String dbVisibility) {

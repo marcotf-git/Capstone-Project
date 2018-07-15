@@ -143,12 +143,12 @@ public class ExoPlayerFragment extends Fragment {
     private void initializePlayer() {
 
         // Use an adaptive track selection
-        TrackSelection.Factory adaptiveTrackSelectionFactory =
-                new AdaptiveTrackSelection.Factory(BANDWIDTH_METER);
+//        TrackSelection.Factory adaptiveTrackSelectionFactory =
+//                new AdaptiveTrackSelection.Factory(BANDWIDTH_METER);
         
         player = ExoPlayerFactory.newSimpleInstance(
                 new DefaultRenderersFactory(getContext()),
-                new DefaultTrackSelector(adaptiveTrackSelectionFactory),
+                new DefaultTrackSelector(),
                 new DefaultLoadControl());
 
         player.setVideoScalingMode(C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);

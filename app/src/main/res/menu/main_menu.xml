@@ -26,12 +26,6 @@
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/action_notification"
-        android:orderInCategory="13"
-        android:title="@string/menu_action_notification_test"
-        app:showAsAction="never"/>
-
-    <item
         android:id="@+id/action_insert_fake_data"
         android:orderInCategory="12"
         android:title="@string/menu_action_insert_fake_label"
