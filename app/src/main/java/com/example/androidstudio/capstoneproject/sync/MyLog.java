@@ -30,7 +30,6 @@ public class MyLog {
     // Add data to the log table and limit its size
     public void addToLog(String logText) {
 
-
         ContentResolver contentResolver = mContext.getContentResolver();
 
         Cursor mCursor = contentResolver.query(LessonsContract.MyLogEntry.CONTENT_URI,
@@ -52,7 +51,6 @@ public class MyLog {
                 idsToDelete.add(mCursor.getLong(mCursor.getColumnIndex(LessonsContract.MyLogEntry._ID)));
                 mCursor.moveToNext();
             }
-            mCursor.close();
 
             // delete that rows
             int count = 0;
@@ -71,8 +69,6 @@ public class MyLog {
                 count++;
             }
         }
-
-        if (mCursor != null) { mCursor.close(); }
 
         // Now add the new value to the log table
         ContentValues contentValues = new ContentValues();

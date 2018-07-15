@@ -17,7 +17,7 @@ public class ScheduledUtilities {
 
     private static final String TAG = ScheduledUtilities.class.getSimpleName();
 
-    private static final int SYNC_INTERVAL_SECONDS = 240;
+    private static final int SYNC_INTERVAL_SECONDS = 60;
 
     private static final String SYNC_GROUP_TABLE_TAG = "sync_group_table_tag";
     private static final String UPLOAD_LESSON_TAG = "upload_lesson_tag";
@@ -41,6 +41,7 @@ public class ScheduledUtilities {
         bundle.putString(USER_UID, userUid);
         bundle.putString(DATABASE_VISIBILITY, databaseVisibility);
 
+        // context parameter is for the Driver
         Driver driver = new GooglePlayDriver(context);
         FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(driver);
 
@@ -110,9 +111,10 @@ public class ScheduledUtilities {
 
         Bundle bundle = new Bundle();
 
-        bundle.putLong(SELECTED_LESSON_ID, lesson_id);
         bundle.putString(USER_UID, userUid);
+        bundle.putLong(SELECTED_LESSON_ID, lesson_id);
 
+        // context parameter is for the Driver
         Driver driver = new GooglePlayDriver(context);
         FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(driver);
 

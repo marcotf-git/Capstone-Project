@@ -758,7 +758,7 @@ public class PartDetailActivity extends AppCompatActivity implements
             String cloud_video_uri = cursor.getString(cursor.
                     getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
 
-            cursor.close();
+            //cursor.close();
 
 
             if (cloud_image_uri != null) {

@@ -13,6 +13,7 @@ public class ScheduledTasks {
     public static final String ACTION_UPLOAD_LESSON = "upload-lesson";
 
 
+    // Entry points
     public static void executeTask(Context context, String action, String userUid, Long lesson_id) {
         if (ACTION_UPLOAD_LESSON.equals(action)) {
             uploadLesson(context, userUid, lesson_id);
@@ -26,12 +27,13 @@ public class ScheduledTasks {
     }
 
 
+    // Helper methods 
     synchronized private static void syncDatabase(Context context, String userUid, String databaseVisibility) {
-        Log.d(TAG, "syncDatabase: syncing group table");
+        Log.d(TAG, "syncDatabase: downloading group data");
 
         try {
-            MyDownload myDownload = new MyDownload(context, userUid, databaseVisibility);
-            myDownload.refreshDatabase();
+            MyDownloadService myDownload = new MyDownloadService(context);
+            myDownload.downloadDatabase(userUid, databaseVisibility);
         } catch (Exception e) {
             Log.e(TAG, e.getMessage());
         }
@@ -39,18 +41,17 @@ public class ScheduledTasks {
     }
 
 
-    synchronized private static void uploadLesson(Context context, String userUid, Long lesson_id) {
+    synchronized private static void uploadLesson(Context context, String userUid, long lesson_id) {
         Log.d(TAG, "uploadLesson: uploading lesson id:" + lesson_id);
 
         try {
-            MyUpload myUpload = new MyUpload(context, userUid, lesson_id);
-            myUpload.uploadImagesAndDatabase();
+            MyUploadService myUpload = new MyUploadService(context);
+            myUpload.uploadImagesAndDatabase(userUid, lesson_id);
         } catch (Exception e) {
             Log.e(TAG, e.getMessage());
         }
 
     }
-
 
 
 }

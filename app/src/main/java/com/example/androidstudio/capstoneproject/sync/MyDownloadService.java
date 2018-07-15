@@ -49,10 +49,8 @@ public class MyDownloadService extends IntentService {
     private static final String TAG = MyDownloadService.class.getSimpleName();
 
     public static final String ACTION =
-            "com.example.androidstudio.capstoneproject.sync.MyDownload"; // use same action
+            "com.example.androidstudio.capstoneproject.sync.MyDownloadService"; // use same action
 
-    // This limits the number of rows in the log table
-    private static final int MAX_ROWS_LOG_TABLE = 200;
 
     private static final String DATABASE_VISIBILITY = "databaseVisibility";
     private static final String USER_UID = "userUid";
@@ -61,7 +59,6 @@ public class MyDownloadService extends IntentService {
     private static final String VIDEO = "video";
     private static final String IMAGE = "image";
 
-    private FirebaseFirestore mFirebaseDatabase;
     private FirebaseStorage mFirebaseStorage;
 
     private List<String> messages = new ArrayList<>();
@@ -69,12 +66,23 @@ public class MyDownloadService extends IntentService {
     private int nImagesToDownload;
     private int nImagesDownloaded;
 
+    private MyLog myLog;
+
     private Context mContext;
 
 
 
-
     public MyDownloadService() { super("MyDownloadService"); }
+
+    public MyDownloadService(Context context) {
+        super("MyDownloadService");
+
+        mContext = context;
+
+        myLog = new MyLog(context);
+        messages = new ArrayList<>();
+    }
+
 
     @Override
     public void onCreate() {
@@ -85,19 +93,14 @@ public class MyDownloadService extends IntentService {
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
 
+        mContext = this;
+
+        myLog = new MyLog(this);
+        messages = new ArrayList<>();
+
         String databaseVisibility = null;
         String userUid = null;
 
-        mContext = this;
-
-        mFirebaseDatabase = FirebaseFirestore.getInstance();
-        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
-                .setTimestampsInSnapshotsEnabled(true)
-                .build();
-        mFirebaseDatabase.setFirestoreSettings(settings);
-        mFirebaseStorage = FirebaseStorage.getInstance();
-
-        MyLog myLog = new MyLog(this);
 
         // Recover information from caller activity
         if (intent != null && intent.hasExtra(DATABASE_VISIBILITY)) {
@@ -130,6 +133,7 @@ public class MyDownloadService extends IntentService {
     // Delete all in the group table (data and local files)
     public void downloadDatabase(final String userUid, final String databaseVisibility) {
 
+        // Test the parameters
         if((userUid == null) || (databaseVisibility == null)) {
             Log.e(TAG, "uploadImagesAndDatabase: failed to get parameters " +
                     "(userUid or databaseVisibility");
@@ -139,6 +143,14 @@ public class MyDownloadService extends IntentService {
             sendMessages();
             return;
         }
+
+        // Initialize Firebase instances
+        FirebaseFirestore mFirebaseDatabase = FirebaseFirestore.getInstance();
+        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
+                .setTimestampsInSnapshotsEnabled(true)
+                .build();
+        mFirebaseDatabase.setFirestoreSettings(settings);
+        mFirebaseStorage = FirebaseStorage.getInstance();
 
         // Get multiple documents (all the data in the database)
         mFirebaseDatabase.collection("lessons")
@@ -235,7 +247,7 @@ public class MyDownloadService extends IntentService {
         if (mCursor != null) {
             mCursor.moveToFirst();
             nRows = mCursor.getCount();
-            mCursor.close();
+            //mCursor.close();
         }
 
         if (nRows > 0) {
@@ -322,7 +334,6 @@ public class MyDownloadService extends IntentService {
     }
 
 
-
     // Helper method called by downloadDatabase
     // Save the data in the database
     // In case of group lessons, clear the existing table and insert new data
@@ -351,10 +362,6 @@ public class MyDownloadService extends IntentService {
             } while (mCursor.moveToNext());
         }
 
-        // grants that the cursor is closed
-        if (mCursor != null) {
-            mCursor.close();
-        }
 
         // now delete the lesson parts table (from group tables)
         int numberOfLessonPartsDeleted = contentResolver.delete(
@@ -512,9 +519,7 @@ public class MyDownloadService extends IntentService {
             // get the next part
         } while (cursor.moveToNext());
 
-        cursor.close();
     }
-
 
 
     // Helper method called by downloadDatabase
@@ -593,18 +598,14 @@ public class MyDownloadService extends IntentService {
 
         } else {
             // return if there are no images to download
-            mCursor.close();
-            addToLog("DOWNLOAD IMAGES/VIDEOS FINISHED");
+            myLog.addToLog("DOWNLOAD IMAGES/VIDEOS FINISHED");
             messages.add("DOWNLOAD IMAGES/VIDEOS FINISHED");
             sendMessages();
             return;
         }
 
-        // close the cursor
-        mCursor.close();
 
         // tell to the main activity the state and the number of images to download for control
-        //mCallback.onDownloadDatabaseSuccess(nImagesToDownload);
         if (nImagesToDownload == 0) { return; }
 
         // set the counter that will control the final message about the download
@@ -644,8 +645,10 @@ public class MyDownloadService extends IntentService {
             if (!fileCreated) {
                 Log.e(TAG, "downloadGroupImages error creating file: file not created");
                 String message = "Error: downloadGroupImages error creating file: file not created";
-                addToLog(message);
+                myLog.addToLog(message);
                 messages.add(message);
+                sendMessages();
+                messages.add("REFRESH USER FINISHED WITH ERROR");
                 sendMessages();
                 return;
             }
@@ -671,7 +674,7 @@ public class MyDownloadService extends IntentService {
                     double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
                     Log.d(TAG, "Image part id: "  + imageToDownload.getPart_id() +
                             " download is " + String.format(Locale.US, "%.2f", progress) + "% done.");
-                    addToLog("Image part id: "  + imageToDownload.getPart_id() +
+                    myLog.addToLog("Image part id: "  + imageToDownload.getPart_id() +
                             " download is " + String.format(Locale.US, "%.2f", progress) + "% done.");
                 }
             }).addOnPausedListener(new OnPausedListener<FileDownloadTask.TaskSnapshot>() {
@@ -679,7 +682,7 @@ public class MyDownloadService extends IntentService {
                 public void onPaused(FileDownloadTask.TaskSnapshot taskSnapshot) {
                     Log.d(TAG, "Image part id: "  + imageToDownload.getPart_id() +
                             " download is paused.");
-                    addToLog( "Image part id: "  + imageToDownload.getPart_id() +
+                    myLog.addToLog( "Image part id: "  + imageToDownload.getPart_id() +
                             " download is paused.");
                 }
             }).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>() {
@@ -687,7 +690,6 @@ public class MyDownloadService extends IntentService {
                 public void onSuccess(FileDownloadTask.TaskSnapshot state) {
 
                     nImagesDownloaded++;
-
                     //call helper function to handle the event.
                     handleDownloadTaskSuccess(
                             imageToDownload.getPart_id(),
@@ -698,14 +700,12 @@ public class MyDownloadService extends IntentService {
 
                     Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
 
-
                 }
             }).addOnFailureListener(new OnFailureListener() {
                 @Override
                 public void onFailure(@NonNull Exception exception) {
 
                     nImagesDownloaded++;
-
                     // Handle unsuccessful downloads
                     handleDownloadTaskFailure(
                             exception,
@@ -724,9 +724,7 @@ public class MyDownloadService extends IntentService {
                 }
             });
         }
-
     }
-
 
 
     // This handles the task success
@@ -740,11 +738,11 @@ public class MyDownloadService extends IntentService {
                 partId + " of lesson id:" + lessonId);
         Log.d(TAG, "handleDownloadTaskSuccess fileUriString " + fileUriString);
 
-        addToLog( "download count:" + nImagesDownloaded + "/" + nImagesToDownload);
+        myLog.addToLog( "download count:" + nImagesDownloaded + "/" + nImagesToDownload);
 
         String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                 .format(new Date());
-        addToLog( time_stamp + ":\nLesson id:" + lessonId + "\nSuccessfully downloaded " +
+        myLog.addToLog( time_stamp + ":\nLesson id:" + lessonId + "\nSuccessfully downloaded " +
                 imageType + " part id: " + partId + "\nfile:" + fileUriString);
 
         // Save the photoUrl in the database
@@ -778,7 +776,7 @@ public class MyDownloadService extends IntentService {
         if (nImagesToDownload == nImagesDownloaded) {
             // all tasks finished
             String message = "ALL DOWNLOAD TASKS HAVE FINISHED";
-            addToLog(message);
+            myLog.addToLog(message);
             messages.add(message);
             sendMessages();
             if (databaseVisibility.equals(USER_DATABASE)) {
@@ -803,18 +801,18 @@ public class MyDownloadService extends IntentService {
         Log.e(TAG, "handleDownloadTaskFailure failure: " + imageType + " id:" +
                 partId + " of lesson id:" + lessonId + " fileUriString:" + fileUriString, e);
 
-        addToLog( "download count:" + nImagesDownloaded + "/" + nImagesToDownload);
+        myLog.addToLog( "download count:" + nImagesDownloaded + "/" + nImagesToDownload);
 
         String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
                 .format(new Date());
 
-        addToLog(time_stamp + ":\nError: lesson id:" + lessonId + "\nDownload failure " + imageType +
+        myLog.addToLog(time_stamp + ":\nError: lesson id:" + lessonId + "\nDownload failure " + imageType +
                 " part id: " + partId + "\nfile:" + fileUriString + "\nMessage:" + e.getMessage());
 
         if (nImagesToDownload == nImagesDownloaded) {
             // all tasks finished
             String message = "ALL DOWNLOAD TASKS HAVE FINISHED";
-            addToLog(message);
+            myLog.addToLog(message);
             messages.add(message);
             sendMessages();
             if (databaseVisibility.equals(USER_DATABASE)) {
@@ -827,65 +825,6 @@ public class MyDownloadService extends IntentService {
 
     }
 
-
-    // Add data to the log table and limit its size
-    public void addToLog(String logText) {
-
-
-        ContentResolver contentResolver = mContext.getContentResolver();
-
-        Cursor mCursor = contentResolver.query(LessonsContract.MyLogEntry.CONTENT_URI,
-                null,
-                null,
-                null,
-                null);
-        int nRows = 0;
-        if (mCursor != null) { nRows = mCursor.getCount(); }
-
-        if (nRows > MAX_ROWS_LOG_TABLE) {
-
-            mCursor.moveToFirst();
-            // limit the number of deletions
-            int maxToDelete = nRows / 5;
-            List<Long> idsToDelete = new ArrayList<>();
-            // get the id_s of the rows to delete and save in the array
-            for (int i = 0; i < maxToDelete; i++) {
-                idsToDelete.add(mCursor.getLong(mCursor.getColumnIndex(LessonsContract.MyLogEntry._ID)));
-                mCursor.moveToNext();
-            }
-            mCursor.close();
-
-            // delete that rows
-            int count = 0;
-            while (count < idsToDelete.size()) {
-                long log_id = idsToDelete.get(count);
-                // delete the row with that log_id
-                Uri uriToDelete = LessonsContract.MyLogEntry.CONTENT_URI.buildUpon()
-                        .appendPath(Long.toString(log_id)).build();
-                if (uriToDelete != null) {
-                    Log.d(TAG, "uriToDelete:" + uriToDelete.toString());
-                    int nRowsDeleted = contentResolver.delete(uriToDelete, null, null);
-                    Log.d(TAG, "addToLog nRowsDeleted:" + nRowsDeleted);
-                    nRows--;
-                }
-                // count the number of tries
-                count++;
-            }
-        }
-
-        if (mCursor != null) { mCursor.close(); }
-
-        // Now add the new value to the log table
-        ContentValues contentValues = new ContentValues();
-        //contentValues.put(LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT, logBuffer.get(j));
-        contentValues.put(LessonsContract.MyLogEntry.COLUMN_LOG_ITEM_TEXT, logText);
-        // Insert the content values via a ContentResolver
-        Uri uri = contentResolver.insert(LessonsContract.MyLogEntry.CONTENT_URI, contentValues);
-        if (uri == null) {
-            Log.e(TAG, "addToLog: error in inserting item on log",
-                    new Exception("addToLog: error in inserting item on log"));
-        }
-    }
 
     private void sendMessages() {
 

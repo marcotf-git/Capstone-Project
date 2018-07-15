@@ -183,7 +183,7 @@ public class LessonsContentProvider extends ContentProvider {
         }
 
         // Close database
-        db.close();
+        //db.close();
 
         // Return constructed uri (this points to the newly inserted row of data)
         return returnUri;
@@ -439,7 +439,7 @@ public class LessonsContentProvider extends ContentProvider {
         }
 
         // Close database
-        db.close();
+        //db.close();
 
         // Return the number of lessons deleted
         return rowsDeleted;
@@ -494,7 +494,7 @@ public class LessonsContentProvider extends ContentProvider {
         }
 
         // Close database
-        db.close();
+        //db.close();
 
         // Return the number of lessons updated
         return rowsUpdated;

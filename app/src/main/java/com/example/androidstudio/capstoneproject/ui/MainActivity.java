@@ -577,7 +577,7 @@ public class MainActivity extends AppCompatActivity implements
                         ScheduledUtilities.scheduleDownloadDatabase(mContext, mUserUid, databaseVisibility);
 
                         final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                                "The app will start syncing in background!\n" +
+                                "The app will start downloading in background!\n" +
                                         "Only on un-metered networks.\n " +
                                         "Please, see the log...\n",
                                 Snackbar.LENGTH_INDEFINITE);
@@ -1342,7 +1342,7 @@ public class MainActivity extends AppCompatActivity implements
         // save the total images to delete
         if (cursor != null) {
             totalImagesToDelete = cursor.getCount();
-            cursor.close();
+            //cursor.close();
         } else {
             totalImagesToDelete = 0;
         }
@@ -1541,7 +1541,7 @@ public class MainActivity extends AppCompatActivity implements
             selectedLesson_id = -1;
         }
 
-        cursor.close();
+        //cursor.close();
     }
 
 
@@ -1651,7 +1651,7 @@ public class MainActivity extends AppCompatActivity implements
 
             Log.d(TAG, "onDialogDeletePartPositiveClick fileReference:" + fileReference);
 
-            cursor.close();
+           //cursor.close();
 
             // Now, delete the part from lesson parts table, and in case of success
             // store the fileRef (if it exists) in the my_cloud_files_to_delete
@@ -2132,9 +2132,12 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onStart() {
         super.onStart();
-        IntentFilter filterUpload = new IntentFilter(MyUpload.ACTION);
+
+        // register the receiver to get communication from the service
+        IntentFilter filterUpload = new IntentFilter(MyUploadService.ACTION);
         LocalBroadcastManager.getInstance(this).registerReceiver(myUploadReceiver, filterUpload);
-        IntentFilter filterDownload = new IntentFilter(MyDownload.ACTION);
+
+        IntentFilter filterDownload = new IntentFilter(MyDownloadService.ACTION);
         LocalBroadcastManager.getInstance(this).registerReceiver(myDownloadReceiver, filterDownload);
     }
 
@@ -2142,12 +2145,13 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onStop() {
         super.onStop();
+
         LocalBroadcastManager.getInstance(this).unregisterReceiver(myUploadReceiver);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(myDownloadReceiver);
     }
 
 
-
+    // define a receiver to listen for communication from the services
     private BroadcastReceiver myDownloadReceiver = new BroadcastReceiver() {
 
         @Override

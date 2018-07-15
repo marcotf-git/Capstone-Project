@@ -1102,7 +1102,7 @@ public class MyFirebaseFragment extends Fragment {
 
         } while (cursor.moveToNext());
 
-        cursor.close();
+        //cursor.close();
 
 
         // Delete the text from Database
@@ -1185,7 +1185,7 @@ public class MyFirebaseFragment extends Fragment {
         }
 
         // close the cursor
-        mCursor.close();
+       // mCursor.close();
 
         if (!(nRows > 0)) {
             mCallback.onDeleteCloudImagesSuccess(nRows);
@@ -1314,7 +1314,7 @@ public class MyFirebaseFragment extends Fragment {
             // get the next part
         } while (cursor.moveToNext());
 
-        cursor.close();
+        //cursor.close();
     }
 
 
@@ -1746,7 +1746,7 @@ public class MyFirebaseFragment extends Fragment {
                     mCursor.moveToNext();
                 }
 
-                mCursor.close();
+                //mCursor.close();
 
                 // delete that rows
                 int count = 0;
@@ -1767,7 +1767,7 @@ public class MyFirebaseFragment extends Fragment {
             }
 
             if (mCursor != null) {
-                mCursor.close();
+               // mCursor.close();
             }
 
             // write buffer to database
