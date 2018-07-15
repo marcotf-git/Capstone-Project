@@ -89,7 +89,7 @@
         </activity>
 
         <service
-            android:name=".sync.SyncDatabaseService"
+            android:name=".sync.ScheduledDownloadService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE"/>
@@ -97,7 +97,7 @@
         </service>
 
         <service
-            android:name=".sync.UploadLessonJobService"
+            android:name=".sync.ScheduledUploadService"
             android:exported="false">
             <intent-filter>
                 <action android:name="com.firebase.jobdispatcher.ACTION_EXECUTE"/>
@@ -122,6 +122,10 @@
 
         <service
             android:name=".sync.MyDownloadService"
+            android:exported="false"/>
+
+        <service
+            android:name=".sync.MyUploadService"
             android:exported="false"/>
 
     </application>

@@ -48,33 +48,33 @@
         android:icon="@drawable/ic_action_delete"
         android:orderInCategory="8"
         android:title="@string/menu_action_delete_label"
-        app:showAsAction="never"/>
+        app:showAsAction="ifRoom"/>
 
     <item
-        android:id="@+id/action_job_sync"
+        android:id="@+id/action_job_download"
         android:orderInCategory="7"
-        android:title="@string/menu_action_sync_label"
+        android:title="@string/menu_action_job_sync_label"
         app:showAsAction="never" />
 
     <item
-        android:id="@+id/action_upload"
+        android:id="@+id/action_job_upload"
         android:orderInCategory="6"
-        android:title="@string/menu_action_upload_label"
-        app:showAsAction="never"/>
+        android:title="@string/menu_action_job_upload_label"
+        app:showAsAction="never" />
 
     <item
-        android:id="@+id/action_refresh"
+        android:id="@+id/action_download"
         android:icon="@drawable/ic_action_refresh"
         android:orderInCategory="5"
         android:title="@string/menu_action_refresh_label"
         app:showAsAction="ifRoom"/>
 
     <item
-        android:id="@+id/action_job_upload"
+        android:id="@+id/action_upload"
         android:icon="@drawable/ic_action_upload"
         android:orderInCategory="4"
-        android:title="@string/menu_action_job_upload_label"
-        app:showAsAction="ifRoom" />
+        android:title="@string/menu_action_upload_label"
+        app:showAsAction="ifRoom"/>
 
     <item
         android:id="@+id/action_edit"

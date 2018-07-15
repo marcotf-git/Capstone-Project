@@ -52,13 +52,13 @@
     <string name="view">View</string>
     <string name="create">Create</string>
     <string name="menu_action_delete_label">Delete</string>
-    <string name="menu_action_upload_label">Upload Now!</string>
+    <string name="menu_action_upload_label">Upload</string>
     <string name="menu_action_refresh_label">Refresh</string>
     <string name="menu_action_edit_label">Edit</string>
     <string name="menu_action_cancel_label">Cancel</string>
     <string name="menu_action_delete_from_cloud_label">Delete from Cloud</string>
-    <string name="menu_action_sync_label">Refresh</string>
-    <string name="menu_action_job_upload_label">Upload</string>
+    <string name="menu_action_job_sync_label">Smart Refresh</string>
+    <string name="menu_action_job_upload_label">Smart Upload</string>
     <string name="menu_action_notification_test">Notification Test</string>
     <string name="menu_action_insert_fake_label">Insert Fake Data</string>
 
@@ -106,8 +106,10 @@
     <string name="widget_header">Learning App</string>
     <string name="widget_image">Widget Image</string>
 
-    <string name="refresh_job_type">Start a background sync of the lessons?</string>
-
+    <string name="refresh_job_type">Start a background download of the group lessons?</string>
     <string name="upload_job_type">Start a background upload of the selected user lesson?</string>
+
+    <string name="upload_confirm">Upload the lesson selected?</string>
+    <string name="upload">Upload</string>
 
 </resources>

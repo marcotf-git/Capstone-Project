@@ -13,25 +13,26 @@ import com.firebase.jobdispatcher.Lifetime;
 import com.firebase.jobdispatcher.Trigger;
 
 
-public class SyncUtilities {
+public class ScheduledUtilities {
 
-    private static final String TAG = SyncUtilities.class.getSimpleName();
+    private static final String TAG = ScheduledUtilities.class.getSimpleName();
 
     private static final int SYNC_INTERVAL_SECONDS = 60;
 
     private static final String SYNC_GROUP_TABLE_TAG = "sync_group_table_tag";
     private static final String UPLOAD_LESSON_TAG = "upload_lesson_tag";
     private static final String SELECTED_LESSON_ID = "selectedLessonId";
+    private static final String USER_UID = "userUid";
     private static final String DATABASE_VISIBILITY = "databaseVisibility";
 
     private static boolean syncInitialized;
     private static boolean uploadInitialized;
 
 
-    synchronized public static void scheduleSyncDatabase(final Context context, String databaseVisibility) {
+    synchronized public static void scheduleDownloadDatabase(final Context context, String databaseVisibility) {
 
         if (syncInitialized) {
-            Log.v(TAG, "scheduleUploadTable syncInitialized = true");
+            Log.v(TAG, "scheduleUploadLesson syncInitialized = true");
         }
 
         Bundle bundle = new Bundle();
@@ -40,12 +41,12 @@ public class SyncUtilities {
         Driver driver = new GooglePlayDriver(context);
         FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(driver);
 
-        Log.v("SyncUtilities", "scheduleSyncDatabase scheduling");
+        Log.v("ScheduledUtilities", "scheduleDownloadDatabase scheduling");
 
         /* Create the Job to periodically create reminders to drink water */
         Job syncGroupTableJob = dispatcher.newJobBuilder()
                 /* The Service that will be used to write to preferences */
-                .setService(SyncDatabaseService.class)
+                .setService(ScheduledDownloadService.class)
                 /*
                  * Set the UNIQUE tag used to identify this Job.
                  */
@@ -59,7 +60,7 @@ public class SyncUtilities {
                  * as different users may have different preferences on when you should be
                  * syncing your application's data.
                  */
-                .setConstraints(Constraint.ON_ANY_NETWORK)
+                .setConstraints(Constraint.ON_UNMETERED_NETWORK)
                 /*
                  * setLifetime sets how long this job should persist. The options are to keep the
                  * Job "forever" or to have it die the next time the device boots up.
@@ -85,8 +86,8 @@ public class SyncUtilities {
                  * the old one.
                  */
                 .setReplaceCurrent(true)
-                /* Once the Job is ready, call the builder's build method to return the Job */
                 .setExtras(bundle)
+                /* Once the Job is ready, call the builder's build method to return the Job */
                 .build();
 
         /* Schedule the Job with the dispatcher */
@@ -98,24 +99,26 @@ public class SyncUtilities {
 
 
 
-    synchronized public static void scheduleUploadTable(final Context context, long lesson_id) {
+    synchronized public static void scheduleUploadLesson(final Context context, String userUid, long lesson_id) {
 
         if (uploadInitialized) {
-            Log.v(TAG, "scheduleUploadTable uploadInitialized = true");
+            Log.v(TAG, "scheduleUploadLesson uploadInitialized = true");
         }
 
         Bundle bundle = new Bundle();
+
         bundle.putLong(SELECTED_LESSON_ID, lesson_id);
+        bundle.putString(USER_UID, userUid);
 
         Driver driver = new GooglePlayDriver(context);
         FirebaseJobDispatcher dispatcher = new FirebaseJobDispatcher(driver);
 
-        Log.v("SyncUtilities", "scheduleSyncDatabase scheduling");
+        Log.v("ScheduledUtilities", "scheduleDownloadDatabase scheduling");
 
         /* Create the Job to periodically create reminders to drink water */
         Job uploadTableJob = dispatcher.newJobBuilder()
                 /* The Service that will be used to write to preferences */
-                .setService(UploadLessonJobService.class)
+                .setService(ScheduledUploadService.class)
                 /*
                  * Set the UNIQUE tag used to identify this Job.
                  */
@@ -129,7 +132,7 @@ public class SyncUtilities {
                  * as different users may have different preferences on when you should be
                  * syncing your application's data.
                  */
-                .setConstraints(Constraint.ON_ANY_NETWORK)
+                .setConstraints(Constraint.ON_UNMETERED_NETWORK)
                 /*
                  * setLifetime sets how long this job should persist. The options are to keep the
                  * Job "forever" or to have it die the next time the device boots up.
@@ -155,8 +158,8 @@ public class SyncUtilities {
                  * the old one.
                  */
                 .setReplaceCurrent(true)
-                /* Once the Job is ready, call the builder's build method to return the Job */
                 .setExtras(bundle)
+                /* Once the Job is ready, call the builder's build method to return the Job */
                 .build();
 
         /* Schedule the Job with the dispatcher */

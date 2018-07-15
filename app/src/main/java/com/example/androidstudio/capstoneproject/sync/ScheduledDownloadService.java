@@ -7,7 +7,7 @@ import android.os.Bundle;
 import com.firebase.jobdispatcher.JobParameters;
 import com.firebase.jobdispatcher.JobService;
 
-public class SyncDatabaseService extends JobService {
+public class ScheduledDownloadService extends JobService {
 
     private AsyncTask mBackgroundTask;
     private static final String USER_UID = "userUid";
@@ -30,14 +30,14 @@ public class SyncDatabaseService extends JobService {
 
             @Override
             protected Object doInBackground(Object[] params) {
-                Context context = SyncDatabaseService.this;
-                SyncTasks.executeTask(context, SyncTasks.ACTION_SYNC_GROUP_TABLE, userUid, databaseVisibility);
+                Context context = ScheduledDownloadService.this;
+                ScheduledTasks.executeTask(context, ScheduledTasks.ACTION_SYNC_GROUP_TABLE, userUid, databaseVisibility);
                 return null;
             }
 
             @Override
             protected void onPostExecute(Object o) {
-               jobFinished(jobParameters, false);
+                jobFinished(jobParameters, false);
             }
         };
 

@@ -4,11 +4,10 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 
-import com.firebase.jobdispatcher.Job;
 import com.firebase.jobdispatcher.JobParameters;
 import com.firebase.jobdispatcher.JobService;
 
-public class UploadLessonJobService extends JobService {
+public class ScheduledUploadService extends JobService {
 
     private AsyncTask mBackgroundTask;
     private static final String SELECTED_LESSON_ID = "selectedLessonId";
@@ -32,14 +31,14 @@ public class UploadLessonJobService extends JobService {
             @Override
             protected Object doInBackground(Object[] params) {
 
-                Context context = UploadLessonJobService.this;
-                SyncTasks.executeTask(context, SyncTasks.ACTION_UPLOAD_LESSON, userUid, lesson_id);
+                Context context = ScheduledUploadService.this;
+                ScheduledTasks.executeTask(context, ScheduledTasks.ACTION_UPLOAD_LESSON, userUid, lesson_id);
                 return null;
             }
 
             @Override
             protected void onPostExecute(Object o) {
-               jobFinished(jobParameters, false);
+                jobFinished(jobParameters, false);
             }
         };
 

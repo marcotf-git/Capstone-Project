@@ -132,12 +132,6 @@ public class LogFragment extends Fragment implements
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
 
-        if (data != null) {
-            Log.d(TAG, "onLoadFinished cursor:" + data.toString());
-        } else {
-            Log.e(TAG, "onLoadFinished cursor: null");
-        }
-
         // Pass the data to the adapter
         mAdapter.swapCursor(data);
 

@@ -561,7 +561,7 @@ public class PartDetailActivity extends AppCompatActivity implements
 
         mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
         mMenu.findItem(R.id.action_upload).setVisible(false);
-        mMenu.findItem(R.id.action_refresh).setVisible(false);
+        mMenu.findItem(R.id.action_download).setVisible(false);
         mMenu.findItem(R.id.action_insert_fake_data).setVisible(false);
 
         if (databaseVisibility.equals(GROUP_DATABASE)) {

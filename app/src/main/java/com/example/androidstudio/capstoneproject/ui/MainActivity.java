@@ -42,8 +42,11 @@ import android.widget.Toast;
 import com.example.androidstudio.capstoneproject.IdlingResource.SimpleIdlingResource;
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
+import com.example.androidstudio.capstoneproject.sync.MyDownload;
 import com.example.androidstudio.capstoneproject.sync.MyDownloadService;
-import com.example.androidstudio.capstoneproject.sync.SyncUtilities;
+import com.example.androidstudio.capstoneproject.sync.MyUpload;
+import com.example.androidstudio.capstoneproject.sync.MyUploadService;
+import com.example.androidstudio.capstoneproject.sync.ScheduledUtilities;
 import com.example.androidstudio.capstoneproject.utilities.MyFirebaseFragment;
 import com.example.androidstudio.capstoneproject.utilities.InsertTestDataUtil;
 import com.firebase.ui.auth.AuthUI;
@@ -150,11 +153,6 @@ import static android.view.View.VISIBLE;
  * Finally, the cloud communication is saved in a log file, that can be viewed by an option in the
  * drawer menu.
  *
- * So, we have Content Provider, Async Tasks, Firebase, Firebase JobDispatcher, Widget, thousands of
- * listeners... :-) and a complex task of handling with two databases in the cloud!
- * All trying to make an app that handle the creation of a small lesson by the user, with some parts,
- * with images and videos, storing and sharing in the cloud.
- *
  */
 
 
@@ -240,7 +238,7 @@ public class MainActivity extends AppCompatActivity implements
 
     // Dialogs
     private AlertDialog uploadDialog;
-    private AlertDialog refreshJobDialog;
+    private AlertDialog downloadJobDialog;
     private AlertDialog uploadJobDialog;
 
     // Fragments
@@ -430,7 +428,7 @@ public class MainActivity extends AppCompatActivity implements
 
         // Initialize Firebase components
         FirebaseFirestore mFirebaseDatabase = FirebaseFirestore.getInstance();
-        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
+        final FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
                 .setTimestampsInSnapshotsEnabled(true)
                 .build();
         mFirebaseDatabase.setFirestoreSettings(settings);
@@ -528,22 +526,11 @@ public class MainActivity extends AppCompatActivity implements
         // Init a uploadDialog menu for user to choose the type of data to upload
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         // Add the buttons
-        builder.setTitle(R.string.upload_type)
-                .setItems(R.array.uploading_array, new DialogInterface.OnClickListener() {
+        builder.setTitle(R.string.upload_confirm)
+                .setPositiveButton(R.string.upload, new DialogInterface.OnClickListener() {
+                    @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        // The 'which' argument contains the index position
-                        // of the selected item
-                        Log.v(TAG, "onClick which:" + which);
-                        switch (which) {
-                            case 0:
-                                uploadImagesAndDatabase();
-                                break;
-                            case 1:
-                                uploadLesson();
-                                break;
-                            default:
-                                break;
-                        }
+                        uploadLesson();
                     }
                 })
                 .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
@@ -558,10 +545,14 @@ public class MainActivity extends AppCompatActivity implements
         builder.setTitle(R.string.refresh_job_type)
                 .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
+
+                        // call the job for sync the group table
+                        ScheduledUtilities.scheduleDownloadDatabase(mContext, databaseVisibility);
+
                         final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                                 "The app will start syncing in background!\n" +
-                                        "Please, wait a few minutes for the job...\n" +
-                                        "You will receive a notification when it finishes!",
+                                        "Only un-metered networks will be used.\n " +
+                                        "Please, see the log...\n",
                                 Snackbar.LENGTH_INDEFINITE);
                         snackBar.setAction("Dismiss", new View.OnClickListener() {
                             @Override
@@ -570,8 +561,6 @@ public class MainActivity extends AppCompatActivity implements
                             }
                         });
                         snackBar.show();
-                        // call the job for sync the group table
-                        SyncUtilities.scheduleSyncDatabase(mContext, databaseVisibility);
                     }
                 })
                 .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
@@ -580,13 +569,16 @@ public class MainActivity extends AppCompatActivity implements
                     }
                 });
 
-        refreshJobDialog = builder.create();
+        downloadJobDialog = builder.create();
 
 
         // Dialog for the upload job service (that will run in background)
         builder.setTitle(R.string.upload_job_type)
                 .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
+
+                        Log.d(TAG, "uploadJobDialog selectedLesson_id:" + selectedLesson_id);
+
                         if (selectedLesson_id == -1) {
                             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                                     "Please, select a lesson to upload the images or videos!",
@@ -599,10 +591,13 @@ public class MainActivity extends AppCompatActivity implements
                             });
                             snackBar.show();
                         } else {
+                            // call the job for upload the selected user lesson (images and text)
+                            ScheduledUtilities.scheduleUploadLesson(mContext, mUserUid, selectedLesson_id);
+
                             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                                     "The app will start uploading in background!\n" +
-                                    "Please, wait a few minutes for the job...\n" +
-                                    "You will receive a notification when it finishes!",
+                                    "Only un-metered networks will be used.\n " +
+                                    "Please, see the log...",
                                     Snackbar.LENGTH_INDEFINITE);
                             snackBar.setAction("Dismiss", new View.OnClickListener() {
                                 @Override
@@ -611,8 +606,7 @@ public class MainActivity extends AppCompatActivity implements
                                 }
                             });
                             snackBar.show();
-                            // call the job for upload the selected user lesson (images and text)
-                            SyncUtilities.scheduleUploadTable(mContext, selectedLesson_id);
+
                         }
                     }
                 })
@@ -808,16 +802,16 @@ public class MainActivity extends AppCompatActivity implements
                 actionEdit();
                 break;
 
-            case R.id.action_refresh:
-                actionRefresh();
+            case R.id.action_download:
+                actionDownload();
                 break;
 
             case R.id.action_upload:
                 uploadDialog.show();
                 break;
 
-            case R.id.action_job_sync:
-                refreshJobDialog.show();
+            case R.id.action_job_download:
+                downloadJobDialog.show();
                 break;
 
             case R.id.action_job_upload:
@@ -830,11 +824,6 @@ public class MainActivity extends AppCompatActivity implements
 
             case R.id.action_delete_from_cloud:
                 actionDeleteFromCloud();
-                break;
-
-            case R.id.action_notification:
-                //NotificationUtils.notifyUserBecauseSyncGroupFinished(this);
-                testUtil();
                 break;
 
             case R.id.action_insert_fake_data:
@@ -923,7 +912,7 @@ public class MainActivity extends AppCompatActivity implements
     // It will download the photos from Firebase Storage, but only for the group table (the user table
     // already has the images in the folder).
     // In case of the group, it will also delete the old files, and the old rows in the table.
-    private void actionRefresh() {
+    private void actionDownload() {
         Intent downloadIntent = new Intent(this, MyDownloadService.class);
         downloadIntent.putExtra(DATABASE_VISIBILITY, databaseVisibility);
         downloadIntent.putExtra(LOCAL_USER_UID, mUserUid);
@@ -938,6 +927,35 @@ public class MainActivity extends AppCompatActivity implements
             snackBar.show();
         }
     }
+
+
+    private void uploadLesson() {
+
+        if (selectedLesson_id == -1) {
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "Please, select a lesson to upload the text content!",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackBar.dismiss();
+                }
+            });
+            snackBar.show();
+            return;
+        }
+
+        Intent uploadIntent = new Intent(this, MyUploadService.class);
+        uploadIntent.putExtra(SELECTED_LESSON_ID, selectedLesson_id);
+        uploadIntent.putExtra(LOCAL_USER_UID, mUserUid);
+        startService(uploadIntent);
+
+        final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                "Uploading of the lesson has started...", Snackbar.LENGTH_LONG);
+        snackBar.show();
+
+    }
+
 
     private void actionDelete() {
         Log.d(TAG, "Deletion action selected");
@@ -1013,11 +1031,11 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         if (!mUsername.equals(ANONYMOUS)) {
-            mMenu.findItem(R.id.action_refresh).setVisible(true);
-            mMenu.findItem(R.id.action_job_sync).setVisible(true);
+            mMenu.findItem(R.id.action_download).setVisible(true);
+            mMenu.findItem(R.id.action_job_download).setVisible(true);
         } else {
-            mMenu.findItem(R.id.action_refresh).setVisible(false);
-            mMenu.findItem(R.id.action_job_sync).setVisible(false);
+            mMenu.findItem(R.id.action_download).setVisible(false);
+            mMenu.findItem(R.id.action_job_download).setVisible(false);
         }
 
         if (databaseVisibility.equals(GROUP_DATABASE)) {
@@ -1040,8 +1058,8 @@ public class MainActivity extends AppCompatActivity implements
         if(logVisibility == VISIBLE) {
             mMenu.findItem(R.id.select_view).setVisible(false);
             mMenu.findItem(R.id.select_create).setVisible(false);
-            mMenu.findItem(R.id.action_refresh).setVisible(false);
-            mMenu.findItem(R.id.action_job_sync).setVisible(false);
+            mMenu.findItem(R.id.action_download).setVisible(false);
+            mMenu.findItem(R.id.action_job_download).setVisible(false);
             mMenu.findItem(R.id.action_edit).setVisible(false);
             mMenu.findItem(R.id.action_upload).setVisible(false);
             mMenu.findItem(R.id.action_job_upload).setVisible(false);
@@ -1104,7 +1122,7 @@ public class MainActivity extends AppCompatActivity implements
 
         @Override
         protected Void doInBackground(Object... object) {
-            firebaseFragment.refreshDatabase(databaseVisibility);
+            //firebaseFragment.refreshDatabase(databaseVisibility);
             return null;
         }
 
@@ -1132,91 +1150,62 @@ public class MainActivity extends AppCompatActivity implements
 
         // query the parts table to count for the number of images to upload
         /* Perform the ContentProvider query for the lesson parts */
-        String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + " =? ";
-        String[] selectionArgs = {Long.toString(selectedLesson_id)};
-        Cursor cursor = this.getContentResolver().query(
-                LessonsContract.MyLessonPartsEntry.CONTENT_URI,
-                null,
-                selection,
-                selectionArgs,
-                null);
-
-        uploadCountFinal = 0;
-
-        // Count the images
-        if (cursor != null) {
-            cursor.moveToFirst();
-
-            do {
-                long part_id = cursor.getLong(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
-                String local_video_uri = cursor.
-                        getString(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
-                String local_image_uri = cursor.
-                        getString(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
-                Log.d(TAG, "part_id: " + part_id);
-                Log.d(TAG, "local_video_uri: " + local_video_uri);
-                Log.d(TAG, "local_image_uri: " + local_image_uri);
-                if (local_image_uri != null || local_video_uri != null ) {
-                    // Total number of images/videos to upload
-
-                    // SET THE INITIAL STATE
-                    uploadCountFinal++;
-                }
-
-            } while (cursor.moveToNext());
-
-            Log.d(TAG, "cursor: getCount:" + cursor.getCount());
-        }
-
-        if (cursor != null) {
-            cursor.close();
-        }
-
-        // SET THE INITIAL STATE
-        uploadCount = 0;
+//        String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + " =? ";
+//        String[] selectionArgs = {Long.toString(selectedLesson_id)};
+//        Cursor cursor = this.getContentResolver().query(
+//                LessonsContract.MyLessonPartsEntry.CONTENT_URI,
+//                null,
+//                selection,
+//                selectionArgs,
+//                null);
+//
+//        uploadCountFinal = 0;
+//
+//        // Count the images
+//        if (cursor != null) {
+//            cursor.moveToFirst();
+//
+//            do {
+//                long part_id = cursor.getLong(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry._ID));
+//                String local_video_uri = cursor.
+//                        getString(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_VIDEO_URI));
+//                String local_image_uri = cursor.
+//                        getString(cursor.getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_LOCAL_IMAGE_URI));
+//                Log.d(TAG, "part_id: " + part_id);
+//                Log.d(TAG, "local_video_uri: " + local_video_uri);
+//                Log.d(TAG, "local_image_uri: " + local_image_uri);
+//                if (local_image_uri != null || local_video_uri != null ) {
+//                    // Total number of images/videos to upload
+//
+//                    // SET THE INITIAL STATE
+//                    uploadCountFinal++;
+//                }
+//
+//            } while (cursor.moveToNext());
+//
+//            Log.d(TAG, "cursor: getCount:" + cursor.getCount());
+//        }
+//
+//        if (cursor != null) {
+//            cursor.close();
+//        }
+//
+//        // SET THE INITIAL STATE
+//        uploadCount = 0;
 
         Log.d(TAG, "uploadCountFinal:" + uploadCountFinal + " images to upload");
-        firebaseFragment.addToLog("STARTING UPLOAD IMAGES/VIDEOS: " +
-                uploadCountFinal + " files to upload.");
+//        firebaseFragment.addToLog("STARTING UPLOAD IMAGES/VIDEOS: " +
+//                uploadCountFinal + " files to upload.");
 
-        loadingIndicator = true;
-        mainFragment.setLoadingIndicator(true);
+//        loadingIndicator = true;
+//        mainFragment.setLoadingIndicator(true);
 
         // After uploading images, this method (in the call back) will trigger the upload of the
         // database
-        firebaseFragment.uploadImagesAndDatabase(selectedLesson_id);
+        //firebaseFragment.uploadImagesAndDatabase(selectedLesson_id);
 
     }
 
-
-    private void uploadLesson() {
-
-        if (selectedLesson_id == -1) {
-            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                    "Please, select a lesson to upload the text content!",
-                    Snackbar.LENGTH_INDEFINITE);
-            snackBar.setAction("Dismiss", new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
-            });
-            snackBar.show();
-            return;
-        }
-
-
-        Log.d(TAG, "uploadLesson: uploadCountFinal:" + uploadCountFinal);
-
-        firebaseFragment.addToLog("STARTING UPLOAD TEXT: " + uploadCountFinal + " files to upload.");
-
-        loadingIndicator = true;
-        mainFragment.setLoadingIndicator(true);
-
-        AsyncTask mUploadBackgroundTask = new UploadTask(selectedLesson_id);
-        mUploadBackgroundTask.execute();
-
-    }
 
     // AsyncTask to process the upload of the lesson in background
     private static class UploadTask extends AsyncTask<Object, Void, Void> {
@@ -1230,7 +1219,7 @@ public class MainActivity extends AppCompatActivity implements
 
         @Override
         protected Void doInBackground(Object... object) {
-            firebaseFragment.uploadLesson(selectedLesson_id);
+            //firebaseFragment.uploadLesson(selectedLesson_id);
             return null;
         }
     }
@@ -2055,31 +2044,26 @@ public class MainActivity extends AppCompatActivity implements
 
 
 
-
-
-    private void testUtil() {
-
-    }
-
-
     @Override
     protected void onStart() {
         super.onStart();
-
-        IntentFilter filter = new IntentFilter(MyDownloadService.ACTION);
-        LocalBroadcastManager.getInstance(this).registerReceiver(myUtilReceiver, filter);
-
+        IntentFilter filterUpload = new IntentFilter(MyUpload.ACTION);
+        LocalBroadcastManager.getInstance(this).registerReceiver(myUploadReceiver, filterUpload);
+        IntentFilter filterDownload = new IntentFilter(MyDownload.ACTION);
+        LocalBroadcastManager.getInstance(this).registerReceiver(myDownloadReceiver, filterDownload);
     }
+
 
     @Override
     protected void onStop() {
         super.onStop();
-
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(myUtilReceiver);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(myUploadReceiver);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(myDownloadReceiver);
     }
 
 
-    private BroadcastReceiver myUtilReceiver = new BroadcastReceiver() {
+
+    private BroadcastReceiver myDownloadReceiver = new BroadcastReceiver() {
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -2143,11 +2127,53 @@ public class MainActivity extends AppCompatActivity implements
                     snackBar.show();
                 }
 
+            }
+        }
+    };
 
+
+
+    private BroadcastReceiver myUploadReceiver = new BroadcastReceiver() {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+
+            int resultCode = intent.getIntExtra("resultCode", RESULT_CANCELED);
+
+            if (resultCode == RESULT_OK) {
+                String resultValue = intent.getStringExtra("resultValue");
+                Log.d(TAG, "BroadcastReceiver onReceive:" + resultValue);
+
+                if (resultValue.equals("[UPLOAD LESSON FINISHED OK]")) {
+                    final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                            "Upload of the lesson finished successfully!",
+                            Snackbar.LENGTH_INDEFINITE);
+                    snackBar.setAction("Dismiss", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            snackBar.dismiss();
+                        }
+                    });
+                    snackBar.show();
+                }
+
+                if (resultValue.equals("[UPLOAD LESSON FINISHED WITH ERROR]")) {
+                    final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                            "Upload of the lesson finished, but with error." +
+                                    "\nPlease, see the log!", Snackbar.LENGTH_INDEFINITE);
+                    snackBar.setAction("Dismiss", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            snackBar.dismiss();
+                        }
+                    });
+                    snackBar.show();
+                }
 
             }
         }
     };
+
 
 
 }
