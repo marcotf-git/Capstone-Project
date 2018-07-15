@@ -168,6 +168,7 @@ public class MainFragment extends Fragment implements
             mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
         }
 
+        
 
         // Return root view
         return rootView;
