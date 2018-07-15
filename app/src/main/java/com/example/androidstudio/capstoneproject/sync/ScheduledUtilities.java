@@ -17,7 +17,7 @@ public class ScheduledUtilities {
 
     private static final String TAG = ScheduledUtilities.class.getSimpleName();
 
-    private static final int SYNC_INTERVAL_SECONDS = 60;
+    private static final int SYNC_INTERVAL_SECONDS = 240;
 
     private static final String SYNC_GROUP_TABLE_TAG = "sync_group_table_tag";
     private static final String UPLOAD_LESSON_TAG = "upload_lesson_tag";
@@ -29,13 +29,16 @@ public class ScheduledUtilities {
     private static boolean uploadInitialized;
 
 
-    synchronized public static void scheduleDownloadDatabase(final Context context, String databaseVisibility) {
+    synchronized public static void scheduleDownloadDatabase(final Context context,
+                                                             String userUid,
+                                                             String databaseVisibility) {
 
         if (syncInitialized) {
             Log.v(TAG, "scheduleUploadLesson syncInitialized = true");
         }
 
         Bundle bundle = new Bundle();
+        bundle.putString(USER_UID, userUid);
         bundle.putString(DATABASE_VISIBILITY, databaseVisibility);
 
         Driver driver = new GooglePlayDriver(context);

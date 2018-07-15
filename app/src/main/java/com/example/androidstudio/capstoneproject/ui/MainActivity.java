@@ -182,7 +182,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final String PARTS_VISIBILITY = "partsVisibility";
     private static final String LOG_VISIBILITY = "logVisibility";
     private static final String DATABASE_VISIBILITY = "databaseVisibility";
-    private static final String LOCAL_USER_UID = "localUserUid";
+    private static final String USER_UID = "userUid";
     private static final String LOADING_INDICATOR = "loadingIndicator";
     private static final String UPLOAD_COUNT = "uploadCount";
     private static final String UPLOAD_COUNT_FINAL = "uploadCountFinal";
@@ -281,7 +281,7 @@ public class MainActivity extends AppCompatActivity implements
             partsVisibility = savedInstanceState.getInt(PARTS_VISIBILITY);
             logVisibility =  savedInstanceState.getInt(LOG_VISIBILITY);
             databaseVisibility = savedInstanceState.getString(DATABASE_VISIBILITY);
-            mUserUid = savedInstanceState.getString(LOCAL_USER_UID);
+            mUserUid = savedInstanceState.getString(USER_UID);
             loadingIndicator = savedInstanceState.getBoolean(LOADING_INDICATOR);
             uploadCount = savedInstanceState.getInt(UPLOAD_COUNT);
             uploadCountFinal = savedInstanceState.getInt(UPLOAD_COUNT_FINAL);
@@ -300,7 +300,7 @@ public class MainActivity extends AppCompatActivity implements
             logVisibility = GONE;
             // Recover the local user uid for handling the database global consistency
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-            mUserUid = sharedPreferences.getString(LOCAL_USER_UID,"");
+            mUserUid = sharedPreferences.getString(USER_UID,"");
             databaseVisibility = sharedPreferences.getString(DATABASE_VISIBILITY, USER_DATABASE);
             loadingIndicator = false;
         }
@@ -530,6 +530,21 @@ public class MainActivity extends AppCompatActivity implements
                 .setPositiveButton(R.string.upload, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
+
+                        if (mUsername.equals(ANONYMOUS)) {
+                            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                                    "Please, login to upload!",
+                                    Snackbar.LENGTH_INDEFINITE);
+                            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    snackBar.dismiss();
+                                }
+                            });
+                            snackBar.show();
+                            return;
+                        }
+
                         uploadLesson();
                     }
                 })
@@ -546,12 +561,27 @@ public class MainActivity extends AppCompatActivity implements
                 .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
 
+                        if (mUsername.equals(ANONYMOUS)) {
+                            final Snackbar snackBarAnonymus = Snackbar.
+                                    make(findViewById(R.id.drawer_layout), "Please, login to upload!",
+                                            Snackbar.LENGTH_INDEFINITE);
+                            snackBarAnonymus.setAction("Dismiss", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    snackBarAnonymus.dismiss();
+                                }
+                            });
+                            snackBarAnonymus.show();
+
+                            return;
+                        }
+
                         // call the job for sync the group table
-                        ScheduledUtilities.scheduleDownloadDatabase(mContext, databaseVisibility);
+                        ScheduledUtilities.scheduleDownloadDatabase(mContext, mUserUid, databaseVisibility);
 
                         final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                                 "The app will start syncing in background!\n" +
-                                        "Only un-metered networks will be used.\n " +
+                                        "Only on un-metered networks.\n " +
                                         "Please, see the log...\n",
                                 Snackbar.LENGTH_INDEFINITE);
                         snackBar.setAction("Dismiss", new View.OnClickListener() {
@@ -590,13 +620,24 @@ public class MainActivity extends AppCompatActivity implements
                                 }
                             });
                             snackBar.show();
+                        } else  if (mUsername.equals(ANONYMOUS)) {
+                            final Snackbar snackBarAnonymus = Snackbar.
+                                    make(findViewById(R.id.drawer_layout),"Please, login to upload!",
+                                    Snackbar.LENGTH_INDEFINITE);
+                            snackBarAnonymus.setAction("Dismiss", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    snackBarAnonymus.dismiss();
+                                }
+                            });
+                            snackBarAnonymus.show();
                         } else {
                             // call the job for upload the selected user lesson (images and text)
                             ScheduledUtilities.scheduleUploadLesson(mContext, mUserUid, selectedLesson_id);
 
                             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                                     "The app will start uploading in background!\n" +
-                                    "Only un-metered networks will be used.\n " +
+                                    "Only on un-metered networks.\n " +
                                     "Please, see the log...",
                                     Snackbar.LENGTH_INDEFINITE);
                             snackBar.setAction("Dismiss", new View.OnClickListener() {
@@ -680,7 +721,7 @@ public class MainActivity extends AppCompatActivity implements
 
         // save the user uid locally
         SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-        sharedPreferences.edit().putString(LOCAL_USER_UID, mUserUid).apply();
+        sharedPreferences.edit().putString(USER_UID, mUserUid).apply();
 
         // Set the drawer
         mUsernameTextView.setText(mUsername);
@@ -913,10 +954,26 @@ public class MainActivity extends AppCompatActivity implements
     // already has the images in the folder).
     // In case of the group, it will also delete the old files, and the old rows in the table.
     private void actionDownload() {
+
+        if (mUsername.equals(ANONYMOUS)) {
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "Please, login to download!",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackBar.dismiss();
+                }
+            });
+            snackBar.show();
+            return;
+        }
+
         Intent downloadIntent = new Intent(this, MyDownloadService.class);
         downloadIntent.putExtra(DATABASE_VISIBILITY, databaseVisibility);
-        downloadIntent.putExtra(LOCAL_USER_UID, mUserUid);
+        downloadIntent.putExtra(USER_UID, mUserUid);
         startService(downloadIntent);
+
         if (databaseVisibility.equals(GROUP_DATABASE)) {
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                     "Refreshing of the group database has started...", Snackbar.LENGTH_LONG);
@@ -933,7 +990,21 @@ public class MainActivity extends AppCompatActivity implements
 
         if (selectedLesson_id == -1) {
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                    "Please, select a lesson to upload the text content!",
+                    "Please, select a lesson to upload!",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackBar.dismiss();
+                }
+            });
+            snackBar.show();
+            return;
+        }
+
+        if (mUsername.equals(ANONYMOUS)) {
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "Please, login to upload!",
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
                 @Override
@@ -947,7 +1018,7 @@ public class MainActivity extends AppCompatActivity implements
 
         Intent uploadIntent = new Intent(this, MyUploadService.class);
         uploadIntent.putExtra(SELECTED_LESSON_ID, selectedLesson_id);
-        uploadIntent.putExtra(LOCAL_USER_UID, mUserUid);
+        uploadIntent.putExtra(USER_UID, mUserUid);
         startService(uploadIntent);
 
         final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
@@ -973,12 +1044,29 @@ public class MainActivity extends AppCompatActivity implements
     private void actionDeleteFromCloud() {
         Log.d(TAG, "Delete from Cloud action selected");
         // Try to action first on the more specific item
-        if  (selectedLesson_id != -1) {
-            deleteLessonFromCloud(selectedLesson_id);
-        } else {
+
+
+        if  (selectedLesson_id == -1) {
             Toast.makeText(this,
                     "Please, select a lesson to delete from Cloud!", Toast.LENGTH_LONG).show();
+            return;
         }
+
+        if (mUsername.equals(ANONYMOUS)) {
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "Please, login to delete from cloud!",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackBar.dismiss();
+                }
+            });
+            snackBar.show();
+            return;
+        }
+
+        deleteLessonFromCloud(selectedLesson_id);
     }
 
     private void actionInsertFakeData() {
@@ -2000,7 +2088,7 @@ public class MainActivity extends AppCompatActivity implements
         outState.putInt(LOG_VISIBILITY, logVisibility);
 
         outState.putString(DATABASE_VISIBILITY, databaseVisibility);
-        outState.putString(LOCAL_USER_UID, mUserUid);
+        outState.putString(USER_UID, mUserUid);
 
         outState.putBoolean(LOADING_INDICATOR, loadingIndicator);
         outState.putInt(UPLOAD_COUNT, uploadCount);

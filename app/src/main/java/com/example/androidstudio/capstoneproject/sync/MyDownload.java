@@ -73,7 +73,7 @@ public class MyDownload {
 
 
 
-    MyDownload(Context context, String databaseVisibility, String userUid) {
+    MyDownload(Context context, String userUid, String databaseVisibility) {
 
         mContext = context;
         this.databaseVisibility = databaseVisibility;
@@ -97,12 +97,12 @@ public class MyDownload {
     // Delete all in the group table (data and local files)
     public void refreshDatabase() {
 
-        if((userUid == null) || !(databaseVisibility == null)) {
+        if((userUid == null) || (databaseVisibility == null)) {
             Log.e(TAG, "uploadImagesAndDatabase: failed to get parameters " +
                     "(userUid or databaseVisibility");
             messages.add("Failed to get parameters (internal failure)");
             sendMessages();
-            messages.add("UPLOAD LESSON FINISHED WITH ERROR");
+            messages.add("REFRESH GROUP FINISHED WITH ERROR");
             sendMessages();
             return;
         }

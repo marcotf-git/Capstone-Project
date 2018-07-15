@@ -30,7 +30,7 @@ public class ScheduledTasks {
         Log.d(TAG, "syncDatabase: syncing group table");
 
         try {
-            MyDownload myDownload = new MyDownload(context, databaseVisibility, userUid);
+            MyDownload myDownload = new MyDownload(context, userUid, databaseVisibility);
             myDownload.refreshDatabase();
         } catch (Exception e) {
             Log.e(TAG, e.getMessage());
