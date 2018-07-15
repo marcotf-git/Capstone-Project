@@ -299,7 +299,7 @@ public class MyFirebaseFragment extends Fragment {
                     int numberOfRowsDeleted = contentResolver.delete(uriToDelete, null, null);
                     Log.d(TAG, "numberOfRowsDeleted:" + numberOfRowsDeleted);
 
-                    myLog.addToLog("Image file " + fileRef + "deleted from cloud successfully!");
+                    myLog.addToLog("Image file " + fileRef + " deleted from cloud successfully!");
 
                     mCallback.onDeleteCloudImagesSuccess(numberOfRowsDeleted);
                 }

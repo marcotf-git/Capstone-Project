@@ -182,7 +182,6 @@ public class MainActivity extends AppCompatActivity implements
     private static final String UPLOAD_COUNT_FINAL = "uploadCountFinal";
     private static final String DOWNLOAD_COUNT = "downloadCount";
     private static final String DOWNLOAD_COUNT_FINAL = "downloadCountFinal";
-    private static final String RELEASE = "release";
 
     // Final strings
     private static final String USER_DATABASE = "userDatabase";
@@ -1611,7 +1610,6 @@ public class MainActivity extends AppCompatActivity implements
             snackBar.show();
         }
 
-        myLog.addToLog(RELEASE);
     }
 
     @Override
@@ -1620,7 +1618,8 @@ public class MainActivity extends AppCompatActivity implements
         Log.e(TAG, "onDeleteCloudImagesFailure error:" + e.getMessage());
 
         final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                "Error in deleting image!",
+                "Error in deleting image file from cloud!" +
+                "\nPlease, see the log!",
                 Snackbar.LENGTH_INDEFINITE);
         snackBar.setAction("Dismiss", new View.OnClickListener() {
             @Override
@@ -1630,7 +1629,6 @@ public class MainActivity extends AppCompatActivity implements
         });
         snackBar.show();
 
-        myLog.addToLog(RELEASE);
     }
 
 
