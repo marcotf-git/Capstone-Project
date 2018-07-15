@@ -123,11 +123,11 @@ public class MyDownload {
                             if (databaseVisibility.equals(USER_DATABASE)) {
 
                                 for (QueryDocumentSnapshot document : task.getResult()) {
-                                    Log.d(TAG, "refreshDatabase onComplete document.getId():" +
+                                    Log.d(TAG, "downloadDatabase onComplete document.getId():" +
                                             document.getId() + " => " + document.getData());
                                     Lesson lesson = document.toObject(Lesson.class);
                                     String jsonString = serialize(lesson);
-                                    Log.v(TAG, "refreshDatabase onComplete lesson jsonString:"
+                                    Log.v(TAG, "downloadDatabase onComplete lesson jsonString:"
                                             + jsonString);
                                     // refresh the lessons of the local user on its separate table
                                     // this gives more security to the database
@@ -171,7 +171,7 @@ public class MyDownload {
 
 
 
-    // Helper method called by refreshDatabase
+    // Helper method called by downloadDatabase
     // Save the data in the database
     private void refreshUserLesson(Lesson lesson) {
 
@@ -290,7 +290,7 @@ public class MyDownload {
 
 
 
-    // Helper method called by refreshDatabase
+    // Helper method called by downloadDatabase
     // Save the data in the database
     // In case of group lessons, clear the existing table and insert new data
     private void refreshGroupLessons(Task<QuerySnapshot> task) {
@@ -484,7 +484,7 @@ public class MyDownload {
 
 
 
-    // Helper method called by refreshDatabase
+    // Helper method called by downloadDatabase
     // It will download all the images and save in local files
     // Then, will save the path (local uri's) in the group lesson table
     // The file will be read and showed in the view of the lesson part

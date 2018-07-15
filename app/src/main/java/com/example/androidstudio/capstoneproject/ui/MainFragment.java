@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.preference.PreferenceManager;
@@ -23,7 +22,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
@@ -77,7 +75,7 @@ public class MainFragment extends Fragment implements
 
     // Interfaces for communication with the main activity (sending data)
     OnLessonListener mLessonCallback;
-    OnIdlingResourceListener mIdlingCallback;
+    //OnIdlingResourceListener mIdlingCallback;
 
     // Interfaces for communication with the main activity (sending data)
     public interface OnLessonListener {
@@ -90,12 +88,12 @@ public class MainFragment extends Fragment implements
     public void onAttach(Context context) {
         super.onAttach(context);
         mContext = context;
-        try {
-            mIdlingCallback = (OnIdlingResourceListener) context;
-        } catch (ClassCastException e) {
-            throw new ClassCastException(context.toString()
-                    + " must implement OnIdlingResourceListener");
-        }
+//        try {
+//            mIdlingCallback = (OnIdlingResourceListener) context;
+//        } catch (ClassCastException e) {
+//            throw new ClassCastException(context.toString()
+//                    + " must implement OnIdlingResourceListener");
+//        }
         try {
             mLessonCallback = (OnLessonListener) context;
         } catch (ClassCastException e) {
@@ -154,11 +152,7 @@ public class MainFragment extends Fragment implements
         mClassesList = rootView.findViewById(R.id.rv_lessons);
 
         // recovering the instance state
-        if (savedInstanceState != null) {
-            loadingIndicator = savedInstanceState.getBoolean(LOADING_INDICATOR);
-        } else {
-            loadingIndicator = false;
-        }
+        loadingIndicator = savedInstanceState != null && savedInstanceState.getBoolean(LOADING_INDICATOR);
 
         if (loadingIndicator) {
             mLoadingIndicatorView.setVisibility(View.VISIBLE);
@@ -177,7 +171,7 @@ public class MainFragment extends Fragment implements
 
         // This is loading the saved position of the recycler view.
         // There is also a call on the post execute method in the loader, for updating the view.
-        if(savedInstanceState != null) {
+        if (savedInstanceState != null) {
             Log.d(TAG, "recovering savedInstanceState");
             Parcelable recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
             mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
@@ -316,6 +310,7 @@ public class MainFragment extends Fragment implements
      */
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
+
 
         // Pass the data to the adapter
         mAdapter.swapCursor(data, databaseVisibility);
@@ -460,9 +455,9 @@ public class MainFragment extends Fragment implements
     }
 
 
-    public interface OnIdlingResourceListener {
-        void onIdlingResource(Boolean value);
-    }
+//    public interface OnIdlingResourceListener {
+//        void onIdlingResource(Boolean value);
+//    }
 
 
     public void setDatabaseVisibility(String dbVisibility) {

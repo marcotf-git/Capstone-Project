@@ -11,11 +11,9 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
@@ -159,9 +157,9 @@ import static android.view.View.VISIBLE;
 public class MainActivity extends AppCompatActivity implements
         SharedPreferences.OnSharedPreferenceChangeListener,
         MainFragment.OnLessonListener,
-        MainFragment.OnIdlingResourceListener,
+        //MainFragment.OnIdlingResourceListener,
         PartsFragment.OnLessonPartListener,
-        PartsFragment.OnIdlingResourceListener,
+        //PartsFragment.OnIdlingResourceListener,
         DeleteLessonLocallyDialogFragment.DeleteLessonDialogListener,
         DeletePartDialogFragment.DeletePartDialogListener,
         MyFirebaseFragment.OnCloudListener,
@@ -234,7 +232,6 @@ public class MainActivity extends AppCompatActivity implements
     private FrameLayout logContainer;
     private TextView mUsernameTextView;
     private TextView mUserEmailTextView;
-    private LinearLayout listContainer;
 
     // Dialogs
     private AlertDialog uploadDialog;
@@ -253,8 +250,8 @@ public class MainActivity extends AppCompatActivity implements
 
 
     // The Idling Resource which will be null in production.
-    @Nullable
-    private SimpleIdlingResource mIdlingResource;
+    //@Nullable
+    //private SimpleIdlingResource mIdlingResource;
 
 
     /**
@@ -308,7 +305,7 @@ public class MainActivity extends AppCompatActivity implements
         // Init the main view
         setContentView(R.layout.activity_main);
 
-        listContainer = findViewById(R.id.linear_layout);
+        LinearLayout listContainer = findViewById(R.id.linear_layout);
         listContainer.setVisibility(INVISIBLE);
 
         // Init another member variables
@@ -422,9 +419,9 @@ public class MainActivity extends AppCompatActivity implements
          * If the idle state is false, Espresso will wait until it is true before
          * performing the next action.
          */
-        if (mIdlingResource != null) {
-            mIdlingResource.setIdleState(false);
-        }
+//        if (mIdlingResource != null) {
+//            mIdlingResource.setIdleState(false);
+//        }
 
         // Initialize Firebase components
         FirebaseFirestore mFirebaseDatabase = FirebaseFirestore.getInstance();
@@ -1180,18 +1177,18 @@ public class MainActivity extends AppCompatActivity implements
         actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
     }
 
-    private void deselectViews() {
-        // Deselect the last view selected
-        mainFragment.deselectViews();
-        selectedLesson_id = -1;
-        partsFragment.deselectViews();
-        selectedLessonPart_id = -1;
-    }
+//    private void deselectViews() {
+//        // Deselect the last view selected
+//        mainFragment.deselectViews();
+//        selectedLesson_id = -1;
+//        partsFragment.deselectViews();
+//        selectedLessonPart_id = -1;
+//    }
 
 
-    /**
-     * Methods for refreshing/uploading the database.
-     */
+//    /**
+//     * Methods for refreshing/uploading the database.
+//     */
 
 
 
@@ -1199,42 +1196,42 @@ public class MainActivity extends AppCompatActivity implements
 
 
     // AsyncTask to process the refresh of the database in background
-    private static class RefreshTask extends AsyncTask<Object, Void, Void> {
-
-        private String databaseVisibility;
-
-        RefreshTask(String databaseVisibility) {
-            super();
-            this.databaseVisibility = databaseVisibility;
-        }
-
-        @Override
-        protected Void doInBackground(Object... object) {
-            //firebaseFragment.refreshDatabase(databaseVisibility);
-            return null;
-        }
-
-    }
+//    private static class RefreshTask extends AsyncTask<Object, Void, Void> {
+//
+//        private String databaseVisibility;
+//
+//        RefreshTask(String databaseVisibility) {
+//            super();
+//            this.databaseVisibility = databaseVisibility;
+//        }
+//
+//        @Override
+//        protected Void doInBackground(Object... object) {
+//            //firebaseFragment.downloadDatabase(databaseVisibility);
+//            return null;
+//        }
+//
+//    }
 
 
     // It will upload the images and videos, and after, upload the database
-    private void uploadImagesAndDatabase() {
-
-        // Verify if there is a lesson selected
-        if (selectedLesson_id == -1) {
-            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                    "Please, select a lesson to upload the images or videos!\n" +
-                    "Sorry,there isn't an option to upload just one part!",
-                    Snackbar.LENGTH_INDEFINITE);
-            snackBar.setAction("Dismiss", new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
-            });
-            snackBar.show();
-            return;
-        }
+//    private void uploadImagesAndDatabase() {
+//
+//        // Verify if there is a lesson selected
+//        if (selectedLesson_id == -1) {
+//            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+//                    "Please, select a lesson to upload the images or videos!\n" +
+//                    "Sorry,there isn't an option to upload just one part!",
+//                    Snackbar.LENGTH_INDEFINITE);
+//            snackBar.setAction("Dismiss", new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//                    snackBar.dismiss();
+//                }
+//            });
+//            snackBar.show();
+//            return;
+//        }
 
         // query the parts table to count for the number of images to upload
         /* Perform the ContentProvider query for the lesson parts */
@@ -1281,7 +1278,7 @@ public class MainActivity extends AppCompatActivity implements
 //        // SET THE INITIAL STATE
 //        uploadCount = 0;
 
-        Log.d(TAG, "uploadCountFinal:" + uploadCountFinal + " images to upload");
+        //Log.d(TAG, "uploadCountFinal:" + uploadCountFinal + " images to upload");
 //        firebaseFragment.addToLog("STARTING UPLOAD IMAGES/VIDEOS: " +
 //                uploadCountFinal + " files to upload.");
 
@@ -1292,25 +1289,25 @@ public class MainActivity extends AppCompatActivity implements
         // database
         //firebaseFragment.uploadImagesAndDatabase(selectedLesson_id);
 
-    }
+//    }
 
 
     // AsyncTask to process the upload of the lesson in background
-    private static class UploadTask extends AsyncTask<Object, Void, Void> {
-
-        private long selectedLesson_id;
-
-        UploadTask(long selectedLesson_id) {
-            super();
-            this.selectedLesson_id = selectedLesson_id;
-        }
-
-        @Override
-        protected Void doInBackground(Object... object) {
-            //firebaseFragment.uploadLesson(selectedLesson_id);
-            return null;
-        }
-    }
+//    private static class UploadTask extends AsyncTask<Object, Void, Void> {
+//
+//        private long selectedLesson_id;
+//
+//        UploadTask(long selectedLesson_id) {
+//            super();
+//            this.selectedLesson_id = selectedLesson_id;
+//        }
+//
+//        @Override
+//        protected Void doInBackground(Object... object) {
+//            //firebaseFragment.uploadLesson(selectedLesson_id);
+//            return null;
+//        }
+//    }
 
 
     /**
@@ -2063,12 +2060,12 @@ public class MainActivity extends AppCompatActivity implements
      * Methods for handling the activity state change
      */
 
-    @Override
-    public void onIdlingResource(Boolean value) {
-        if (mIdlingResource != null) {
-            mIdlingResource.setIdleState(value);
-        }
-    }
+//    @Override
+//    public void onIdlingResource(Boolean value) {
+//        if (mIdlingResource != null) {
+//            mIdlingResource.setIdleState(value);
+//        }
+//    }
 
     // This method is saving the visibility of the fragments in static vars
     @Override

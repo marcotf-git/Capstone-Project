@@ -72,12 +72,12 @@ public class PartsFragment extends Fragment implements
     public void onAttach(Context context) {
         super.onAttach(context);
         mContext = context;
-        try {
-            mIdlingCallback = (OnIdlingResourceListener) context;
-        } catch (ClassCastException e) {
-            throw new ClassCastException(context.toString()
-                    + " must implement OnIdlingResourceListener");
-        }
+//        try {
+//            mIdlingCallback = (OnIdlingResourceListener) context;
+//        } catch (ClassCastException e) {
+//            throw new ClassCastException(context.toString()
+//                    + " must implement OnIdlingResourceListener");
+//        }
         try {
             mPartCallback = (OnLessonPartListener) context;
         } catch (ClassCastException e) {
@@ -329,7 +329,7 @@ public class PartsFragment extends Fragment implements
         }
 
         // Send to the main activity the order to setting the idling resource state
-        mIdlingCallback.onIdlingResource(true);
+        //mIdlingCallback.onIdlingResource(true);
 
         // Pass the data to the adapter
         setCursor(data);

@@ -20,8 +20,6 @@ public class MyLog {
     // This limits the number of rows in the log table
     private static final int MAX_ROWS_LOG_TABLE = 200;
 
-    private ContentResolver contentResolver;
-
     private Context mContext;
 
 
@@ -32,7 +30,8 @@ public class MyLog {
     // Add data to the log table and limit its size
     public void addToLog(String logText) {
 
-        contentResolver = mContext.getContentResolver();
+
+        ContentResolver contentResolver = mContext.getContentResolver();
 
         Cursor mCursor = contentResolver.query(LessonsContract.MyLogEntry.CONTENT_URI,
                 null,
@@ -86,6 +85,5 @@ public class MyLog {
                     new Exception("addToLog: error in inserting item on log"));
         }
     }
-
 
 }

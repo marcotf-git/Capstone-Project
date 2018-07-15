@@ -111,7 +111,7 @@ public class MyDownloadService extends IntentService {
         if (databaseVisibility != null && userUid != null) {
 
             try {
-               refreshDatabase(userUid, databaseVisibility);
+                downloadDatabase(userUid, databaseVisibility);
             } catch (Exception e) {
                 Log.e(TAG, e.getMessage());
                 myLog.addToLog(e.getMessage());
@@ -128,7 +128,7 @@ public class MyDownloadService extends IntentService {
     // Helper method for refreshing the database from Cloud Firestore
     // Do not delete if existing in user table
     // Delete all in the group table (data and local files)
-    public void refreshDatabase(final String userUid, final String databaseVisibility) {
+    public void downloadDatabase(final String userUid, final String databaseVisibility) {
 
         if((userUid == null) || (databaseVisibility == null)) {
             Log.e(TAG, "uploadImagesAndDatabase: failed to get parameters " +
@@ -156,11 +156,11 @@ public class MyDownloadService extends IntentService {
                             if (databaseVisibility.equals(USER_DATABASE)) {
 
                                 for (QueryDocumentSnapshot document : task.getResult()) {
-                                    Log.d(TAG, "refreshDatabase onComplete document.getId():" +
+                                    Log.d(TAG, "downloadDatabase onComplete document.getId():" +
                                             document.getId() + " => " + document.getData());
                                     Lesson lesson = document.toObject(Lesson.class);
                                     String jsonString = serialize(lesson);
-                                    Log.v(TAG, "refreshDatabase onComplete lesson jsonString:"
+                                    Log.v(TAG, "downloadDatabase onComplete lesson jsonString:"
                                             + jsonString);
                                     // refresh the lessons of the local user on its separate table
                                     // this gives more security to the database
@@ -204,7 +204,7 @@ public class MyDownloadService extends IntentService {
 
 
 
-    // Helper method called by refreshDatabase
+    // Helper method called by downloadDatabase
     // Save the data in the database
     private void refreshUserLesson(Lesson lesson) {
 
@@ -323,7 +323,7 @@ public class MyDownloadService extends IntentService {
 
 
 
-    // Helper method called by refreshDatabase
+    // Helper method called by downloadDatabase
     // Save the data in the database
     // In case of group lessons, clear the existing table and insert new data
     private void refreshGroupLessons(Task<QuerySnapshot> task) {
@@ -517,7 +517,7 @@ public class MyDownloadService extends IntentService {
 
 
 
-    // Helper method called by refreshDatabase
+    // Helper method called by downloadDatabase
     // It will download all the images and save in local files
     // Then, will save the path (local uri's) in the group lesson table
     // The file will be read and showed in the view of the lesson part

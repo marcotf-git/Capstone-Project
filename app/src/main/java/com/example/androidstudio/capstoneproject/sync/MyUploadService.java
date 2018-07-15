@@ -21,8 +21,6 @@ public class MyUploadService extends IntentService {
     private Long lesson_id;
     private String userUid;
 
-    private MyLog myLog;
-
 
     public MyUploadService() {
         super("MyUploadService");
@@ -31,13 +29,13 @@ public class MyUploadService extends IntentService {
     @Override
     public void onCreate() {
 
-        myLog = new MyLog(this);
-
         super.onCreate();
     }
 
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
+
+        MyLog myLog = new MyLog(this);
 
         // Recover information from caller activity
         if (intent != null && intent.hasExtra(SELECTED_LESSON_ID)) {

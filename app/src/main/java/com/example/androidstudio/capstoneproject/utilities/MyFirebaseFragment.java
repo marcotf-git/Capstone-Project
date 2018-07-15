@@ -552,7 +552,7 @@ public class MyFirebaseFragment extends Fragment {
     // Helper method for refreshing the database from Cloud Firestore
     // Do not delete if existing in user table
     // Delete all in the group table (data and local files)
-//    public void refreshDatabase(final String databaseVisibility) {
+//    public void downloadDatabase(final String databaseVisibility) {
 //
 //        // Get multiple documents (all the data in the database)
 //        mFirebaseDatabase.collection("lessons")
@@ -568,11 +568,11 @@ public class MyFirebaseFragment extends Fragment {
 //                        if (databaseVisibility.equals(USER_DATABASE)) {
 //
 //                            for (QueryDocumentSnapshot document : task.getResult()) {
-//                                Log.d(TAG, "refreshDatabase onComplete document.getId():" +
+//                                Log.d(TAG, "downloadDatabase onComplete document.getId():" +
 //                                        document.getId() + " => " + document.getData());
 //                                Lesson lesson = document.toObject(Lesson.class);
 //                                String jsonString = MyFirebaseFragment.serialize(lesson);
-//                                Log.v(TAG, "refreshDatabase onComplete lesson jsonString:"
+//                                Log.v(TAG, "downloadDatabase onComplete lesson jsonString:"
 //                                        + jsonString);
 //                                // refresh the lessons of the local user on its separate table
 //                                // this gives more security to the database
@@ -605,7 +605,7 @@ public class MyFirebaseFragment extends Fragment {
 //    }
 
 
-    // Helper method called by refreshDatabase
+    // Helper method called by downloadDatabase
 //    private void refreshUserLesson(Lesson lesson) {
 //
 //        Log.v(TAG, "refreshUserLesson lesson_id:" + lesson.getLesson_id());
@@ -721,7 +721,7 @@ public class MyFirebaseFragment extends Fragment {
 //    }
 
 
-    // Helper method called by refreshDatabase
+    // Helper method called by downloadDatabase
     // In case of group lessons, clear the existing table and insert new data
 //    private void refreshGroupLessons(Task<QuerySnapshot> task) {
 //
@@ -836,7 +836,7 @@ public class MyFirebaseFragment extends Fragment {
 //    }
 
 
-    // Helper method called by refreshDatabase
+    // Helper method called by downloadDatabase
     // It will download all the images and save in local files
     // Then, will save the path (local uri's) in the group lesson table
     // The file will be read and showed in the view of the lesson part
