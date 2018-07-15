@@ -59,9 +59,6 @@ public class MyUploadService extends IntentService {
     private int nImagesToUpload;
     private int nImagesUploaded;
 
-    private long lesson_id;
-    private String userUid;
-
     private MyLog myLog;
 
     private Context mContext;
@@ -94,6 +91,9 @@ public class MyUploadService extends IntentService {
 
         myLog = new MyLog(this);
         messages = new ArrayList<>();
+
+        long lesson_id = -1;
+        String userUid = null;
 
         // Recover information from caller activity
         if (intent != null && intent.hasExtra(SELECTED_LESSON_ID)) {
@@ -228,7 +228,7 @@ public class MyUploadService extends IntentService {
         if (images.size() == 0) {
             Log.d(TAG, "uploadImagesAndDatabase: no images in the database");
             // Go directly to upload the lesson
-            uploadLesson(lesson_id);
+            uploadLesson(userUid, lesson_id);
             myLog.addToLog ("uploadImagesAndDatabase: no images in the database");
             messages.add("UPLOAD LESSON FINISHED OK");
             sendMessages();
@@ -328,6 +328,7 @@ public class MyUploadService extends IntentService {
                             imageToUpload.getPart_id(),
                             imageToUpload.getImageType(),
                             filePath,
+                            userUid,
                             lesson_id);
 
                     Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
@@ -359,7 +360,7 @@ public class MyUploadService extends IntentService {
 
     // Helper method to upload the lesson text to
     // Firebase Database
-    private void uploadLesson(long lesson_id) {
+    private void uploadLesson(String userUid, long lesson_id) {
 
         Log.d(TAG, "uploadLesson lesson_id:" + lesson_id);
 
@@ -537,6 +538,7 @@ public class MyUploadService extends IntentService {
                                          long partId,
                                          String imageType,
                                          String fileUriString,
+                                         String userUid,
                                          long lessonId) {
 
         Log.d(TAG, "handleUploadTaskSuccess complete. Uploaded " + imageType + " id:" +
@@ -592,7 +594,7 @@ public class MyUploadService extends IntentService {
             myLog.addToLog(message);
             messages.add(message);
             sendMessages();
-            uploadLesson(lesson_id);
+            uploadLesson(userUid, lessonId);
 
             // notify the user that the task (synchronized) has finished
             NotificationUtils.notifyUserBecauseUploadFinished(mContext);

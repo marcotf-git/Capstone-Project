@@ -74,8 +74,10 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
     void swapCursor(Cursor cursor, String databaseVisibility){
 
         Log.d(TAG, "setLessonsCursorData");
+
         mDatabaseVisibility = databaseVisibility;
         mCursor = cursor;
+
         notifyDataSetChanged();
     }
 

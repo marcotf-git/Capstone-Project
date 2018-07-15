@@ -7,7 +7,6 @@
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
     android:orientation="vertical"
-    android:animateLayoutChanges="true"
     tools:context=".ui.PartDetailActivity">
 
     <ProgressBar
@@ -65,14 +64,17 @@
             android:layout_width="match_parent"
             android:layout_height="200dp"
             android:scaleType="centerCrop"
-            android:contentDescription="@string/part_image" />
+            android:contentDescription="@string/part_image"
+            android:visibility="invisible"/>
 
         <!-- The container for the player -->
         <FrameLayout
             xmlns:android="http://schemas.android.com/apk/res/android"
             android:id="@+id/player_container"
             android:layout_width="match_parent"
-            android:layout_height="200dp"/>
+            android:layout_height="200dp"
+            android:background="#000000"
+            android:visibility="invisible"/>
 
         <!-- The error message -->
         <TextView

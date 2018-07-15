@@ -143,21 +143,24 @@ public class ExoPlayerFragment extends Fragment {
     private void initializePlayer() {
 
         // Use an adaptive track selection
-//        TrackSelection.Factory adaptiveTrackSelectionFactory =
-//                new AdaptiveTrackSelection.Factory(BANDWIDTH_METER);
-        
-        player = ExoPlayerFactory.newSimpleInstance(
-                new DefaultRenderersFactory(getContext()),
-                new DefaultTrackSelector(),
-                new DefaultLoadControl());
+        TrackSelection.Factory adaptiveTrackSelectionFactory =
+                new AdaptiveTrackSelection.Factory(BANDWIDTH_METER);
 
-        player.setVideoScalingMode(C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
+        if (player == null) {
+            player = ExoPlayerFactory.newSimpleInstance(
+                    new DefaultRenderersFactory(mContext),
+                    new DefaultTrackSelector(adaptiveTrackSelectionFactory),
+                    new DefaultLoadControl());
 
-        // attach player to the view
-        playerView.setPlayer(player);
+            player.setVideoScalingMode(C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
 
-        // Register an Player.DefaultEventListener
-        player.addListener(componentListener);
+            // attach player to the view
+            playerView.setPlayer(player);
+
+            // Register an Player.DefaultEventListener
+            player.addListener(componentListener);
+
+        }
 
         if (mediaUri != null) {
             Uri uri = Uri.parse(mediaUri);
@@ -174,10 +177,11 @@ public class ExoPlayerFragment extends Fragment {
 
     private MediaSource buildMediaSource(Uri uri) {
 
-        ApplicationInfo applicationInfo = mContext.getApplicationInfo();
+
+        ApplicationInfo applicationInfo = getContext().getApplicationInfo();
         int stringId = applicationInfo.labelRes;
         String appName = (stringId == 0 ?
-                applicationInfo.nonLocalizedLabel.toString() : mContext.getString(stringId));
+                applicationInfo.nonLocalizedLabel.toString() : getContext().getString(stringId));
 
         String userAgent = Util.getUserAgent(getContext(), appName);
 
@@ -187,7 +191,7 @@ public class ExoPlayerFragment extends Fragment {
 
         DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
         return new ExtractorMediaSource.Factory(
-        new DefaultDataSourceFactory(mContext, userAgent, bandwidthMeter))
+        new DefaultDataSourceFactory(getContext(), userAgent, bandwidthMeter))
         .createMediaSource(uri);
 
     }
