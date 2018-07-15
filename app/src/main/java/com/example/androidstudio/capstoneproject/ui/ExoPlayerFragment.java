@@ -145,21 +145,19 @@ public class ExoPlayerFragment extends Fragment {
         // Use an adaptive track selection
         TrackSelection.Factory adaptiveTrackSelectionFactory =
                 new AdaptiveTrackSelection.Factory(BANDWIDTH_METER);
+        
+        player = ExoPlayerFactory.newSimpleInstance(
+                new DefaultRenderersFactory(getContext()),
+                new DefaultTrackSelector(adaptiveTrackSelectionFactory),
+                new DefaultLoadControl());
 
-        if (player == null) {
-            player = ExoPlayerFactory.newSimpleInstance(
-                    new DefaultRenderersFactory(getContext()),
-                    new DefaultTrackSelector(adaptiveTrackSelectionFactory),
-                    new DefaultLoadControl());
+        player.setVideoScalingMode(C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
 
-            player.setVideoScalingMode(C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING);
+        // attach player to the view
+        playerView.setPlayer(player);
 
-            playerView.setPlayer(player);
-
-            // Register an Player.DefaultEventListener
-            player.addListener(componentListener);
-
-        }
+        // Register an Player.DefaultEventListener
+        player.addListener(componentListener);
 
         if (mediaUri != null) {
             Uri uri = Uri.parse(mediaUri);
@@ -187,8 +185,9 @@ public class ExoPlayerFragment extends Fragment {
 //                new DefaultHttpDataSourceFactory(userAgent))
 //                .createMediaSource(uri);
 
+        DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
         return new ExtractorMediaSource.Factory(
-        new DefaultDataSourceFactory(mContext, userAgent))
+        new DefaultDataSourceFactory(mContext, userAgent, bandwidthMeter))
         .createMediaSource(uri);
 
     }

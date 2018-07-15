@@ -146,7 +146,7 @@ public class PartDetailActivity extends AppCompatActivity implements
             errorMessageView.setVisibility(errorMessageViewVisibility);
         } else {
             errorMessageView.setVisibility(GONE);
-            mPlayerView.setVisibility(VISIBLE);
+            mPlayerView.setVisibility(GONE);
             imageView.setVisibility(GONE);
         }
 
@@ -234,9 +234,9 @@ public class PartDetailActivity extends AppCompatActivity implements
         Log.v(TAG, "updateView");
 
         // Set initial state of the player and thumbnail views (this method is only called in two pane)
-//        errorMessageView.setVisibility(View.INVISIBLE);
-//        mPlayerView.setVisibility(View.INVISIBLE);
-//        imageView.setVisibility(View.INVISIBLE);
+        errorMessageView.setVisibility(View.GONE);
+        mPlayerView.setVisibility(View.GONE);
+        imageView.setVisibility(View.GONE);
 
 
         String partText = null;
@@ -287,6 +287,10 @@ public class PartDetailActivity extends AppCompatActivity implements
                 }
             }
         }
+
+
+        Log.d(TAG, "updateView: localVideoUri:" + localVideoUri + " localImageUri:"
+                + localImageUri);
 
         // Send the data to the fragment data
         if (partText != null) {
