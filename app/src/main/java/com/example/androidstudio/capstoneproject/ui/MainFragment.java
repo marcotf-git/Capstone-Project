@@ -74,10 +74,10 @@ public class MainFragment extends Fragment implements
     OnLessonListener mLessonCallback;
 
 
-    // Interfaces for communication with the main activity (sending data)
+    // Interfaces for communication with the MainActivity (sending data)
     public interface OnLessonListener {
         void onLessonSelected(long _id);
-        void onLessonClicked(long _id);
+        void onLessonClicked(long _id, String lessonName);
     }
 
 
@@ -111,8 +111,6 @@ public class MainFragment extends Fragment implements
             databaseVisibility = sharedPreferences.getString(DATABASE_VISIBILITY, USER_DATABASE);
             loadingIndicator = false;
         }
-
-
 
         // Query the database and set the adapter with the cursor data
         if (null != getActivity()) {
@@ -168,67 +166,8 @@ public class MainFragment extends Fragment implements
             mClassesList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
         }
 
-        
-
         // Return root view
         return rootView;
-    }
-
-
-    // This method is saving the position of the recycler view
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
-
-        Parcelable recyclerViewState = mClassesList.getLayoutManager().onSaveInstanceState();
-        savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
-
-        savedInstanceState.putLong(SELECTED_LESSON_ID, selectedLesson_id);
-        savedInstanceState.putString(DATABASE_VISIBILITY, databaseVisibility);
-
-        savedInstanceState.putBoolean(LOADING_INDICATOR, loadingIndicator);
-
-        super.onSaveInstanceState(savedInstanceState);
-    }
-
-
-    /**
-     * This is where we receive our callback from the classes list adapter
-     * {@link com.example.androidstudio.capstoneproject.ui.LessonsListAdapter.ListItemClickListener}
-     *
-     * This callback is invoked when you long click on an item in the list.
-     *
-     * @param clickedItemIndex Index in the list of the item that was clicked.
-     */
-    @Override
-    public void onListItemLongClick(View view, int clickedItemIndex, long lesson_id, String lessonName) {
-
-        Log.d(TAG, "onListItemLongClick lessonName:" + lessonName);
-
-        // If the actual view is selected, return
-        if (view.isSelected()) {
-            return;
-        }
-
-        // Deselect the last view selected
-        deselectViews();
-
-        // Select the view if the app is in create mode
-        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-        String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
-                this.getString(R.string.pref_mode_view));
-
-        if (queryOption.equals(this.getString(R.string.pref_mode_create))) {
-            // Select the actual view
-            view.setSelected(true);
-            mAdapter.setSelectedItemId(selectedLesson_id);
-            // Save a reference to the view
-            mSelectedView = view;
-            // Save the _id of the lesson selected
-            selectedLesson_id = lesson_id;
-            // Save in Main Activity
-            mLessonCallback.onLessonSelected(selectedLesson_id);
-        }
-
     }
 
     // Helper method for calc the number of columns based on screen
@@ -303,7 +242,6 @@ public class MainFragment extends Fragment implements
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
 
-
         // Pass the data to the adapter
         mAdapter.swapCursor(data, databaseVisibility);
         mAdapter.setSelectedItemId(selectedLesson_id);
@@ -335,7 +273,7 @@ public class MainFragment extends Fragment implements
 
     /**
      * This method will make the View for data visible and hide the error message.
-     * <p>
+     *
      * Since it is okay to redundantly set the visibility of a View, we don't
      * need to check whether each view is currently visible or invisible.
      */
@@ -360,34 +298,8 @@ public class MainFragment extends Fragment implements
         mErrorMessageDisplay.setVisibility(View.VISIBLE);
     }
 
-    /**
-     * This is where we receive our callback from the classes list adapter
-     * {@link com.example.androidstudio.capstoneproject.ui.LessonsListAdapter.ListItemClickListener}
-     *
-     * This callback is invoked when you click on an item in the list.
-     *
-     * @param clickedItemIndex Index in the list of the item that was clicked.
-     */
-    @Override
-    public void onListItemClick(View view, int clickedItemIndex, long lesson_id, String lessonName) {
-
-        Log.d(TAG, "onListItemClick lessonName:" + lessonName);
-
-        // If the actual or other view view is selected, deselect it and return
-        if (view.isSelected() || selectedLesson_id >= 0) {
-            view.setSelected(false);
-            deselectViews();
-            return;
-        }
-
-        // Inform the MainActivity
-        mLessonCallback.onLessonClicked(lesson_id);
-
-    }
-
-
-    // Helper function to update the widget
-    // It will make a JSON string with all the lesson titles and set the widget provider
+    // Update the widget
+    // Make a JSON string with all the lesson titles and set the widget provider
     private void updateWidget(Cursor mCursor) {
 
         if (!(mCursor != null && (mCursor.getCount() > 0)) ){
@@ -428,14 +340,12 @@ public class MainFragment extends Fragment implements
                 }
                 // get the next image
             } while (mCursor.moveToNext());
-
         }
 
         Log.d(TAG, "updateWidget lessons:" + lessons.toString());
 
         // send the data
         ListRemoteViewsFactory.setWidgetProviderData(lessons);
-
 
         //Trigger data update to handle the View widgets and force a data refresh
         appWidgetManager = AppWidgetManager.getInstance(mContext);
@@ -445,8 +355,6 @@ public class MainFragment extends Fragment implements
         LessonsWidgetProvider.updateLessonsWidgets(mContext, appWidgetManager, appWidgetIds);
 
     }
-
-
 
     public void setDatabaseVisibility(String dbVisibility) {
         databaseVisibility = dbVisibility;
@@ -468,7 +376,6 @@ public class MainFragment extends Fragment implements
             }
         }
     }
-
 
     public void deselectViews() {
         // Deselect the last view selected
@@ -499,6 +406,82 @@ public class MainFragment extends Fragment implements
                 mLoadingIndicatorView.setVisibility(View.INVISIBLE);
             }
         }
+    }
+
+    /**
+     * This is where we receive our callback from the classes list adapter
+     * {@link com.example.androidstudio.capstoneproject.ui.LessonsListAdapter.ListItemClickListener}
+     *
+     * This callback is invoked when you click on an item in the list.
+     *
+     * @param clickedItemIndex Index in the list of the item that was clicked.
+     */
+    @Override
+    public void onListItemClick(View view, int clickedItemIndex, long lesson_id, String lessonName) {
+
+        Log.d(TAG, "onListItemClick lessonName:" + lessonName);
+
+        // If the actual or other view view is selected, deselect it and return
+        if (view.isSelected() || selectedLesson_id >= 0) {
+            view.setSelected(false);
+            deselectViews();
+            return;
+        }
+
+        // Inform the MainActivity
+        mLessonCallback.onLessonClicked(lesson_id, lessonName);
+
+    }
+
+    /**
+     * This is where we receive our callback from the lesson list adapter
+     */
+    @Override
+    public void onListItemLongClick(View view, int clickedItemIndex, long lesson_id, String lessonName) {
+
+        Log.d(TAG, "onListItemLongClick lessonName:" + lessonName);
+
+        // If the actual view is selected, return
+        if (view.isSelected()) {
+            return;
+        }
+
+        // Deselect the last view selected
+        deselectViews();
+
+        // Select the view if the app is in create mode
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+        String queryOption = sharedPreferences.getString(this.getString(R.string.pref_mode_key),
+                this.getString(R.string.pref_mode_view));
+
+        if (queryOption.equals(this.getString(R.string.pref_mode_create))) {
+            // Select the actual view
+            view.setSelected(true);
+            mAdapter.setSelectedItemId(selectedLesson_id);
+            // Save a reference to the view
+            mSelectedView = view;
+            // Save the _id of the lesson selected
+            selectedLesson_id = lesson_id;
+            // Save in Main Activity
+            mLessonCallback.onLessonSelected(selectedLesson_id);
+        }
+
+    }
+
+
+    // This method is saving the position of the recycler view
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
+
+        Parcelable recyclerViewState = mClassesList.getLayoutManager().onSaveInstanceState();
+        savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
+
+        savedInstanceState.putLong(SELECTED_LESSON_ID, selectedLesson_id);
+        savedInstanceState.putString(DATABASE_VISIBILITY, databaseVisibility);
+
+        savedInstanceState.putBoolean(LOADING_INDICATOR, loadingIndicator);
+
+        super.onSaveInstanceState(savedInstanceState);
     }
 
 }

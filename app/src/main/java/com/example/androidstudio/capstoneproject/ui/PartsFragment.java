@@ -40,6 +40,7 @@ public class PartsFragment extends Fragment implements
     private static final String GROUP_DATABASE = "groupDatabase";
 
     private static final String REFERENCE_LESSON_ID = "referenceLesson_id";
+    private static final String REFERENCE_LESSON_NAME = "referenceLessonName";
     private static final String SELECTED_LESSON_PART_ID = "selectedLessonPartId";
     private static final String DATABASE_VISIBILITY = "databaseVisibility";
 
@@ -50,10 +51,12 @@ public class PartsFragment extends Fragment implements
     // State vars
     private View mSelectedView; // not saved
     private long referenceLesson_id;
+    private String referenceLessonName;
     private long selectedLessonPart_id;
     private String databaseVisibility;
 
     // Views
+    private TextView mLessonTitle;
     private TextView mErrorMessageDisplay;
     private ProgressBar mLoadingIndicator;
     private RecyclerView mPartsList;
@@ -65,19 +68,17 @@ public class PartsFragment extends Fragment implements
 
     // Callbacks to send data to the main activity
     OnLessonPartListener mPartCallback;
-    OnIdlingResourceListener mIdlingCallback;
 
+    // Interfaces for communication with the main activity (sending data)
+    public interface OnLessonPartListener {
+        void onPartSelected(long _id);
+        void onPartClicked(long _id);
+    }
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
         mContext = context;
-//        try {
-//            mIdlingCallback = (OnIdlingResourceListener) context;
-//        } catch (ClassCastException e) {
-//            throw new ClassCastException(context.toString()
-//                    + " must implement OnIdlingResourceListener");
-//        }
         try {
             mPartCallback = (OnLessonPartListener) context;
         } catch (ClassCastException e) {
@@ -96,6 +97,7 @@ public class PartsFragment extends Fragment implements
             selectedLessonPart_id = savedInstanceState.getLong(SELECTED_LESSON_PART_ID);
             databaseVisibility = savedInstanceState.getString(DATABASE_VISIBILITY);
             referenceLesson_id = savedInstanceState.getLong(REFERENCE_LESSON_ID);
+            referenceLessonName = savedInstanceState.getString(REFERENCE_LESSON_NAME);
 
         } else {
             // Initialize the state vars
@@ -128,6 +130,7 @@ public class PartsFragment extends Fragment implements
         // Inflate the fragment view
         View rootView = inflater.inflate(R.layout.fragment_parts, container, false);
 
+        mLessonTitle = rootView.findViewById(R.id.tv_lesson_title);
         mErrorMessageDisplay = rootView.findViewById(R.id.tv_error_message_display);
         mLoadingIndicator = rootView.findViewById(R.id.pb_loading_indicator);
         mPartsList = rootView.findViewById(R.id.rv_parts);
@@ -164,8 +167,8 @@ public class PartsFragment extends Fragment implements
 
         savedInstanceState.putLong(SELECTED_LESSON_PART_ID, selectedLessonPart_id);
         savedInstanceState.putLong(REFERENCE_LESSON_ID, referenceLesson_id);
+        savedInstanceState.putString(REFERENCE_LESSON_NAME, referenceLessonName);
         savedInstanceState.putString(DATABASE_VISIBILITY, databaseVisibility);
-
 
         super.onSaveInstanceState(savedInstanceState);
     }
@@ -370,7 +373,6 @@ public class PartsFragment extends Fragment implements
         mPartsList.setVisibility(View.VISIBLE);
     }
 
-
     /**
      * This method will make the error message visible and hide data View.
      *
@@ -386,19 +388,10 @@ public class PartsFragment extends Fragment implements
     }
 
 
-
-    // Interfaces for communication with the main activity (sending data)
-    public interface OnLessonPartListener {
-        void onPartSelected(long _id);
-        void onPartClicked(long _id);
-    }
-
-    public interface OnIdlingResourceListener {
-        void onIdlingResource(Boolean value);
-    }
-
-    // Functions for receiving the data from main activity
-    // Receives the data from the main activity
+    /**
+     * Methods for receiving the data from main activity
+    */
+     // Receives the data from the main activity
     public void setCursor(Cursor cursor) {
 
         mLoadingIndicator.setVisibility(View.INVISIBLE);
@@ -406,6 +399,24 @@ public class PartsFragment extends Fragment implements
 
     }
 
+    // Receive communication from MainActivity
+    public void deselectViews() {
+        // Deselect the last view selected
+        if (null != mSelectedView) {
+            mSelectedView.setSelected(false);
+            mSelectedView = null;
+        }
+        selectedLessonPart_id = -1;
+        // Force deselecting all views
+        int i = 0;
+        while (mPartsList.getChildAt(i) != null) {
+            mPartsList.getChildAt(i).setSelected(false);
+            i++;
+        }
+    }
+
+    // Receive communication from MainActivity
+    // Set what table is to be viewed
     public void setDatabaseVisibility(String dbVisibility) {
         databaseVisibility = dbVisibility;
 
@@ -424,30 +435,20 @@ public class PartsFragment extends Fragment implements
                 getActivity().getSupportLoaderManager().initLoader(ID_GROUP_LESSON_PARTS_LOADER,
                         null, this);
             }
-
         }
     }
 
-    public void deselectViews() {
-        // Deselect the last view selected
-        if (null != mSelectedView) {
-            mSelectedView.setSelected(false);
-            mSelectedView = null;
-        }
-        selectedLessonPart_id = -1;
-        // Force deselecting all views
-        int i = 0;
-        while (mPartsList.getChildAt(i) != null) {
-            mPartsList.getChildAt(i).setSelected(false);
-            i++;
-        }
-    }
-
+    // Receive communication from MainActivity
     // Set the reference to the selected lesson
-    public void setReferenceLesson(long _id) {
+    public void setReferenceLesson(long _id, String lessonName) {
+
         Log.v(TAG, "setReferenceLesson: lesson _id:" + _id);
         // Write the data that will be used by the loader
         referenceLesson_id = _id;
+
+        // Write the lesson title in the view of the by fragment_parts layout
+        referenceLessonName = lessonName;
+        mLessonTitle.setText(lessonName);
 
         if(null != getActivity()) {
 
@@ -462,9 +463,7 @@ public class PartsFragment extends Fragment implements
                 getActivity().getSupportLoaderManager().initLoader(ID_GROUP_LESSON_PARTS_LOADER,
                         null, this);
             }
-
         }
-
     }
 
 }

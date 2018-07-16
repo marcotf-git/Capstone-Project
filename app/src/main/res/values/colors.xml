@@ -6,10 +6,10 @@
     <color name="colorAccent">#FF4081</color>
 
     <!-- Create a new color, colorPrimaryLight -->
-    <color name="colorPrimaryLight">#7986cb</color>
-    <color name="colorAccentLight">#f48fb1</color>
+    <color name="colorPrimaryLight">#283f51b5</color>
+    <color name="colorAccentLight">#3cff4081</color>
 
-    <color name="colorItemPressed">#65cdd1ea</color>
+    <color name="colorItemSelected">#28303f9f</color>
 
 
 </resources>

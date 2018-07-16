@@ -236,10 +236,8 @@ public class MainActivity extends AppCompatActivity implements
     // Fragments
     private MainFragment mainFragment;
     private PartsFragment partsFragment;
-    static private MyFirebaseFragment firebaseFragment;
+    private MyFirebaseFragment firebaseFragment;
     private LogFragment logFragment;
-
-    private MyLog myLog;
 
     // Context
     private Context mContext;
@@ -341,7 +339,6 @@ public class MainActivity extends AppCompatActivity implements
         partsContainer = findViewById(R.id.parts_container);
         logContainer = findViewById(R.id.log_container);
 
-
         // Initialize the fragments
         FragmentManager fragmentManager = getSupportFragmentManager();
         // Only create fragment when needed
@@ -389,9 +386,6 @@ public class MainActivity extends AppCompatActivity implements
         Log.d(TAG, "lessonsContainer visibility:" + lessonsContainer.getVisibility());
         Log.d(TAG, "partsContainer visibility:" + partsContainer.getVisibility());
         Log.d(TAG, "logContainer visibility:" + logContainer.getVisibility());
-
-
-        myLog = new MyLog(mContext);
 
         // Initialize Firebase components
         FirebaseFirestore mFirebaseDatabase = FirebaseFirestore.getInstance();
@@ -1250,9 +1244,9 @@ public class MainActivity extends AppCompatActivity implements
 
     // Method for receiving communication from the MainFragment
     @Override
-    public void onLessonClicked(long _id) {
+    public void onLessonClicked(long _id, String lessonName) {
 
-        Log.d(TAG, "onLessonClicked _id:" + _id);
+        Log.d(TAG, "onLessonClicked _id:" + _id + " lessonName:" + lessonName);
 
         // change the state to clicked
         clickedLesson_id = _id;
@@ -1272,7 +1266,7 @@ public class MainActivity extends AppCompatActivity implements
             actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
         }
         // Inform the parts fragment
-        partsFragment.setReferenceLesson(_id);
+        partsFragment.setReferenceLesson(_id, lessonName);
     }
 
 
