@@ -23,7 +23,8 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar_container" />
+        app:layout_constraintTop_toBottomOf="@+id/toolbar_container"
+        android:contentDescription="@string/loading_indicator"/>
 
     <android.support.design.widget.AppBarLayout
         android:id="@+id/toolbar_container"

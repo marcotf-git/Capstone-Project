@@ -16,6 +16,7 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -150,8 +151,7 @@ public class MainFragment extends Fragment implements
         }
 
         // Set the layout of the recycler view
-        int nColumns = numberOfColumns();
-        GridLayoutManager layoutManager = new GridLayoutManager(mContext, nColumns);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(mContext);
         mClassesList.setLayoutManager(layoutManager);
         mClassesList.setHasFixedSize(true);
         // Set the adapter
@@ -168,24 +168,6 @@ public class MainFragment extends Fragment implements
 
         // Return root view
         return rootView;
-    }
-
-    // Helper method for calc the number of columns based on screen
-    private int numberOfColumns() {
-
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-
-        if(null != getActivity()) {
-            getActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        }
-
-        // You can change this divider to adjust the size of the recipe card
-        int widthDivider = 600;
-        int width = displayMetrics.widthPixels;
-        int nColumns = width / widthDivider;
-        if (nColumns < 1) return 1;
-
-        return nColumns;
     }
 
     /**

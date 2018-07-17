@@ -32,7 +32,7 @@
             android:scaleType="centerCrop"
             android:adjustViewBounds="true"
             android:layout_gravity="center_horizontal"
-            android:contentDescription="@string/lesson_image"/>
+            android:contentDescription="@string/lesson_image" />
 
         <TextView
             android:id="@+id/tv_main_lesson_name"

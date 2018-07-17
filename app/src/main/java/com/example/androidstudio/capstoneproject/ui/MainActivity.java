@@ -59,50 +59,66 @@ import static android.view.View.VISIBLE;
 
 
 /**
+ * This app helps the user to create small lessons, with text and videos or images, using their own
+ * devices (phones or tablets), and sharing this content with a group of users.
+ *
+ * Each user can create and save their content in the device, and upload it to the cloud. The group
+ * can download that content, and save it locally in the device, including the images or videos,
+ * for attending the classes.
+ *
+ * The process requires login to the remote server, in case, the Firebase (https://firebase.google.com),
+ * that handles all the login and logout, and stores the data.
+ *
  * The app has two modes: 'view' mode and 'create' mode.
+ *
  * If the user select 'create' mode, it will show only the content created by the user,
  * plus the options to create, edit and delete, in the action items of the app bar.
- * If the user shows 'view' mode, it will show the content that is synced with an remote server.
- * This class will start showing the lessons' titles queried from a local database, which is a copy
- * of the remote database. This corresponds to the 'view' mode, which can be selected in the
- * overflow menu.
  *
- * According to the modes of the app, the local database has two types of tables.
- * The table "group_ ... content" is a copy of the remote database.
- * The table "my_ ... content" is the content created by the user.
+ * If the user shows 'view' mode, it will show the content that is synced with the remote server.
+ *
+ * According to the modes of the app, the local database has two types of tables:
+ * - the tables "group_ ... " is a copy of the remote database.
+ * - the tables "my_ ... " is the content created by the user.
  *
  * The database and its tables are handled by a content provider LessonsContentProvider.
  * The provider is queried by a cursor loader, which returns a cursor object.
  *
- * In the 'view' mode, the view layout will be the activity_main.xml, which has fragments containers.
- * The fragment_main will have a RecyclerView,
- * populated with a GridLayoutManager and a custom adapter LessonsListAdapter.
- * The cursor provided by the loader is passed to the adapter with the data that will be shown.
+ * In the 'view' mode, the view layout will be the activity_main.xml, which has containers for
+ * fragments. The fragment_main will have a RecyclerView, populated with a LinearLayoutManager and
+ * a custom adapter LessonsListAdapter. The cursor provided by the loader is passed to the adapter
+ * with the data that will be shown.
  *
- * In the 'view' mode, if the user shows the option to sync the database, it will call a job task,
- * or an async task. There will have two options. The async task will be the immediate sync.
+ * In the 'view' mode, if the user shows the option to sync the database, it will call a job
+ * scheduled service (Intent Service), with the help of Firebase JobDispatcher, or call the service
+ * immediately, with an intent call to the Intent Service.
+ *
+ * The result is informed via intent sent by a local broadcast, with messages that will be received
+ * by a Receiver in the MainActivity, and trigger, according to the content, messages informing the
+ * user about if the task have finished OK or with errors.
+ *
+ * In case of the Scheduled Jobs, the user also have a notification, that will be received even
+ * if the app is closed, and has an pending intent incorporated, to open the app.
  *
  * In the 'create' mode, if the user selects the option to add a lesson title, it will open another
- * activity AddLessonActivity to add the title. If the user select to delete and then click on an
- * item, the item will be deleted after a confirmation. The confirmation is handled by a fragment.
+ * activity AddLessonActivity to add the title.
+ *
+ * If the user select to delete and then click on an item, the item will be deleted after a
+ * confirmation. The confirmation is handled by a Dialog fragment.
+ *
  * If the user select to edit and then click, it will open an activity EditLessonActivity to edit
  * that item.
  *
- * The app has two main kinds of local tables: the USER tables and the GROUP tables. The user tables
- * are for user data, and creation of new content. It is possible to use all of the resources from
- * the device, like camera and video, selecting images from the device storage, using the device
- * touch screen keyboard and edition resources to write text, etc.
- *
- * Then, the user creation can be uploaded to the cloud, and downloaded (in the GROUP table) by any
- * person that have the same key (same root/project) in the Firebase. There are specific rules in
- * the app and in Firebase protecting the data of one user from another.
+ * There are specific rules in the app and in Firebase protecting the data of one user from another.
  *
  * The user only can upload or download data from the cloud when logged. The login process is
  * handled by the Firebase Authentication.
  *
  * The cloud data is divided between the Firebase Database Cloud Firestore (text), and the Firebase
- * Storage (blob). The local data is divided between a table with the lesson data (text), and a
- * table with the lesson parts data (text), and the local folders for file (blob) storage.
+ * Storage (images and videos). The local data is divided between:
+ * - a table with the lesson data (text)
+ * - a table with the lesson parts data (text)
+ * - the local folders for file (blob) storage
+ *
  * The table with the lesson parts will store the uri's of the images or videos of that part.
  *
  * The upload of data has the following algorithm:
@@ -110,15 +126,23 @@ import static android.view.View.VISIBLE;
  * 2) get the uri's info and save in the local database, in the table of the lesson parts
  * 3) then, upload the two tables (lesson and parts) to the Firebase Database
  *
+ * The user can choose to download the group data (in the group table) or its own data (in the user
+ * table).
+ *
  * To download data from cloud, the app has the algorithm:
  * 1) first, download the tables from Firebase Database
  * 2) get the uri's and with them, download the files from Storage
  * 3) write the file in the local folder, in the internal storage
- * 4) save the path and filename (the local uri) in the table of the parts
- * 5) when the user clicks on the part, the ExoPlayer or the Picasso will get that file uri,
- * and load the file form local folder.
- * 6) before the downloading, the table is deleted from local database, and the files are deleted
- * from local folder (/data/user/0/appUri/files/...)
+ * 4) save the local uri in the table of the parts
+ * 0.1) before the download, the local group data is cleared: the tables are deleted from local
+ * database, and the files are deleted from local folder (/data/user/0/appUri/files/...)
+ * 0.2) the clearing process do not delete all the data when downloading only the user lessons,
+ * only that the is equal to that been downloaded
+ *
+ * When the app reads the data, when the user clicks on the lesson part, the ExoPlayer
+ * (https://developer.android.com/guide/topics/media/exoplayer) or the Picasso
+ * (http://square.github.io/picasso/) will get that file uri, and load the file from local folder
+ * into the specific view.
  *
  * To delete a user lesson (a complex task!), the app has the algorithm:
  * a) it is possible to delete or locally, or in the cloud
@@ -228,6 +252,9 @@ public class MainActivity extends AppCompatActivity implements
     private TextView mUsernameTextView;
     private TextView mUserEmailTextView;
 
+    // A single-pane display refers to phone screens, and two-pane to tablet screens
+    private boolean mTwoPane;
+
     // Dialogs
     private AlertDialog uploadDialog;
     private AlertDialog downloadJobDialog;
@@ -241,7 +268,6 @@ public class MainActivity extends AppCompatActivity implements
 
     // Context
     private Context mContext;
-
 
 
     @Override
@@ -271,10 +297,19 @@ public class MainActivity extends AppCompatActivity implements
             selectedLesson_id = -1;
             clickedLessonPart_id = -1;
             selectedLessonPart_id = -1;
-            // Phone visibility
-            mainVisibility = VISIBLE;
-            partsVisibility = GONE;
-            logVisibility = GONE;
+
+            if (mTwoPane) {
+                // tablet visibility
+                mainVisibility = VISIBLE; // the lesson list
+                partsVisibility = VISIBLE; // the parts list
+                logVisibility = GONE; // the log view
+            } else {
+                // Phone visibility
+                mainVisibility = VISIBLE;
+                partsVisibility = GONE;
+                logVisibility = GONE;
+            }
+
             // Recover the local user uid for handling the database global consistency
             SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
             mUserUid = sharedPreferences.getString(USER_UID,"");
@@ -284,6 +319,10 @@ public class MainActivity extends AppCompatActivity implements
 
         // Init the main view
         setContentView(R.layout.activity_main);
+
+        // Determine if you are creating a two-pane or single-pane display
+        // This LinearLayout will only initially exists in the two-pane tablet case
+        mTwoPane = findViewById(R.id.drawer_tablet_land_layout) != null;
 
         LinearLayout listContainer = findViewById(R.id.linear_layout);
         listContainer.setVisibility(INVISIBLE);
@@ -417,7 +456,11 @@ public class MainActivity extends AppCompatActivity implements
         };
 
         // Set the drawer menu
-        mDrawerLayout = findViewById(R.id.drawer_layout);
+        if (mTwoPane) {
+            mDrawerLayout = findViewById(R.id.drawer_tablet_land_layout);
+        } else {
+            mDrawerLayout = findViewById(R.id.drawer_layout);
+        }
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(
             new NavigationView.OnNavigationItemSelectedListener() {
@@ -484,28 +527,13 @@ public class MainActivity extends AppCompatActivity implements
         menuDrawer.findItem(R.id.nav_my_lessons).setChecked(databaseVisibility.equals(USER_DATABASE));
         menuDrawer.findItem(R.id.nav_group_lessons).setChecked(databaseVisibility.equals(GROUP_DATABASE));
 
-        // Init a uploadDialog menu for user to choose the type of data to upload
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        // Add the buttons
+
+        // Dialog for immediate upload the lesson
         builder.setTitle(R.string.upload_confirm)
                 .setPositiveButton(R.string.upload, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-
-                        if (mUsername.equals(ANONYMOUS)) {
-                            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                                    "Please, login to upload!",
-                                    Snackbar.LENGTH_INDEFINITE);
-                            snackBar.setAction("Dismiss", new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    snackBar.dismiss();
-                                }
-                            });
-                            snackBar.show();
-                            return;
-                        }
-
                         uploadLesson();
                     }
                 })
@@ -533,7 +561,6 @@ public class MainActivity extends AppCompatActivity implements
                                 }
                             });
                             snackBarAnonymus.show();
-
                             return;
                         }
 
@@ -541,8 +568,8 @@ public class MainActivity extends AppCompatActivity implements
                         ScheduledUtilities.scheduleDownloadDatabase(mContext, mUserUid, databaseVisibility);
 
                         final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                                "The app will start downloading in background!\n" +
-                                        "Only on un-metered networks. Please, see the log...\n",
+                                "Download has started in background (if un-metered network)." +
+                                        " Please, see the log...",
                                 Snackbar.LENGTH_INDEFINITE);
                         snackBar.setAction("Dismiss", new View.OnClickListener() {
                             @Override
@@ -592,12 +619,13 @@ public class MainActivity extends AppCompatActivity implements
                             });
                             snackBarAnonymus.show();
                         } else {
+
                             // call the job for upload the selected user lesson (images and text)
                             ScheduledUtilities.scheduleUploadLesson(mContext, mUserUid, selectedLesson_id);
 
                             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                                    "The app will start uploading in background!\n" +
-                                    "Only on un-metered networks. Please, see the log...",
+                                    "Uploading has started in background (if un-metered net)." +
+                                            "Please, see the log...",
                                     Snackbar.LENGTH_INDEFINITE);
                             snackBar.setAction("Dismiss", new View.OnClickListener() {
                                 @Override
@@ -1313,7 +1341,7 @@ public class MainActivity extends AppCompatActivity implements
         if (cursor == null) {
             Log.e(TAG, "Failed to get cursor",
                     new Exception("onDialogDeleteLessonLocallyPositiveClick: Failed to get cursor."));
-            Toast.makeText(this, "The application has found an error!\n" +
+            Toast.makeText(this, "The application has found an error! " +
                     "Action canceled!", Toast.LENGTH_LONG).show();
             return;
         }
@@ -1325,7 +1353,7 @@ public class MainActivity extends AppCompatActivity implements
             Log.d(TAG, "onDialogDeleteLessonLocallyPositiveClick number of lesson parts nRows:" + nRows);
 
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                    "This lesson has " + nRows + " parts.\nPlease, delete the parts first!\n" +
+                    "This lesson has " + nRows + " parts. Please, delete the parts first! " +
                             "Action canceled!",
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
@@ -1397,7 +1425,6 @@ public class MainActivity extends AppCompatActivity implements
     public void onPartSelected(long _id) {
         selectedLessonPart_id = _id;
     }
-
 
     // Receive communication from the PartsFragment
     @Override
@@ -1523,13 +1550,12 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
-
     @Override
     public void onDeleteCloudDatabaseSuccess() {
 
         final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                "Lesson text deleted from cloud database!" +
-                        "\nNow, deleting the images/videos...",
+                "Lesson text deleted from cloud database! " +
+                        "Now, deleting the images/videos...",
                 Snackbar.LENGTH_INDEFINITE);
         snackBar.setAction("Dismiss", new View.OnClickListener() {
             @Override
@@ -1554,7 +1580,7 @@ public class MainActivity extends AppCompatActivity implements
 
         final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                 "Error on deleting text from Cloud:" + e.getMessage() +
-                "\nNow it will try to delete the images/videos...",
+                " Now it will try to delete the images/videos...",
                 Snackbar.LENGTH_INDEFINITE);
         snackBar.setAction("Dismiss", new View.OnClickListener() {
             @Override
@@ -1579,8 +1605,8 @@ public class MainActivity extends AppCompatActivity implements
         if (!(nRowsDeleted > 0)) {
 
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                    "No images to delete!\n" +
-                    "The action finished successfully!",
+                    "No images to delete!" +
+                    " The action finished successfully!",
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
                 @Override
@@ -1613,7 +1639,7 @@ public class MainActivity extends AppCompatActivity implements
 
         final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                 "Error in deleting image file from cloud!" +
-                "\nPlease, see the log!",
+                " Please, see the log!",
                 Snackbar.LENGTH_INDEFINITE);
         snackBar.setAction("Dismiss", new View.OnClickListener() {
             @Override
@@ -1629,7 +1655,6 @@ public class MainActivity extends AppCompatActivity implements
     /**
      * Methods for handling the activity state change
      */
-
     // This method is saving the visibility of the fragments in static vars
     @Override
     public void onSaveInstanceState(Bundle outState) {
@@ -1691,7 +1716,6 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
-
     @Override
     protected void onStart() {
         super.onStart();
@@ -1714,7 +1738,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
 
-    // define a receiver to listen for communication from the services (upload and download services)
+    // Define a receiver to listen for communication from the services (download service)
     private BroadcastReceiver myDownloadReceiver = new BroadcastReceiver() {
 
         @Override
@@ -1742,7 +1766,7 @@ public class MainActivity extends AppCompatActivity implements
                 if (resultValue.equals("[REFRESH USER FINISHED WITH ERROR]")) {
                     final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                             "Refreshing of the user database finished, but with error." +
-                                    "\nPlease, see the log!", Snackbar.LENGTH_INDEFINITE);
+                                    " Please, see the log!", Snackbar.LENGTH_INDEFINITE);
                     snackBar.setAction("Dismiss", new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
@@ -1769,7 +1793,7 @@ public class MainActivity extends AppCompatActivity implements
                 if (resultValue.equals("[REFRESH GROUP FINISHED WITH ERROR]")) {
                     final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                             "Refreshing of the group database finished, but with error." +
-                                    "\nPlease, see the log!", Snackbar.LENGTH_INDEFINITE);
+                                    " Please, see the log!", Snackbar.LENGTH_INDEFINITE);
                     snackBar.setAction("Dismiss", new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
@@ -1778,13 +1802,12 @@ public class MainActivity extends AppCompatActivity implements
                     });
                     snackBar.show();
                 }
-
             }
         }
     };
 
 
-
+    // Define a receiver to listen for communication from the services (upload service)
     private BroadcastReceiver myUploadReceiver = new BroadcastReceiver() {
 
         @Override
@@ -1812,7 +1835,7 @@ public class MainActivity extends AppCompatActivity implements
                 if (resultValue.equals("[UPLOAD LESSON FINISHED WITH ERROR]")) {
                     final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                             "Upload of the lesson finished, but with error." +
-                                    "\nPlease, see the log!", Snackbar.LENGTH_INDEFINITE);
+                                    " Please, see the log!", Snackbar.LENGTH_INDEFINITE);
                     snackBar.setAction("Dismiss", new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {
@@ -1824,7 +1847,5 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
     };
-
-
 
 }

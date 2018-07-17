@@ -96,8 +96,10 @@
 
     <!-- Notification -->
     <string name="main_notification_channel_name">primary</string>
-    <string name="sync_notification_title">Finished refreshing the data</string>
+    <string name="sync_user_notification_title">Finished refreshing the user lessons</string>
+    <string name="sync_group_notification_title">Finished refreshing the group lessons</string>
     <string name="sync_group_notification_body">Please, verify the log!</string>
+    <string name="sync_user_notification_body">Please, verify the log!</string>
     <string name="upload_notification_title">Upload has finished</string>
     <string name="upload_notification_body">Please, see the log!</string>
 
@@ -111,5 +113,26 @@
 
     <string name="upload_confirm">Upload the lesson selected?</string>
     <string name="upload">Upload</string>
+    <string name="view_mode_option">View Mode option</string>
+    <string name="create_mode_option">Create Mode option</string>
+    <string name="cancel_option">Cancel option</string>
+    <string name="insert_fake_data_option">Insert Fake Data option</string>
+    <string name="delete_from_cloud_option">Delete From Cloud option</string>
+    <string name="delete_option">Delete option</string>
+    <string name="smart_refresh_option">Smart Refresh option</string>
+    <string name="smart_upload_option">Smart Upload option</string>
+    <string name="refresh_database_option">Refresh database option</string>
+    <string name="upload_to_cloud_option">Upload to cloud option</string>
+    <string name="edit_option">Edit option</string>
+    <string name="login_option">Login option</string>
+    <string name="logout_option">Logout option</string>
+    <string name="navigate_to_your_lessons">Navigate to Your Lessons</string>
+    <string name="navigate_to_the_group_lessons">Navigate to the Group Lessons</string>
+    <string name="view_the_log">view the Log</string>
+    <string name="loading_indicator">Loading Indicator</string>
+    <string name="player_view">Player View</string>
+    <string name="enter_your_e_mail">Enter your e-mail</string>
+    <string name="enter_your_username">Enter your username</string>
+    <string name="app_logo">App Logo</string>
 
 </resources>

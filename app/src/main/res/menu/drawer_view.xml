@@ -3,23 +3,28 @@
     <group>
         <item
             android:id="@+id/action_login"
-            android:title="@string/login" />
+            android:title="@string/login"
+            android:contentDescription="@string/login_option"/>
         <item
             android:id="@+id/action_logout"
-            android:title="@string/logout" />
+            android:title="@string/logout"
+            android:contentDescription="@string/logout_option"/>
     </group>
 
     <group android:checkableBehavior="single">
         <item
             android:id="@+id/nav_my_lessons"
-            android:title="@string/my_lessons" />
+            android:title="@string/my_lessons"
+            android:contentDescription="@string/navigate_to_your_lessons"/>
         <item
             android:id="@+id/nav_group_lessons"
-            android:title="@string/group_lessons" />
+            android:title="@string/group_lessons"
+            android:contentDescription="@string/navigate_to_the_group_lessons"/>
     </group>
 
     <item
         android:id="@+id/nav_log"
-        android:title="@string/log"/>
+        android:title="@string/log"
+        android:contentDescription="@string/view_the_log"/>
 
 </menu>

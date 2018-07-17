@@ -7,7 +7,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ui.PartsFragment">
+    tools:context=".ui.PartsFragment"
+    android:focusable="true">
 
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
@@ -59,7 +60,8 @@
             android:layout_height="42dp"
             android:layout_width="42dp"
             android:layout_gravity="center"
-            android:visibility="invisible" />
+            android:visibility="invisible"
+            android:contentDescription="@string/loading_indicator"/>
 
     </FrameLayout>
 

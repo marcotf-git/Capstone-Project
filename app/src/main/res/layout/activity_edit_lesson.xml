@@ -53,7 +53,8 @@
             android:background="@color/colorPrimary"
             android:onClick="onClickEditLesson"
             android:text="@string/edit_button"
-            android:textColor="@android:color/primary_text_dark" />
+            android:textColor="@android:color/primary_text_dark"
+            style="?android:attr/buttonBarButtonStyle"/>
 
         <Button
             android:id="@+id/cancelButton"
@@ -64,7 +65,9 @@
             android:background="@color/colorAccentLight"
             android:onClick="onClickCancel"
             android:text="@string/cancel_button"
-            android:textColor="@android:color/primary_text_dark" />
+            android:textColor="@android:color/primary_text_dark"
+            style="?android:attr/buttonBarButtonStyle"/>
+
     </LinearLayout>
 
 </LinearLayout>

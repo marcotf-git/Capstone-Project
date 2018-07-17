@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout
+<android.support.design.widget.CoordinatorLayout
+    android:id="@+id/ll_part_detail"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -9,23 +10,6 @@
     android:orientation="vertical"
     android:animateLayoutChanges="true"
     tools:context=".ui.PartDetailActivity">
-
-    <ProgressBar
-        android:id="@+id/pb_loading_indicator"
-        android:layout_width="42dp"
-        android:layout_height="42dp"
-        android:layout_gravity="center"
-        android:layout_marginBottom="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginLeft="8dp"
-        android:layout_marginRight="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar_container" />
 
     <android.support.design.widget.AppBarLayout
         android:id="@+id/toolbar_container"
@@ -43,91 +27,103 @@
             app:contentInsetStart="72dp"
             app:layout_scrollFlags="snap"
             app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
-
     </android.support.design.widget.AppBarLayout>
 
-    <FrameLayout
-        android:id="@+id/illustrationView"
-        android:layout_width="342dp"
-        android:layout_height="200dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginLeft="16dp"
-        android:layout_marginRight="16dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/toolbar_container">
+    <LinearLayout
+        android:id="@+id/ll_part_detail_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="?android:attr/actionBarSize"
+        android:layout_marginBottom="@dimen/my_margin_bottom"
+        android:layout_marginEnd="@dimen/my_margin_end"
+        android:layout_marginStart="@dimen/my_margin_start"
+        android:orientation="vertical"
+        android:paddingTop="@dimen/my_margin_top">
 
-        <!-- The image -->
-        <ImageView
-            android:id="@+id/iv_image"
-            android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:scaleType="centerCrop"
-            android:contentDescription="@string/part_image" />
-
-        <!-- The container for the player -->
         <FrameLayout
-            xmlns:android="http://schemas.android.com/apk/res/android"
-            android:id="@+id/player_container"
-            android:layout_width="match_parent"
-            android:layout_height="200dp"/>
-
-        <!-- The error message -->
-        <TextView
-            android:id="@+id/tv_illustration_not_available_label"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:hint="@string/illustration_not_available"
-            android:padding="64dp"
-            android:visibility="invisible"
-            android:textSize="@dimen/lesson_part_name_text_size" />
-
-    </FrameLayout>
-
-    <ScrollView
-        android:id="@+id/scrollView2"
-        android:layout_width="342dp"
-        android:layout_height="0dp"
-        android:layout_marginBottom="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginLeft="16dp"
-        android:layout_marginRight="16dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/illustrationView">
-
-        <!-- The container for the part detail -->
-        <FrameLayout
-            android:id="@+id/part_detail_container"
+            android:id="@+id/illustrationView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minHeight="32dp">
+            android:layout_marginBottom="@dimen/image_layout_margin_bottom"
+            android:layout_marginTop="@dimen/image_layout_margin_top">
+
+            <!-- loading indicator -->
+            <ProgressBar
+                android:id="@+id/pb_loading_indicator"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
+                android:layout_gravity="center"
+                android:layout_marginBottom="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="8dp"
+                android:contentDescription="@string/loading_indicator"
+                android:visibility="invisible" />
+
+            <!-- The image -->
+            <ImageView
+                android:id="@+id/iv_image"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/my_image_layout_height"
+                android:layout_gravity="center"
+                android:contentDescription="@string/part_image"
+                android:scaleType="centerCrop" />
+
+            <!-- The container for the player -->
+            <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:id="@+id/player_container"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/my_image_layout_height"
+                android:layout_gravity="center" />
+
+            <!-- The error message -->
+            <TextView
+                android:id="@+id/tv_illustration_not_available_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:hint="@string/illustration_not_available"
+                android:padding="16dp"
+                android:textSize="@dimen/lesson_part_name_text_size"
+                android:visibility="invisible" />
 
         </FrameLayout>
 
-    </ScrollView>
 
-    <!-- Floating action button that launches AddTaskActivity when clicked -->
+        <ScrollView
+            android:id="@+id/scrollView2"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="16dp">
+
+            <!-- The container for the part detail -->
+            <FrameLayout
+                android:id="@+id/part_detail_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="32dp">
+            </FrameLayout>
+
+        </ScrollView>
+
+    </LinearLayout>
+
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/fab_add"
-        android:layout_width="wrap_content"
-        android:layout_height="67dp"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/fab_margin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end|bottom"
         android:layout_marginBottom="16dp"
         android:layout_marginEnd="16dp"
         android:contentDescription="@string/action_add"
         android:src="@drawable/ic_action_add"
         app:elevation="@dimen/fab_elevation"
         app:fabSize="normal"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:pressedTranslationZ="@dimen/fab_press_translation_z" />
 
-</android.support.constraint.ConstraintLayout>
+
+    <!-- Floating action button that launches AddTaskActivity when clicked -->
+
+</android.support.design.widget.CoordinatorLayout>

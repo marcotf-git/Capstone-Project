@@ -36,13 +36,14 @@
         android:hint="@string/edit_lesson_part_title"
         android:inputType="textMultiLine"
         android:padding="16dp"
-        android:layout_marginBottom= "@dimen/activity_horizontal_margin"/>
+        android:layout_marginBottom="@dimen/activity_horizontal_margin"/>
 
     <!-- Add button -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        style="?android:attr/buttonBarStyle">
 
         <Button
             android:id="@+id/editButton"
@@ -53,7 +54,8 @@
             android:background="@color/colorPrimary"
             android:onClick="onClickEditPartLesson"
             android:text="@string/edit_button"
-            android:textColor="@android:color/primary_text_dark" />
+            android:textColor="@android:color/primary_text_dark"
+            style="?android:attr/buttonBarButtonStyle"/>
 
         <Button
             android:id="@+id/cancelButton"
@@ -61,10 +63,12 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_weight="1"
-            android:background="@color/colorAccentLight"
+            android:background="@color/colorAccent"
             android:onClick="onClickCancel"
             android:text="@string/cancel_button"
-            android:textColor="@android:color/primary_text_dark" />
+            android:textColor="@android:color/primary_text_dark"
+            style="?android:attr/buttonBarButtonStyle"/>
+
     </LinearLayout>
 
 </LinearLayout>

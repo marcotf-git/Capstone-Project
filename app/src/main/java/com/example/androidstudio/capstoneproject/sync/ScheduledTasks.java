@@ -15,7 +15,7 @@ public class ScheduledTasks {
     public static final String ACTION_UPLOAD_LESSON = "upload-lesson";
     public static final String ACTION_DISMISS_NOTIFICATION = "dismiss_notification";
 
-    private static final int ACTION_IGNORE_PENDING_INTENT_ID = 3000;
+    //private static final int ACTION_IGNORE_PENDING_INTENT_ID = 3000;
 
 
     // Entry points
@@ -36,8 +36,6 @@ public class ScheduledTasks {
             syncDatabase(context, userUid, databaseVisibility);
         }
     }
-
-
 
 
     // Helper methods 

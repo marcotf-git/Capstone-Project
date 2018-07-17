@@ -38,7 +38,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-
+/**
+ * This class handle the upload of the user lesson to the Firebase Database (of the local
+ * database data) and to the Firebase Storage (of the local image/video files).
+ */
 public class MyUploadService extends IntentService {
 
     private static final String TAG = MyDownloadService.class.getSimpleName();
@@ -51,6 +54,9 @@ public class MyUploadService extends IntentService {
     private static final String VIDEO = "video";
     private static final String IMAGE = "image";
 
+    private static final String IMMEDIATE_UPLOAD_SERVICE = "MyUploadService";
+    private static final String SCHEDULED_UPLOAD_SERVICE = "ScheduledUploadService";
+
     private FirebaseFirestore mFirebaseDatabase;
     private FirebaseStorage mFirebaseStorage;
 
@@ -60,6 +66,7 @@ public class MyUploadService extends IntentService {
     private int nImagesUploaded;
 
     private MyLog myLog;
+    private String callerType;
 
     private Context mContext;
 
@@ -68,6 +75,7 @@ public class MyUploadService extends IntentService {
         super("MyUploadService");
     }
 
+    // This is called by Scheduled Tasks
     public MyUploadService(Context context) {
         super("MyUploadService");
 
@@ -84,6 +92,7 @@ public class MyUploadService extends IntentService {
         super.onCreate();
     }
 
+    // this is called by Intent (in MainActivity)
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
 
@@ -132,7 +141,24 @@ public class MyUploadService extends IntentService {
             sendMessages();
             messages.add("UPLOAD LESSON FINISHED WITH ERROR");
             sendMessages();
+            if (callerType.equals(SCHEDULED_UPLOAD_SERVICE)) {
+                // notify the user that the task (synchronized) has finished
+                NotificationUtils.notifyUserBecauseUploadFinished(mContext);
+            }
             return;
+        }
+
+        // Save the origin that is calling this service
+        String callerContext = mContext.toString();
+        Log.d(TAG, "index of MyUploadService:" +
+                callerContext.indexOf("MyUploadService"));
+        Log.d(TAG, "index of ScheduledUploadService:" +
+                callerContext.indexOf("ScheduledUploadService"));
+
+        if (callerContext.indexOf(IMMEDIATE_UPLOAD_SERVICE) > 0) {
+            callerType = IMMEDIATE_UPLOAD_SERVICE;
+        } else if (callerContext.indexOf(SCHEDULED_UPLOAD_SERVICE) > 0) {
+            callerType = SCHEDULED_UPLOAD_SERVICE;
         }
 
         // Initialize tre Firebase instances
@@ -164,8 +190,10 @@ public class MyUploadService extends IntentService {
             sendMessages();
             messages.add("UPLOAD LESSON FINISHED WITH ERROR");
             sendMessages();
-            // notify the user that the task (synchronized) has finished
-            NotificationUtils.notifyUserBecauseUploadFinished(mContext);
+            if (callerType.equals(SCHEDULED_UPLOAD_SERVICE)) {
+                // notify the user that the task (synchronized) has finished
+                NotificationUtils.notifyUserBecauseUploadFinished(mContext);
+            }
             return;
         }
 
@@ -179,8 +207,10 @@ public class MyUploadService extends IntentService {
             sendMessages();
             messages.add("UPLOAD LESSON FINISHED WITH ERROR");
             sendMessages();
-            // notify the user that the task (synchronized) has finished
-            NotificationUtils.notifyUserBecauseUploadFinished(mContext);
+            if (callerType.equals(SCHEDULED_UPLOAD_SERVICE)) {
+                // notify the user that the task (synchronized) has finished
+                NotificationUtils.notifyUserBecauseUploadFinished(mContext);
+            }
             return;
         }
 
@@ -232,8 +262,10 @@ public class MyUploadService extends IntentService {
             myLog.addToLog ("uploadImagesAndDatabase: no images in the database");
             messages.add("UPLOAD LESSON FINISHED OK");
             sendMessages();
-            // notify the user that the task (synchronized) has finished
-            NotificationUtils.notifyUserBecauseUploadFinished(mContext);
+            if (callerType.equals(SCHEDULED_UPLOAD_SERVICE)) {
+                // notify the user that the task (synchronized) has finished
+                NotificationUtils.notifyUserBecauseUploadFinished(mContext);
+            }
             return;
         } else {
             Log.d(TAG, "uploadImagesAndDatabase: uri's of the images stored in the Image array:" + images.toString());
@@ -506,8 +538,16 @@ public class MyUploadService extends IntentService {
 
                         Log.d(TAG, "OnSuccessListener onSuccess");
                         myLog.addToLog("ALL UPLOAD TASKS HAVE FINISHED");
+
+                        // Trigger the snack bar in MainActivity
                         messages.add("UPLOAD LESSON FINISHED OK");
                         sendMessages();
+
+                        // Notify the user in case of Job Scheduled
+                        if (callerType.equals(SCHEDULED_UPLOAD_SERVICE)) {
+                            // notify the user that the task (synchronized) has finished
+                            NotificationUtils.notifyUserBecauseUploadFinished(mContext);
+                        }
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
@@ -524,8 +564,16 @@ public class MyUploadService extends IntentService {
                         myLog.addToLog("Error:" + e.getMessage());
                         messages.add("Error:" + e.getMessage());
                         sendMessages();
+
+                        // Trigger the snack bar in MainActivity
                         messages.add("UPLOAD LESSON FINISHED WITH ERROR");
                         sendMessages();
+
+                        // Notify the user in case of Job Scheduled
+                        if (callerType.equals(SCHEDULED_UPLOAD_SERVICE)) {
+                            // notify the user that the task (synchronized) has finished
+                            NotificationUtils.notifyUserBecauseUploadFinished(mContext);
+                        }
 
                     }
                 });
@@ -564,6 +612,10 @@ public class MyUploadService extends IntentService {
         if(imageType == null) {
             messages.add("UPLOAD LESSON FINISHED WITH ERROR");
             sendMessages();
+            if (callerType.equals(SCHEDULED_UPLOAD_SERVICE)) {
+                // notify the user that the task (synchronized) has finished
+                NotificationUtils.notifyUserBecauseUploadFinished(mContext);
+            }
             return;
         }
 
@@ -594,12 +646,11 @@ public class MyUploadService extends IntentService {
             myLog.addToLog(message);
             messages.add(message);
             sendMessages();
+
+            // --> NOW UPLOAD THE LESSON
             uploadLesson(userUid, lessonId);
 
-            // notify the user that the task (synchronized) has finished
-            NotificationUtils.notifyUserBecauseUploadFinished(mContext);
         }
-
 
     }
 
@@ -632,11 +683,16 @@ public class MyUploadService extends IntentService {
             myLog.addToLog(message);
             messages.add(message);
             sendMessages();
+
+            // Trigger the snack bar in MainActivity
             messages.add("UPLOAD LESSON FINISHED WITH ERROR");
             sendMessages();
 
-            // notify the user that the task (synchronized) has finished
-            NotificationUtils.notifyUserBecauseUploadFinished(mContext);
+            // Notify the user in case of Job Scheduled
+            if(callerType.equals(SCHEDULED_UPLOAD_SERVICE)) {
+                // notify the user that the task (synchronized) has finished
+                NotificationUtils.notifyUserBecauseUploadFinished(mContext);
+            }
         }
 
     }

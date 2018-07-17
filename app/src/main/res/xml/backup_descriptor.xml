@@ -4,5 +4,7 @@
     <exclude
         domain="database"
         path="lessons.db" />
+
     <!-- Exclude specific shared preferences that contain GCM registration Id -->
+
 </full-backup-content>

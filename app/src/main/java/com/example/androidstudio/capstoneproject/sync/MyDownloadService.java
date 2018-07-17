@@ -44,7 +44,10 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-
+/**
+ * This class handle the download of the user lessons or the group lessons, from the Firebase
+ * Database (to local database data) and from the Firebase Storage (to local image/video files).
+ */
 public class MyDownloadService extends IntentService {
 
     private static final String TAG = MyDownloadService.class.getSimpleName();
@@ -60,6 +63,9 @@ public class MyDownloadService extends IntentService {
     private static final String VIDEO = "video";
     private static final String IMAGE = "image";
 
+    private static final String IMMEDIATE_DOWNLOAD_SERVICE = "MyDownloadService";
+    private static final String SCHEDULED_DOWNLOAD_SERVICE = "ScheduledDownloadService";
+
     private FirebaseStorage mFirebaseStorage;
 
     private List<String> messages = new ArrayList<>();
@@ -68,6 +74,7 @@ public class MyDownloadService extends IntentService {
     private int nImagesDownloaded;
 
     private MyLog myLog;
+    private String callerType;
 
     private Context mContext;
 
@@ -75,6 +82,7 @@ public class MyDownloadService extends IntentService {
 
     public MyDownloadService() { super("MyDownloadService"); }
 
+    // This is called by Scheduled Tasks
     public MyDownloadService(Context context) {
         super("MyDownloadService");
 
@@ -91,6 +99,7 @@ public class MyDownloadService extends IntentService {
         super.onCreate();
     }
 
+    // this is called by Intent (in MainActivity)
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
 
@@ -144,6 +153,21 @@ public class MyDownloadService extends IntentService {
             sendMessages();
             return;
         }
+
+        // Save the origin that is calling this service
+        String callerContext = mContext.toString();
+        Log.d(TAG, "index of MyDownloadService:" +
+                callerContext.indexOf("MyDownloadService"));
+        Log.d(TAG, "index of ScheduledDownloadService:" +
+                callerContext.indexOf("ScheduledDownloadService"));
+
+        if (callerContext.indexOf(IMMEDIATE_DOWNLOAD_SERVICE) > 0) {
+            callerType = IMMEDIATE_DOWNLOAD_SERVICE;
+        } else if (callerContext.indexOf(SCHEDULED_DOWNLOAD_SERVICE) > 0) {
+            callerType = SCHEDULED_DOWNLOAD_SERVICE;
+        }
+
+        Log.d(TAG, "callerType:" + callerType);
 
         // Initialize Firebase instances
         FirebaseFirestore mFirebaseDatabase = FirebaseFirestore.getInstance();
@@ -216,7 +240,6 @@ public class MyDownloadService extends IntentService {
     }
 
 
-
     // Helper method called by downloadDatabase
     // Save the data in the database
     private void refreshUserLesson(Lesson lesson) {
@@ -248,7 +271,6 @@ public class MyDownloadService extends IntentService {
         if (mCursor != null) {
             mCursor.moveToFirst();
             nRows = mCursor.getCount();
-            //mCursor.close();
         }
 
         if (nRows > 0) {
@@ -270,9 +292,9 @@ public class MyDownloadService extends IntentService {
         }
 
 
-        // now, insert the new lesson
-        /* Create values to insert */
-        // insert with the same id (because it will make the consistency)
+        // Now, insert the new lesson row in the database
+        // Create values to insert
+        // Insert with the same id (because it will make the consistency)
         ContentValues insertLessonValues = new ContentValues();
         insertLessonValues.put(LessonsContract.MyLessonsEntry._ID, lesson.getLesson_id());
         insertLessonValues.put(LessonsContract.MyLessonsEntry.COLUMN_LESSON_TITLE, lesson.getLesson_title());
@@ -293,7 +315,7 @@ public class MyDownloadService extends IntentService {
             inserted_lesson_id = Long.parseLong(lessonUri.getPathSegments().get(1));
         }
 
-        // insert all the parts of the lesson into the database in its table
+        // Insert all the parts of the lesson into the database in its table
         ArrayList<LessonPart> lessonParts = lesson.getLesson_parts();
         // Insert all the parts, with the lesson_id value of the last _id inserted in the local database
         // This will give consistency and separates the local database consistency from the remote
@@ -328,9 +350,13 @@ public class MyDownloadService extends IntentService {
             }
         }
 
-        // inform the main activity that the job finishes
+        // Inform the main activity that the job finishes
         messages.add("REFRESH USER FINISHED OK");
         sendMessages();
+        if(callerType.equals(SCHEDULED_DOWNLOAD_SERVICE)) {
+            // notify the user that the task (synchronized) has finished
+            NotificationUtils.notifyUserBecauseSyncUserFinished(mContext);
+        }
 
     }
 
@@ -364,7 +390,7 @@ public class MyDownloadService extends IntentService {
         }
 
 
-        // now delete the lesson parts table (from group tables)
+        // Now delete the lesson parts table (from group tables)
         int numberOfLessonPartsDeleted = contentResolver.delete(
                 LessonsContract.GroupLessonPartsEntry.CONTENT_URI,
                 null,
@@ -380,7 +406,7 @@ public class MyDownloadService extends IntentService {
 
         Log.v(TAG, "refreshGroupLesson numberOfLessonsDeleted:" + numberOfLessonsDeleted);
 
-        // insert the new data
+        // Insert the new data
         for (QueryDocumentSnapshot document : task.getResult()) {
 
             Log.d(TAG, "refreshGroupLessons onComplete document.getId():" +
@@ -391,7 +417,7 @@ public class MyDownloadService extends IntentService {
             String jsonString = serialize(lesson);
             Log.v(TAG, "refreshGroupLessons onComplete lesson jsonString:" + jsonString);
 
-            // insert the data in the clean table
+            // Insert the data in the clean table
             /* Create values to insert */
             ContentValues insertLessonValues = new ContentValues();
             // The _id will be automatically generated for local consistency reasons.
@@ -403,7 +429,7 @@ public class MyDownloadService extends IntentService {
 
             Uri lessonUri = contentResolver.insert(LessonsContract.GroupLessonsEntry.CONTENT_URI, insertLessonValues);
 
-            // for inserting the parts, extract the _id of the uri!
+            // For inserting the parts, extract the _id of the uri!
             Long inserted_lesson_id;
             if (lessonUri != null) {
                 Log.v(TAG, "insert uri:" + lessonUri.toString());
@@ -475,7 +501,7 @@ public class MyDownloadService extends IntentService {
         long nRows = cursor.getCount();
         if (nRows == 0) { return; }
 
-        // Moves to the first part of that lesson
+        // Move to the first part of that lesson
         cursor.moveToFirst();
 
         do {
@@ -602,8 +628,10 @@ public class MyDownloadService extends IntentService {
             myLog.addToLog("DOWNLOAD IMAGES/VIDEOS FINISHED");
             messages.add("DOWNLOAD IMAGES/VIDEOS FINISHED");
             sendMessages();
-            // notify the user that the task (synchronized) has finished
-            NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
+            if(callerType.equals(SCHEDULED_DOWNLOAD_SERVICE)) {
+                // notify the user that the task (synchronized) has finished
+                NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
+            }
             return;
         }
 
@@ -651,10 +679,12 @@ public class MyDownloadService extends IntentService {
                 myLog.addToLog(message);
                 messages.add(message);
                 sendMessages();
-                messages.add("REFRESH USER FINISHED WITH ERROR");
+                messages.add("REFRESH GROUP FINISHED WITH ERROR");
                 sendMessages();
-                // notify the user that the task (synchronized) has finished
-                NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
+                if(callerType.equals(SCHEDULED_DOWNLOAD_SERVICE)) {
+                    // notify the user that the task (synchronized) has finished
+                    NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
+                }
                 return;
             }
 
@@ -784,6 +814,8 @@ public class MyDownloadService extends IntentService {
             myLog.addToLog(message);
             messages.add(message);
             sendMessages();
+
+            // Trigger the snack bar in MainActivity
             if (databaseVisibility.equals(USER_DATABASE)) {
                 messages.add("REFRESH USER FINISHED OK");
             } else if (databaseVisibility.equals(GROUP_DATABASE)) {
@@ -791,8 +823,16 @@ public class MyDownloadService extends IntentService {
             }
             sendMessages();
 
-            // notify the user that the task (synchronized) has finished
-            NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
+            // Notify the user in case if Job Scheduled
+            if(callerType.equals(SCHEDULED_DOWNLOAD_SERVICE)) {
+                if (databaseVisibility.equals(USER_DATABASE)) {
+                    // notify the user that the task (synchronized) has finished
+                    NotificationUtils.notifyUserBecauseSyncUserFinished(mContext);
+                } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+                    // notify the user that the task (synchronized) has finished
+                    NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
+                }
+            }
         }
 
     }
@@ -823,6 +863,8 @@ public class MyDownloadService extends IntentService {
             myLog.addToLog(message);
             messages.add(message);
             sendMessages();
+
+            // Trigger the snack bar in MainActivity
             if (databaseVisibility.equals(USER_DATABASE)) {
                 messages.add("REFRESH USER FINISHED WITH ERROR");
             } else if (databaseVisibility.equals(GROUP_DATABASE)) {
@@ -830,8 +872,16 @@ public class MyDownloadService extends IntentService {
             }
             sendMessages();
 
-            // notify the user that the task (synchronized) has finished
-            NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
+            // Notify the user in case if Job Scheduled
+            if(callerType.equals(SCHEDULED_DOWNLOAD_SERVICE)) {
+                if (databaseVisibility.equals(USER_DATABASE)) {
+                    // notify the user that the task (synchronized) has finished
+                    NotificationUtils.notifyUserBecauseSyncUserFinished(mContext);
+                } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+                    // notify the user that the task (synchronized) has finished
+                    NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
+                }
+            }
         }
 
     }
