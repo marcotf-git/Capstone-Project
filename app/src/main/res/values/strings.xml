@@ -134,5 +134,7 @@
     <string name="enter_your_e_mail">Enter your e-mail</string>
     <string name="enter_your_username">Enter your username</string>
     <string name="app_logo">App Logo</string>
+    <string name="menu_action_cancel_task_label">Cancel Task</string>
+    <string name="cancel_task_option">Cancel the Task</string>
 
 </resources>

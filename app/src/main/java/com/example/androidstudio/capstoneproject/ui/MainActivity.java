@@ -10,6 +10,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.preference.PreferenceManager;
@@ -40,7 +42,6 @@ import android.widget.Toast;
 import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.example.androidstudio.capstoneproject.sync.MyDownloadService;
-import com.example.androidstudio.capstoneproject.sync.MyLog;
 import com.example.androidstudio.capstoneproject.sync.MyUploadService;
 import com.example.androidstudio.capstoneproject.sync.ScheduledUtilities;
 import com.example.androidstudio.capstoneproject.utilities.MyFirebaseFragment;
@@ -63,18 +64,19 @@ import static android.view.View.VISIBLE;
  * devices (phones or tablets), and sharing this content with a group of users.
  *
  * Each user can create and save their content in the device, and upload it to the cloud. The group
- * can download that content, and save it locally in the device, including the images or videos,
+ * can download that content, and save it locally on the device, including the images or videos,
  * for attending the classes.
  *
  * The process requires login to the remote server, in case, the Firebase
- * (https://firebase.google.com), that handles all the login and logout, and stores the data.
+ * (https://firebase.google.com), which handles all the login and logout, and stores the data.
  *
  * The app has two modes: 'view' mode and 'create' mode.
  *
- * If the user select 'create' mode, it will show only the content created by the user,
- * plus the options to create, edit and delete, in the action items of the app bar.
+ * If the user selects 'create' mode, it will show only the options to create, edit and delete,
+ * in the action items of the app bar.
  *
- * If the user shows 'view' mode, it will show the content that is synced with the remote server.
+ * If the user shows 'view' mode, it will show only option to read and sync the content with the
+ * remote server (download).
  *
  * According to the modes of the app, the local database has two types of tables:
  * - the tables "group_ ... " is a copy of the remote database.
@@ -94,13 +96,13 @@ import static android.view.View.VISIBLE;
  *
  * The result is informed via intent sent by a local broadcast, with messages that will be received
  * by a Receiver in the MainActivity, and trigger, according to the content, messages informing the
- * user about if the task have finished OK or with errors.
+ * user about if the task has finished OK or with errors.
  *
  * In case of the Scheduled Jobs, the user also have a notification, that will be received even
- * if the app is closed, and has an pending intent incorporated, to open the app.
+ * if the app is closed, and has a pending intent incorporated, to open the app.
  *
  * In the 'create' mode, if the user selects the option to add a lesson title, it will open another
- * activity AddLessonActivity to add the title. If the user select to delete and then click on an
+ * activity AddLessonActivity to add the title. If the user selects to delete and then click on an
  * item, the item will be deleted after a confirmation. The confirmation is handled by a Dialog
  * fragment. If the user selects to edit and then click, it will open an activity EditLessonActivity
  * to edit that item.
@@ -116,29 +118,32 @@ import static android.view.View.VISIBLE;
  * - a table with the lesson parts data (text)
  * - the local folders for file (blob) storage
  *
- * The table with the lesson parts will store the uri's of the images or videos of that part.
+ * The table with the lesson parts will store the URIs of the images or videos of that part.
  *
  * The upload of data has the following algorithm:
  * 1) first, upload the images or videos to Storage
- * 2) get the uri's info and save in the local database, in the table of the lesson parts
+ * 2) get the URIs info and save in the local database, in the table of the lesson parts
  * 3) then, upload the two tables (lesson and parts) to the Firebase Database
  *
  * The user can choose to download the group data (in the group table) or its own data (in the user
  * table).
  *
- * To download data from cloud, the app has the algorithm:
- * 1) first, download the tables from Firebase Database
- * 2) get the uri's and with them, download the files from Storage
- * 3) write the file in the local folder, in the internal storage
- * 4) save the local uri in the table of the parts
- * 0.1) before the download, the local group data is cleared: the tables are deleted from local
+ * To download data from the cloud, the app has the algorithm:
+ * 1) The clearing process:
+ * 1.1) before the download, the local group data is cleared: the tables are deleted from a local
  * database, and the files are deleted from local folder (/data/user/0/appUri/files/...)
- * 0.2) the clearing process do not delete all the data when downloading only the user lessons,
- * only that the is equal to that been downloaded
+ * 1.2) the clearing process does not delete all the data when downloading only the user lessons;
+ * it deletes only what is equal to that downloaded
+ * 2) The download:
+ * 2.1) download the tables from Firebase Database
+ * 2.2) in case of group data:
+ * 2.2.1) get the URIs of those tables, and with them, download the files from Storage
+ * 2.2.2) write the file in the local folder, in the internal storage
+ * 2.2.3) save the local URI in the table of the parts
  *
  * When the app reads the data, when the user clicks on the lesson part, the ExoPlayer
  * (https://developer.android.com/guide/topics/media/exoplayer) or the Picasso
- * (http://square.github.io/picasso/) will get that file uri, and load the file from local folder
+ * (http://square.github.io/picasso/) will get that file URI, and load the file from a local folder
  * into the specific view.
  *
  * To delete a user lesson, the app has the algorithm:
@@ -146,22 +151,22 @@ import static android.view.View.VISIBLE;
  *
  * a.1) when deleting user lesson locally:
  * 1) only delete if there are no parts
- * 2) when deleting the lesson part row, store the reference of the cloud file uri Storage (reading
- * it from the lesson parts table) in an specific table, which will be used to delete the file in
- * the cloud, when the user choose to do it in future
+ * 2) when deleting the lesson part row, store the reference of the cloud file URI Storage (reading
+ * it from the lesson parts table) in a specific table, which will be used to delete the file in
+ * the cloud, when the user chooses to do it in future
  *
  * When the user chooses to delete the lesson from the cloud, it will also delete the files in the
  * Storage, but it won't be deleted locally.
  *
  * a.2) when deleting user lesson only in the cloud:
- * 1) delete from cloud Database and save the uri's of the files in a specific local table, that
+ * 1) delete from cloud Database and save the URIs of the files in a specific local table, that
  * will store the files for deletion from Storage
  * 2) query that table, and with the information, delete from the Storage
  *
  * To edit the local data, the user can edit only their tables:
- * 1) choose what to edit and edit (select choose the option in the menu)
- * 2) choose to pick another image
- * 2.1) the old image, if has cloud uri, will be deleted but its reference will be saved in that
+ * 1) choose what to edit and edit (click on the item and on the 'edit' icon)
+ * 2) choose to pick another image (the 'Fab' button)
+ * 2.1) the old image, if it has cloud URI, will be deleted but its reference will be saved in that
  * specific table, for future deletion from Storage
  * 2.2) the new one (or the new video) take the place
  *
@@ -174,7 +179,12 @@ import static android.view.View.VISIBLE;
  * The app menu is contextual: the options change according to the user actions.
  *
  * Finally, the cloud communication is saved in a log table, updated at the same time as the
- * services are been executed, that can be viewed by an option in the drawer menu.
+ * services are being executed. The log can be viewed by an option in the drawer menu.
+ *
+ * This app is for studying purposes. It is a city! You can change to there and be happy! :)
+ * Thanks very much to Udacity, and Google, and all others that make this app possible!
+ *
+ * Marcos Tewfiq
  *
  */
 
@@ -553,6 +563,20 @@ public class MainActivity extends AppCompatActivity implements
                 .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
 
+                        if(!isWifi()) {
+                            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                                    "There isn't Wifi! Please, verify the connection! Action canceled!",
+                                    Snackbar.LENGTH_INDEFINITE);
+                            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    snackBar.dismiss();
+                                }
+                            });
+                            snackBar.show();
+                            return;
+                        }
+
                         if (mUsername.equals(ANONYMOUS)) {
                             final Snackbar snackBarAnonymus = Snackbar.
                                     make(findViewById(R.id.drawer_layout), "Please, login to upload!",
@@ -599,6 +623,20 @@ public class MainActivity extends AppCompatActivity implements
 
                         Log.d(TAG, "uploadJobDialog selectedLesson_id:" + selectedLesson_id);
 
+                        if(!isWifi()) {
+                            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                                    "There isn't Wifi! Please, verify the connection! Action canceled!",
+                                    Snackbar.LENGTH_INDEFINITE);
+                            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    snackBar.dismiss();
+                                }
+                            });
+                            snackBar.show();
+                            return;
+                        }
+
                         if (selectedLesson_id == -1) {
                             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                                     "Please, select a lesson to upload the images or videos!",
@@ -611,16 +649,16 @@ public class MainActivity extends AppCompatActivity implements
                             });
                             snackBar.show();
                         } else  if (mUsername.equals(ANONYMOUS)) {
-                            final Snackbar snackBarAnonymus = Snackbar.
+                            final Snackbar snackBarAnonymous = Snackbar.
                                     make(findViewById(R.id.drawer_layout),"Please, login to upload!",
                                     Snackbar.LENGTH_INDEFINITE);
-                            snackBarAnonymus.setAction("Dismiss", new View.OnClickListener() {
+                            snackBarAnonymous.setAction("Dismiss", new View.OnClickListener() {
                                 @Override
                                 public void onClick(View v) {
-                                    snackBarAnonymus.dismiss();
+                                    snackBarAnonymous.dismiss();
                                 }
                             });
-                            snackBarAnonymus.show();
+                            snackBarAnonymous.show();
                         } else {
 
                             // call the job for upload the selected user lesson (images and text)
@@ -955,6 +993,20 @@ public class MainActivity extends AppCompatActivity implements
             return;
         }
 
+        if(!isOnline()) {
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "There isn't internet! Please, verify the connection! Action canceled!",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackBar.dismiss();
+                }
+            });
+            snackBar.show();
+            return;
+        }
+
         Intent downloadIntent = new Intent(this, MyDownloadService.class);
         downloadIntent.putExtra(DATABASE_VISIBILITY, databaseVisibility);
         downloadIntent.putExtra(USER_UID, mUserUid);
@@ -991,6 +1043,20 @@ public class MainActivity extends AppCompatActivity implements
         if (mUsername.equals(ANONYMOUS)) {
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                     "Please, login to upload!",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackBar.dismiss();
+                }
+            });
+            snackBar.show();
+            return;
+        }
+
+        if(!isOnline()) {
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "There isn't internet! Please, verify the connection! Action canceled!",
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
                 @Override
@@ -1041,6 +1107,20 @@ public class MainActivity extends AppCompatActivity implements
         if (mUsername.equals(ANONYMOUS)) {
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                     "Please, login to delete from cloud!",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackBar.dismiss();
+                }
+            });
+            snackBar.show();
+            return;
+        }
+
+        if(!isOnline()) {
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "There isn't internet! Please, verify the connection! Action canceled!",
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
                 @Override
@@ -1141,7 +1221,10 @@ public class MainActivity extends AppCompatActivity implements
             mMenu.findItem(R.id.action_delete_from_cloud).setVisible(false);
             mMenu.findItem(R.id.action_insert_fake_data).setVisible(false);
             mMenu.findItem(R.id.action_cancel).setVisible(false);
+            //mMenu.findItem(R.id.action_cancel_task).setVisible(true);
             mButton.setVisibility(GONE);
+        } else {
+            //mMenu.findItem(R.id.action_cancel_task).setVisible(false);
         }
 
     }
@@ -1184,6 +1267,20 @@ public class MainActivity extends AppCompatActivity implements
 
     // Helper function to delete lesson data from cloud (delete the lesson document)
     private void deleteLessonFromCloud(long lesson_id) {
+
+        if(!isOnline()) {
+            final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
+                    "There isn't internet! Please, verify the connection! Action canceled!",
+                    Snackbar.LENGTH_INDEFINITE);
+            snackBar.setAction("Dismiss", new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    snackBar.dismiss();
+                }
+            });
+            snackBar.show();
+            return;
+        }
 
         // query the images to delete
         String selection = LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID + "=?";
@@ -1504,7 +1601,6 @@ public class MainActivity extends AppCompatActivity implements
 
             Log.d(TAG, "onDialogDeletePartPositiveClick fileReference:" + fileReference);
 
-           //cursor.close();
 
             // Now, delete the part from lesson parts table, and in case of success
             // store the fileRef (if it exists) in the my_cloud_files_to_delete
@@ -1755,7 +1851,7 @@ public class MainActivity extends AppCompatActivity implements
 
                 if (resultValue.equals("[REFRESH USER FINISHED OK]")) {
                     final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                            "Refreshing of the user database finished successfully!",
+                            "Refreshing of the user database has finished successfully!",
                             Snackbar.LENGTH_INDEFINITE);
                     snackBar.setAction("Dismiss", new View.OnClickListener() {
                         @Override
@@ -1768,7 +1864,7 @@ public class MainActivity extends AppCompatActivity implements
 
                 if (resultValue.equals("[REFRESH USER FINISHED WITH ERROR]")) {
                     final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                            "Refreshing of the user database finished, but with error." +
+                            "Refreshing of the user database has finished, but with error." +
                                     " Please, see the log!", Snackbar.LENGTH_INDEFINITE);
                     snackBar.setAction("Dismiss", new View.OnClickListener() {
                         @Override
@@ -1782,7 +1878,7 @@ public class MainActivity extends AppCompatActivity implements
 
                 if (resultValue.equals("[REFRESH GROUP FINISHED OK]")) {
                     final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                            "Refreshing of the group database finished successfully!",
+                            "Refreshing of the group database has finished successfully!",
                             Snackbar.LENGTH_INDEFINITE);
                     snackBar.setAction("Dismiss", new View.OnClickListener() {
                         @Override
@@ -1795,7 +1891,7 @@ public class MainActivity extends AppCompatActivity implements
 
                 if (resultValue.equals("[REFRESH GROUP FINISHED WITH ERROR]")) {
                     final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                            "Refreshing of the group database finished, but with error." +
+                            "Refreshing of the group database has finished, but with error." +
                                     " Please, see the log!", Snackbar.LENGTH_INDEFINITE);
                     snackBar.setAction("Dismiss", new View.OnClickListener() {
                         @Override
@@ -1824,7 +1920,7 @@ public class MainActivity extends AppCompatActivity implements
 
                 if (resultValue.equals("[UPLOAD LESSON FINISHED OK]")) {
                     final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                            "Upload of the lesson finished successfully!",
+                            "Upload of the lesson has finished successfully!",
                             Snackbar.LENGTH_INDEFINITE);
                     snackBar.setAction("Dismiss", new View.OnClickListener() {
                         @Override
@@ -1837,7 +1933,7 @@ public class MainActivity extends AppCompatActivity implements
 
                 if (resultValue.equals("[UPLOAD LESSON FINISHED WITH ERROR]")) {
                     final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
-                            "Upload of the lesson finished, but with error." +
+                            "Upload of the lesson has finished, but with error." +
                                     " Please, see the log!", Snackbar.LENGTH_INDEFINITE);
                     snackBar.setAction("Dismiss", new View.OnClickListener() {
                         @Override
@@ -1850,5 +1946,53 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
     };
+
+
+    // Verify if there is internet
+    private boolean isOnline() {
+
+        ConnectivityManager connMgr = (ConnectivityManager)
+                getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = null;
+        if (connMgr != null) {
+            networkInfo = connMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        }
+        boolean isWifiConn = false;
+        if (networkInfo != null) {
+            isWifiConn = networkInfo.isConnected();
+        }
+        if (connMgr != null) {
+            networkInfo = connMgr.getNetworkInfo(ConnectivityManager.TYPE_MOBILE);
+        }
+        boolean isMobileConn = false;
+        if (networkInfo != null) {
+            isMobileConn = networkInfo.isConnected();
+        }
+        Log.d(TAG, "Wifi connected: " + isWifiConn);
+        Log.d(TAG, "Mobile connected: " + isMobileConn);
+
+        return isWifiConn || isMobileConn;
+
+    }
+
+
+    // Verify if there is wi-fi
+    private boolean isWifi() {
+
+        ConnectivityManager connMgr = (ConnectivityManager)
+                getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = null;
+        if (connMgr != null) {
+            networkInfo = connMgr.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+        }
+        boolean isWifiConn = false;
+        if (networkInfo != null) {
+            isWifiConn = networkInfo.isConnected();
+        }
+        Log.d(TAG, "Wifi connected: " + isWifiConn);
+
+        return (isWifiConn);
+    }
+
 
 }

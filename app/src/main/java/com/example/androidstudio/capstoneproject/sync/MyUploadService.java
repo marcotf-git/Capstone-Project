@@ -44,7 +44,7 @@ import java.util.Locale;
  */
 public class MyUploadService extends IntentService {
 
-    private static final String TAG = MyDownloadService.class.getSimpleName();
+    private static final String TAG = MyUploadService.class.getSimpleName();
 
     public static final String ACTION =
             "com.example.androidstudio.capstoneproject.sync.MyUploadService"; // use same action
@@ -57,8 +57,10 @@ public class MyUploadService extends IntentService {
     private static final String IMMEDIATE_UPLOAD_SERVICE = "MyUploadService";
     private static final String SCHEDULED_UPLOAD_SERVICE = "ScheduledUploadService";
 
+    // Automatic unregister listeners
     private FirebaseFirestore mFirebaseDatabase;
     private FirebaseStorage mFirebaseStorage;
+    private List<UploadTask> uploadtasks;
 
     private List<String> messages = new ArrayList<>();
 
@@ -71,11 +73,12 @@ public class MyUploadService extends IntentService {
     private Context mContext;
 
 
+    // Default constructor
     public MyUploadService() {
         super("MyUploadService");
     }
 
-    // This is called by Scheduled Tasks
+    // This constructor is called by Scheduled Tasks
     public MyUploadService(Context context) {
         super("MyUploadService");
 
@@ -91,6 +94,7 @@ public class MyUploadService extends IntentService {
 
         super.onCreate();
     }
+
 
     // this is called by Intent (in MainActivity)
     @Override
@@ -281,6 +285,8 @@ public class MyUploadService extends IntentService {
 
         final String lessonRef = String.format( Locale.US, "%03d", lesson_id);
 
+        uploadtasks = new ArrayList<>();
+
         for (int imgIndex = 0; imgIndex < images.size(); imgIndex++) {
 
             final Image imageToUpload = images.get(imgIndex);
@@ -330,6 +336,9 @@ public class MyUploadService extends IntentService {
 
             // Call the task  (storage has activity scope to unregister the listeners when activity stops)
             UploadTask uploadTask = storageRef.putFile(uri);
+
+            // save for use when canceling the service
+            uploadtasks.add(uploadTask);
 
             uploadTask.addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>() {
                 @Override
@@ -693,6 +702,32 @@ public class MyUploadService extends IntentService {
                 // notify the user that the task (synchronized) has finished
                 NotificationUtils.notifyUserBecauseUploadFinished(mContext);
             }
+
+        } else {
+
+            // Trigger the snack bar in MainActivity
+            messages.add("Error: service stopped!");
+            sendMessages();
+            messages.add("UPLOAD LESSON FINISHED WITH ERROR");
+            sendMessages();
+
+            String message = "Error: service has stopped!";
+            myLog.addToLog(message);
+
+            if (uploadtasks != null) {
+                for(UploadTask task:uploadtasks) {
+                    task.cancel();
+                }
+            }
+
+            // Notify the user in case of Job Scheduled
+            if(callerType.equals(SCHEDULED_UPLOAD_SERVICE)) {
+                // notify the user that the task (synchronized) has finished
+                NotificationUtils.notifyUserBecauseUploadFinished(mContext);
+            }
+
+            // Stop this service
+            stopSelf();
         }
 
     }

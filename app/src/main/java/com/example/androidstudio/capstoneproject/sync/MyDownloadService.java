@@ -66,7 +66,10 @@ public class MyDownloadService extends IntentService {
     private static final String IMMEDIATE_DOWNLOAD_SERVICE = "MyDownloadService";
     private static final String SCHEDULED_DOWNLOAD_SERVICE = "ScheduledDownloadService";
 
+    // Automatic unregister listeners
     private FirebaseStorage mFirebaseStorage;
+    private FirebaseFirestore mFirebaseDatabase;
+    private List<FileDownloadTask> downloadTasks;
 
     private List<String> messages = new ArrayList<>();
 
@@ -79,10 +82,10 @@ public class MyDownloadService extends IntentService {
     private Context mContext;
 
 
-
+    // Default constructor
     public MyDownloadService() { super("MyDownloadService"); }
 
-    // This is called by Scheduled Tasks
+    // This constructor is called by Scheduled Tasks
     public MyDownloadService(Context context) {
         super("MyDownloadService");
 
@@ -92,14 +95,12 @@ public class MyDownloadService extends IntentService {
         messages = new ArrayList<>();
     }
 
-
     @Override
     public void onCreate() {
-
         super.onCreate();
     }
 
-    // this is called by Intent (in MainActivity)
+     // this is called by Intent (in MainActivity)
     @Override
     protected void onHandleIntent(@Nullable Intent intent) {
 
@@ -170,7 +171,7 @@ public class MyDownloadService extends IntentService {
         Log.d(TAG, "callerType:" + callerType);
 
         // Initialize Firebase instances
-        FirebaseFirestore mFirebaseDatabase = FirebaseFirestore.getInstance();
+        mFirebaseDatabase = FirebaseFirestore.getInstance();
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
                 .setTimestampsInSnapshotsEnabled(true)
                 .build();
@@ -223,17 +224,34 @@ public class MyDownloadService extends IntentService {
                             }
 
                         } else {
+
                             Log.d(TAG, "Error in getting documents: ", task.getException());
                             if (task.getException() != null) {
                                 String message = task.getException().getMessage();
                                 messages.add(message);
                                 sendMessages();
+
+                                informFailure(databaseVisibility);
+
                             } else {
                                 String message = "Error while querying Firebase Database";
                                 messages.add(message);
                                 sendMessages();
+
+                                informFailure(databaseVisibility);
+
                             }
                         }
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+
+                        Log.e(TAG, "onFailure: " + e.getMessage());
+
+                        informFailure(databaseVisibility);
+
                     }
                 });
 
@@ -354,6 +372,8 @@ public class MyDownloadService extends IntentService {
         messages.add("REFRESH USER FINISHED OK");
         sendMessages();
         if(callerType.equals(SCHEDULED_DOWNLOAD_SERVICE)) {
+
+            Log.d(TAG, "notify the user that the task (synchronized) has finished");
             // notify the user that the task (synchronized) has finished
             NotificationUtils.notifyUserBecauseSyncUserFinished(mContext);
         }
@@ -587,6 +607,8 @@ public class MyDownloadService extends IntentService {
         List<Image> images = new ArrayList<>();
         Image image;
 
+        downloadTasks = new ArrayList<>();
+
         if (nRows > 0) {
 
             do {
@@ -679,12 +701,7 @@ public class MyDownloadService extends IntentService {
                 myLog.addToLog(message);
                 messages.add(message);
                 sendMessages();
-                messages.add("REFRESH GROUP FINISHED WITH ERROR");
-                sendMessages();
-                if(callerType.equals(SCHEDULED_DOWNLOAD_SERVICE)) {
-                    // notify the user that the task (synchronized) has finished
-                    NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
-                }
+                informFailure(databaseVisibility);
                 return;
             }
 
@@ -702,6 +719,8 @@ public class MyDownloadService extends IntentService {
 
             // Call the task  (storage has activity scope to unregister the listeners when activity stops)
             FileDownloadTask downloadTask = storageRef.getFile(file);
+
+            downloadTasks.add(downloadTask);
 
             downloadTask.addOnProgressListener(new OnProgressListener<FileDownloadTask.TaskSnapshot>() {
                 @Override
@@ -758,11 +777,12 @@ public class MyDownloadService extends IntentService {
 
                 }
             });
+
         }
     }
 
 
-    // This handles the task success
+    // Handle the download image task success
     private void handleDownloadTaskSuccess(long partId,
                                            String imageType,
                                            String fileUriString,
@@ -838,7 +858,7 @@ public class MyDownloadService extends IntentService {
     }
 
 
-    // This handles the upload images task failure
+    // handle the download image task failure
     private void handleDownloadTaskFailure(Exception e,
                                            long partId,
                                            String imageType,
@@ -864,26 +884,50 @@ public class MyDownloadService extends IntentService {
             messages.add(message);
             sendMessages();
 
-            // Trigger the snack bar in MainActivity
-            if (databaseVisibility.equals(USER_DATABASE)) {
-                messages.add("REFRESH USER FINISHED WITH ERROR");
-            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
-                messages.add("REFRESH GROUP FINISHED WITH ERROR");
-            }
-            sendMessages();
+            informFailure(databaseVisibility);
 
-            // Notify the user in case if Job Scheduled
-            if(callerType.equals(SCHEDULED_DOWNLOAD_SERVICE)) {
-                if (databaseVisibility.equals(USER_DATABASE)) {
-                    // notify the user that the task (synchronized) has finished
-                    NotificationUtils.notifyUserBecauseSyncUserFinished(mContext);
-                } else if (databaseVisibility.equals(GROUP_DATABASE)) {
-                    // notify the user that the task (synchronized) has finished
-                    NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
+        } else {
+
+            String message = "Error: download is been stopped!";
+            myLog.addToLog(message);
+
+            // cancel all tasks
+            if (downloadTasks != null) {
+                for (FileDownloadTask task : downloadTasks) {
+                    task.cancel();
                 }
             }
+
+            informFailure(databaseVisibility);
+
+            stopSelf();
+
         }
 
+    }
+
+
+    // Inform the MainActivity about the end of the service with error
+    private void informFailure(String databaseVisibility) {
+
+        // Trigger the snack bar in MainActivity
+        if (databaseVisibility.equals(USER_DATABASE)) {
+            messages.add("REFRESH USER FINISHED WITH ERROR");
+        } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+            messages.add("REFRESH GROUP FINISHED WITH ERROR");
+        }
+        sendMessages();
+
+        // Notify the user in case if Job Scheduled
+        if(callerType.equals(SCHEDULED_DOWNLOAD_SERVICE)) {
+            if (databaseVisibility.equals(USER_DATABASE)) {
+                // notify the user that the task (synchronized) has finished
+                NotificationUtils.notifyUserBecauseSyncUserFinished(mContext);
+            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+                // notify the user that the task (synchronized) has finished
+                NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
+            }
+        }
     }
 
 
