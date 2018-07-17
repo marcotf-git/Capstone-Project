@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="my_margin_start">64dp</dimen>
-    <dimen name="my_margin_end">64dp</dimen>
-    <dimen name="my_margin_top">32dp</dimen>
-    <dimen name="my_margin_bottom">32dp</dimen>
+    <dimen name="main_margin_start">56dp</dimen>
+    <dimen name="main_margin_end">64dp</dimen>
+    <dimen name="main_margin_top">64dp</dimen>
+    <dimen name="main_margin_bottom">56dp</dimen>
 
-    <dimen name="my_image_layout_height">300dp</dimen>
+    <dimen name="main_image_layout_height">300dp</dimen>
 
     <dimen name="image_layout_margin_bottom">16dp</dimen>
     <dimen name="image_layout_margin_top">0dp</dimen>
+
+    <dimen name="edit_text_margin_start">64dp</dimen>
+    <dimen name="edit_text_margin_end">64dp</dimen>
 
 </resources>

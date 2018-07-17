@@ -5,6 +5,10 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:layout_marginStart="@dimen/edit_text_margin_start"
+    android:layout_marginEnd="@dimen/edit_text_margin_end"
+    android:layout_marginBottom="@dimen/main_margin_bottom"
+    android:paddingTop="@dimen/main_margin_start"
     tools:context=".ui.EditPartTextActivity"
     android:orientation="vertical"
     android:fitsSystemWindows="true">

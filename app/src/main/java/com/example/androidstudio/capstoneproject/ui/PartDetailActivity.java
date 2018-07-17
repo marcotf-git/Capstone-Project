@@ -144,6 +144,10 @@ public class PartDetailActivity extends AppCompatActivity implements
             mPlayerView.setVisibility(mPlayerViewVisibility);
             imageView.setVisibility(imageViewVisibility);
             errorMessageView.setVisibility(errorMessageViewVisibility);
+        } else {
+            errorMessageView.setVisibility(GONE);
+            mPlayerView.setVisibility(GONE);
+            imageView.setVisibility(GONE);
         }
 
         // Query the database and set the view with the cursor data
@@ -230,10 +234,9 @@ public class PartDetailActivity extends AppCompatActivity implements
         Log.v(TAG, "updateView");
 
         // Set initial state of the player and thumbnail views (this method is only called in two pane)
-        errorMessageView.setVisibility(View.INVISIBLE);
-        mPlayerView.setVisibility(View.INVISIBLE);
-        imageView.setVisibility(View.INVISIBLE);
-
+        errorMessageView.setVisibility(View.GONE);
+        mPlayerView.setVisibility(View.GONE);
+        imageView.setVisibility(View.GONE);
 
         String partText = null;
         String localImageUri = null;

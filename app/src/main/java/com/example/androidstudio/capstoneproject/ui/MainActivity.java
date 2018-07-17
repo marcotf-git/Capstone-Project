@@ -181,8 +181,8 @@ import static android.view.View.VISIBLE;
  * Finally, the cloud communication is saved in a log table, updated at the same time as the
  * services are being executed. The log can be viewed by an option in the drawer menu.
  *
- * This app is for studying purposes. It is a city! You can change to there and be happy! :)
- * Thanks very much to Udacity, and Google, and all others that make this app possible!
+ * This app is for studying purposes.
+ * Thanks very much to Udacity, and Google, and all others that make this app possible! :)
  *
  * Marcos Tewfiq
  *
@@ -287,6 +287,18 @@ public class MainActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // Init the main view
+        setContentView(R.layout.activity_main);
+
+        // Determine if you are creating a two-pane or single-pane display
+        // This LinearLayout will only initially exists in the two-pane tablet case
+        mTwoPane = findViewById(R.id.drawer_tablet_land_layout) != null;
+
+        Log.d(TAG, "mTwoPane:" + mTwoPane);
+
+        LinearLayout listContainer = findViewById(R.id.linear_layout);
+        listContainer.setVisibility(INVISIBLE);
+
         // recovering the instance state
         if (savedInstanceState != null) {
             clickedLesson_id = savedInstanceState.getLong(CLICKED_LESSON_ID);
@@ -330,15 +342,11 @@ public class MainActivity extends AppCompatActivity implements
             loadingIndicator = false;
         }
 
-        // Init the main view
-        setContentView(R.layout.activity_main);
 
-        // Determine if you are creating a two-pane or single-pane display
-        // This LinearLayout will only initially exists in the two-pane tablet case
-        mTwoPane = findViewById(R.id.drawer_tablet_land_layout) != null;
-
-        LinearLayout listContainer = findViewById(R.id.linear_layout);
-        listContainer.setVisibility(INVISIBLE);
+        if (mTwoPane && (mainVisibility == VISIBLE || partsVisibility == VISIBLE)) {
+            mainVisibility = VISIBLE;
+            partsVisibility = VISIBLE;
+        }
 
         // Init another member variables
         mContext = this;
@@ -474,6 +482,9 @@ public class MainActivity extends AppCompatActivity implements
         } else {
             mDrawerLayout = findViewById(R.id.drawer_layout);
         }
+
+
+
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(
             new NavigationView.OnNavigationItemSelectedListener() {
@@ -912,23 +923,52 @@ public class MainActivity extends AppCompatActivity implements
     private void actionHome() {
         Log.d(TAG, "onOptionsItemSelected mainVisibility:" + mainVisibility);
         // Set the action according to the views visibility
-        if (mainVisibility == VISIBLE) {
-            mDrawerLayout.openDrawer(GravityCompat.START);
-        } else if (mainVisibility == GONE && partsVisibility == VISIBLE){
-            closePartsFragment();
-        } else if (logVisibility == VISIBLE) {
-            logVisibility = GONE;
-            logContainer.setVisibility(logVisibility);
 
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            fragmentManager.beginTransaction()
-                    .remove(logFragment)
-                    .commit();
+        // Show the lesson parts fragment
+        if (mTwoPane) {
 
-            mainVisibility = VISIBLE;
-            lessonsContainer.setVisibility(mainVisibility);
-            actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
-            contextualizeMenu();
+            // Phone visibility
+            if (mainVisibility == VISIBLE) {
+                mDrawerLayout.openDrawer(GravityCompat.START);
+            } else if (logVisibility == VISIBLE) {
+                logVisibility = GONE;
+                logContainer.setVisibility(logVisibility);
+
+                FragmentManager fragmentManager = getSupportFragmentManager();
+                fragmentManager.beginTransaction()
+                        .remove(logFragment)
+                        .commit();
+
+                mainVisibility = VISIBLE;
+                partsVisibility = VISIBLE;
+                lessonsContainer.setVisibility(mainVisibility);
+                partsContainer.setVisibility(partsVisibility);
+
+                actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
+                contextualizeMenu();
+            }
+
+        } else {
+
+            // Phone visibility
+            if (mainVisibility == VISIBLE) {
+                mDrawerLayout.openDrawer(GravityCompat.START);
+            } else if (mainVisibility == GONE && partsVisibility == VISIBLE) {
+                closePartsFragment();
+            } else if (logVisibility == VISIBLE) {
+                logVisibility = GONE;
+                logContainer.setVisibility(logVisibility);
+
+                FragmentManager fragmentManager = getSupportFragmentManager();
+                fragmentManager.beginTransaction()
+                        .remove(logFragment)
+                        .commit();
+
+                mainVisibility = VISIBLE;
+                lessonsContainer.setVisibility(mainVisibility);
+                actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
+                contextualizeMenu();
+            }
         }
     }
 
@@ -1383,16 +1423,27 @@ public class MainActivity extends AppCompatActivity implements
         selectedLesson_id = -1;
 
         // Show the lesson parts fragment
-        mainVisibility = GONE;
+        if (mTwoPane) {
+            // tablet visibility
+            mainVisibility = VISIBLE; // the lesson list
+            partsVisibility = VISIBLE; // the parts list
+            logVisibility = GONE; // the log view
+        } else {
+            // Phone visibility
+            mainVisibility = GONE;
+            partsVisibility = VISIBLE;
+        }
+
         lessonsContainer.setVisibility(mainVisibility);
-        partsVisibility = VISIBLE;
         partsContainer.setVisibility(partsVisibility);
+
         // Set the drawer menu icon according to views
         if (mainVisibility == VISIBLE) {
             actionBar.setHomeAsUpIndicator(R.drawable.ic_menu);
         } else {
             actionBar.setHomeAsUpIndicator(R.drawable.ic_arrow_back);
         }
+
         // Inform the parts fragment
         partsFragment.setReferenceLesson(_id, lessonName);
     }

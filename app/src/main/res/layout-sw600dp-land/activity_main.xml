@@ -49,24 +49,34 @@
                 android:id="@+id/log_container"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_margin="0dp"
+                android:layout_margin="32dp"
                 android:padding="0dp">
             </FrameLayout>
 
             <FrameLayout
                 android:id="@+id/lessons_container"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_margin="0dp"
+                android:layout_weight="1"
+                android:layout_margin="32dp"
                 android:padding="0dp">
 
             </FrameLayout>
 
+            <View
+                android:id="@+id/divider"
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:layout_marginTop="32dp"
+                android:layout_marginBottom="32dp"
+                android:background="?android:attr/listDivider" />
+
             <FrameLayout
                 android:id="@+id/parts_container"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_margin="0dp"
+                android:layout_weight="1"
+                android:layout_margin="32dp"
                 android:padding="0dp">
 
             </FrameLayout>

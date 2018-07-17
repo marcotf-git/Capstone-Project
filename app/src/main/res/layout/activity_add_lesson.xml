@@ -24,6 +24,8 @@
         android:id="@+id/textView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/edit_text_margin_start"
+        android:layout_marginEnd="@dimen/edit_text_margin_end"
         android:gravity="center"
         android:padding="16dp"
         android:text="@string/add_lesson_title_label" />
@@ -32,6 +34,8 @@
         android:id="@+id/addTextLessonTitle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/edit_text_margin_start"
+        android:layout_marginEnd="@dimen/edit_text_margin_end"
         android:gravity="start"
         android:hint="@string/add_lesson_title"
         android:inputType="textMultiLine"
@@ -42,6 +46,8 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/edit_text_margin_start"
+        android:layout_marginEnd="@dimen/edit_text_margin_end"
         android:orientation="horizontal">
 
         <Button
