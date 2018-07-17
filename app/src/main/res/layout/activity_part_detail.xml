@@ -70,7 +70,7 @@
                 android:scaleType="centerCrop" />
 
             <!-- The container for the player -->
-            <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            <FrameLayout
                 android:id="@+id/player_container"
                 android:layout_width="match_parent"
                 android:layout_height="@dimen/main_image_layout_height"
@@ -94,7 +94,8 @@
             android:id="@+id/scrollView2"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_marginTop="16dp">
+            android:layout_marginTop="16dp"
+            android:elevation="4dp">
 
             <!-- The container for the part detail -->
             <FrameLayout

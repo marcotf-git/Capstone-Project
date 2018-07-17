@@ -42,38 +42,52 @@
         android:padding="16dp"
         android:layout_marginBottom= "@dimen/activity_horizontal_margin"/>
 
-    <!-- Add button -->
-    <LinearLayout
+
+    <!-- buttons -->
+    <TableRow
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/edit_text_margin_start"
-        android:layout_marginEnd="@dimen/edit_text_margin_end"
-        android:orientation="horizontal">
+        android:gravity="end">
 
-        <Button
-            android:id="@+id/addButton"
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/editButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
+            android:layout_gravity="bottom|end"
+            android:layout_marginBottom="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="16dp"
             android:layout_weight="1"
-            android:background="@color/colorPrimary"
+            android:clickable="true"
+            android:focusable="true"
+            app:elevation="@dimen/fab_elevation"
+            app:fabSize="normal"
+            app:pressedTranslationZ="@dimen/fab_press_translation_z"
+            android:color="@color/colorPrimaryLight"
             android:onClick="onClickAddLesson"
-            android:text="@string/add_button"
-            android:textColor="@android:color/primary_text_dark"
-            style="?android:attr/buttonBarButtonStyle"/>
+            app:backgroundTint="?attr/colorPrimaryDark"
+            app:srcCompat="@android:drawable/ic_menu_save"
+            android:contentDescription="@string/add_lesson_title"/>
 
-        <Button
+        <android.support.design.widget.FloatingActionButton
             android:id="@+id/cancelButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:layout_gravity="bottom|end"
+            android:color="@color/colorAccentLight"
             android:layout_weight="1"
-            android:background="@color/colorAccentLight"
+            android:clickable="true"
+            android:focusable="true"
+            app:elevation="@dimen/fab_elevation"
+            app:fabSize="normal"
+            app:pressedTranslationZ="@dimen/fab_press_translation_z"
             android:onClick="onClickCancel"
-            android:text="@string/cancel_button"
-            android:textColor="@android:color/primary_text_dark"
-            style="?android:attr/buttonBarButtonStyle"/>
+            app:srcCompat="@android:drawable/ic_menu_close_clear_cancel"
+            android:contentDescription="@string/cancel"/>
+    </TableRow>
 
-    </LinearLayout>
 
 </LinearLayout>

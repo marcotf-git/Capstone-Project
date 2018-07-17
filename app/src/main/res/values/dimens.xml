@@ -8,23 +8,16 @@
     <dimen name="fab_elevation">6dp</dimen>
     <dimen name="fab_press_translation_z">6dp</dimen>
     <dimen name="activity_horizontal_margin">16dp</dimen>
-    <dimen name="button_width">32dp</dimen>
     <dimen name="part_card_height">96dp</dimen>
     <dimen name="lesson_part_name_text_size">16sp</dimen>
 
-    <dimen name="part_text_title_text_size">32sp</dimen>
-    <dimen name="part_text_body_text_size">16sp</dimen>
     <dimen name="part_text_inner_horiz_margin">16dp</dimen>
-    <dimen name="part_text_body_bottom_margin">16dp</dimen>
-    <dimen name="part_text__body_top_margin">16dp</dimen>
-    <dimen name="part_text_body_top_margin">16dp</dimen>
     <item name="part_text_line_spacing_multiplier" format="float" type="fraction">1.25</item>
 
     <dimen name="widget_margin">8dp</dimen>
     <dimen name="widget_header_padding">8dp</dimen>
 
     <dimen name="lesson_part_title_text_size">20sp</dimen>
-    <dimen name="lesson_parts_lesson_title_text_size">20sp</dimen>
     <dimen name="lessons_list_lesson_title_text_size">20sp</dimen>
 
     <dimen name="main_margin_start">16dp</dimen>

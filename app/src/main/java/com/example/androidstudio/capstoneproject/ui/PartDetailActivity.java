@@ -367,7 +367,8 @@ public class PartDetailActivity extends AppCompatActivity implements
 
                         });
             } else {
-                errorMessageView.setVisibility(View.VISIBLE);
+                // There is no image to load
+                errorMessageView.setVisibility(View.GONE);
             }
         }
     }
@@ -438,7 +439,7 @@ public class PartDetailActivity extends AppCompatActivity implements
     @Override
     public void onLoadFinished(@NonNull Loader<Cursor> loader, Cursor data) {
 
-        mLoadingIndicator.setVisibility(View.INVISIBLE);
+        mLoadingIndicator.setVisibility(View.GONE);
 
         // Pass the data to the view
         updateView(data);
@@ -786,7 +787,11 @@ public class PartDetailActivity extends AppCompatActivity implements
                 Log.d(TAG, "saveUrisForFutureCloudDeletion inserted uri:" + uri);
 
             }
+
+            cursor.close();
         }
+
+
     }
 
 

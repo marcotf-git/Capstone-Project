@@ -1,34 +1,26 @@
 <resources>
     <string name="app_name">Learning App</string>
-    <string name="up">Up Button</string>
 
     <string name="file_loading_error_message">Failed to load</string>
     <string name="illustration_not_available">Illustration Not Available</string>
     <string name="lesson_image">Class Image</string>
     <string name="lesson_name">Class Name</string>
 
-    <string name="pref_mode_label">Mode Type</string>
     <string name="pref_mode_key" translatable="false">mode</string>
 
     <!-- Add Activity -->
     <string name="title_activity_add_lesson">Add Lesson Activity</string>
-    <string name="edit_lesson_description">Edit Lesson Description</string>
-    <string name="add_button">Add</string>
     <string name="add_lesson_title">Please, add the Lesson Title!</string>
 
     <!-- Edit Activity -->
     <string name="title_activity_edit_lesson">Edit Lesson Activity</string>
-    <string name="edit_lesson_title">Please, edit the Lesson Title!</string>
     <string name="add_lesson_title_label">Add Lesson Title</string>
     <string name="edit_lesson_title_label">Edit Lesson Title</string>
-    <string name="edit_button">Save</string>
-    <string name="cancel_button">Cancel</string>
 
     <!-- Delete Dialog -->
     <string name="dialog_delete_lesson">Delete the lesson?</string>
     <string name="dialog_delete_lesson_from_cloud">Delete the lesson and ALL ITS PARTS from Cloud?</string>
     <string name="delete">Delete</string>
-    <string name="cancel">Cancel</string>
 
     <string name="part_image">Lesson Part Image</string>
     <string name="lesson_part_name">Lesson Part Name</string>
@@ -42,11 +34,8 @@
     <!-- Drawer -->
     <string name="login">Login</string>
     <string name="logout">Logout</string>
-    <string name="user_email">user email</string>
     <string name="username">User Name:</string>
-    <string name="username_hint">username</string>
     <string name="userEmail">Email:</string>
-    <string name="userEmail_hint">email</string>
 
     <!-- Menu -->
     <string name="view">View</string>
@@ -59,13 +48,9 @@
     <string name="menu_action_delete_from_cloud_label">Delete from Cloud</string>
     <string name="menu_action_job_sync_label">Smart Refresh</string>
     <string name="menu_action_job_upload_label">Smart Upload</string>
-    <string name="menu_action_notification_test">Notification Test</string>
     <string name="menu_action_insert_fake_label">Insert Fake Data</string>
 
-    <string name="pref_view_label">View</string>
     <string name="pref_mode_view" translatable="false">view</string>
-
-    <string name="pref_create_label">Create</string>
     <string name="pref_mode_create" translatable="false">create</string>
 
     <!-- fab button -->
@@ -73,26 +58,17 @@
 
     <string name="my_lessons">My Lessons</string>
     <string name="group_lessons">Group Lessons</string>
-    <string name="part_text">Part Text</string>
-    <string name="title_activity_part_detail">Part Detail Activity</string>
     <string name="edit_part_activity_label">Edit Part Activity</string>
-    <string name="edit_part_text_label">Edit Lesson Part Text</string>
-    <string name="edit_part_text">Please, edit the text!</string>
+    <string name="edit_part_text">Please, edit the lesson text!</string>
     <string name="pick_image_video">Pick an Image or Video?</string>
 
     <string name="image">Image</string>
     <string name="video">Video</string>
     <string name="ok">OK!</string>
-    <string name="form_pick_photos">Complete action using</string>
     <string name="form_pick_image">Select an image</string>
     <string name="form_pick_video">Select a video</string>
     <string name="dialog_delete_lesson_part">Delete the lesson part?</string>
     <string name="log">Log</string>
-    <string name="upload_type">Please, choose what to upload</string>
-
-    <!-- Upload Dialog -->
-    <string name="images">Images, Videos and Text</string>
-    <string name="text">Only Text</string>
 
     <!-- Notification -->
     <string name="main_notification_channel_name">primary</string>
@@ -106,7 +82,6 @@
     <string name="ignore_pending_intent_text">OK</string>
 
     <string name="widget_header">Learning App</string>
-    <string name="widget_image">Widget Image</string>
 
     <string name="refresh_job_type">Start a background download of the group lessons?</string>
     <string name="upload_job_type">Start a background upload of the selected user lesson?</string>
@@ -134,7 +109,9 @@
     <string name="enter_your_e_mail">Enter your e-mail</string>
     <string name="enter_your_username">Enter your username</string>
     <string name="app_logo">App Logo</string>
-    <string name="menu_action_cancel_task_label">Cancel Task</string>
-    <string name="cancel_task_option">Cancel the Task</string>
+    <string name="edit_text_part">Edit Text Part</string>
+    <string name="cancel">Cancel</string>
+    <string name="edit_lesson_part">Edit Lesson Part</string>
+
 
 </resources>

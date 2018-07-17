@@ -209,16 +209,15 @@ public class MainActivity extends AppCompatActivity implements
     private static final String SELECTED_LESSON_ID = "selectedLessonId";
     private static final String CLICKED_LESSON_PART_ID = "clickedLessonPartId";
     private static final String SELECTED_LESSON_PART_ID = "selectedLessonPartId";
+
     private static final String MAIN_VISIBILITY = "mainVisibility";
     private static final String PARTS_VISIBILITY = "partsVisibility";
     private static final String LOG_VISIBILITY = "logVisibility";
+
     private static final String DATABASE_VISIBILITY = "databaseVisibility";
     private static final String USER_UID = "userUid";
+
     private static final String LOADING_INDICATOR = "loadingIndicator";
-    private static final String UPLOAD_COUNT = "uploadCount";
-    private static final String UPLOAD_COUNT_FINAL = "uploadCountFinal";
-    private static final String DOWNLOAD_COUNT = "downloadCount";
-    private static final String DOWNLOAD_COUNT_FINAL = "downloadCountFinal";
 
     // Final strings
     private static final String USER_DATABASE = "userDatabase";
@@ -236,10 +235,6 @@ public class MainActivity extends AppCompatActivity implements
     private static String databaseVisibility;
     private String mUserUid; // The user's ID, unique to the Firebase project.
     private boolean loadingIndicator;
-    private int uploadCount;
-    private int uploadCountFinal;
-    private int downloadCount;
-    private int downloadCountFinal;
     private int totalImagesToDelete;
     private int imagesToDeleteCount;
 
@@ -305,16 +300,15 @@ public class MainActivity extends AppCompatActivity implements
             selectedLesson_id = savedInstanceState.getLong(SELECTED_LESSON_ID);
             clickedLessonPart_id = savedInstanceState.getLong(CLICKED_LESSON_PART_ID);
             selectedLessonPart_id = savedInstanceState.getLong(SELECTED_LESSON_PART_ID);
+
             mainVisibility = savedInstanceState.getInt(MAIN_VISIBILITY);
             partsVisibility = savedInstanceState.getInt(PARTS_VISIBILITY);
             logVisibility =  savedInstanceState.getInt(LOG_VISIBILITY);
+
             databaseVisibility = savedInstanceState.getString(DATABASE_VISIBILITY);
             mUserUid = savedInstanceState.getString(USER_UID);
+
             loadingIndicator = savedInstanceState.getBoolean(LOADING_INDICATOR);
-            uploadCount = savedInstanceState.getInt(UPLOAD_COUNT);
-            uploadCountFinal = savedInstanceState.getInt(UPLOAD_COUNT_FINAL);
-            downloadCount = savedInstanceState.getInt(DOWNLOAD_COUNT);
-            downloadCountFinal = savedInstanceState.getInt(DOWNLOAD_COUNT_FINAL);
 
         } else {
             // Initialize the state vars
@@ -342,9 +336,13 @@ public class MainActivity extends AppCompatActivity implements
             loadingIndicator = false;
         }
 
-
+        // Handle screen rotation cases
         if (mTwoPane && (mainVisibility == VISIBLE || partsVisibility == VISIBLE)) {
             mainVisibility = VISIBLE;
+            partsVisibility = VISIBLE;
+        } else if (clickedLesson_id != -1) {
+            Log.d(TAG, "Handle screen rotation cases: clickedLesson_id:" + clickedLesson_id);
+            mainVisibility = GONE;
             partsVisibility = VISIBLE;
         }
 
@@ -483,8 +481,7 @@ public class MainActivity extends AppCompatActivity implements
             mDrawerLayout = findViewById(R.id.drawer_layout);
         }
 
-
-
+        // Drawer options
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(
             new NavigationView.OnNavigationItemSelectedListener() {
@@ -574,7 +571,7 @@ public class MainActivity extends AppCompatActivity implements
                 .setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
 
-                        if(!isWifi()) {
+                        if(noWifi()) {
                             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                                     "There isn't Wifi! Please, verify the connection! Action canceled!",
                                     Snackbar.LENGTH_INDEFINITE);
@@ -634,7 +631,7 @@ public class MainActivity extends AppCompatActivity implements
 
                         Log.d(TAG, "uploadJobDialog selectedLesson_id:" + selectedLesson_id);
 
-                        if(!isWifi()) {
+                        if(noWifi()) {
                             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                                     "There isn't Wifi! Please, verify the connection! Action canceled!",
                                     Snackbar.LENGTH_INDEFINITE);
@@ -927,7 +924,7 @@ public class MainActivity extends AppCompatActivity implements
         // Show the lesson parts fragment
         if (mTwoPane) {
 
-            // Phone visibility
+            // two pane visibility (tablet landscape)
             if (mainVisibility == VISIBLE) {
                 mDrawerLayout.openDrawer(GravityCompat.START);
             } else if (logVisibility == VISIBLE) {
@@ -950,7 +947,7 @@ public class MainActivity extends AppCompatActivity implements
 
         } else {
 
-            // Phone visibility
+            // portrait visibility or phone visibility
             if (mainVisibility == VISIBLE) {
                 mDrawerLayout.openDrawer(GravityCompat.START);
             } else if (mainVisibility == GONE && partsVisibility == VISIBLE) {
@@ -1033,7 +1030,7 @@ public class MainActivity extends AppCompatActivity implements
             return;
         }
 
-        if(!isOnline()) {
+        if(isOffline()) {
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                     "There isn't internet! Please, verify the connection! Action canceled!",
                     Snackbar.LENGTH_INDEFINITE);
@@ -1094,7 +1091,7 @@ public class MainActivity extends AppCompatActivity implements
             return;
         }
 
-        if(!isOnline()) {
+        if(isOffline()) {
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                     "There isn't internet! Please, verify the connection! Action canceled!",
                     Snackbar.LENGTH_INDEFINITE);
@@ -1158,7 +1155,7 @@ public class MainActivity extends AppCompatActivity implements
             return;
         }
 
-        if(!isOnline()) {
+        if(isOffline()) {
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                     "There isn't internet! Please, verify the connection! Action canceled!",
                     Snackbar.LENGTH_INDEFINITE);
@@ -1263,8 +1260,6 @@ public class MainActivity extends AppCompatActivity implements
             mMenu.findItem(R.id.action_cancel).setVisible(false);
             //mMenu.findItem(R.id.action_cancel_task).setVisible(true);
             mButton.setVisibility(GONE);
-        } else {
-            //mMenu.findItem(R.id.action_cancel_task).setVisible(false);
         }
 
     }
@@ -1280,6 +1275,7 @@ public class MainActivity extends AppCompatActivity implements
         partsFragment.deselectViews();
         // clear the reference var
         selectedLessonPart_id = -1;
+        clickedLesson_id = -1;
         // Change the views
         partsVisibility = GONE;
         partsContainer.setVisibility(partsVisibility);
@@ -1308,7 +1304,7 @@ public class MainActivity extends AppCompatActivity implements
     // Helper function to delete lesson data from cloud (delete the lesson document)
     private void deleteLessonFromCloud(long lesson_id) {
 
-        if(!isOnline()) {
+        if(isOffline()) {
             final Snackbar snackBar = Snackbar.make(findViewById(R.id.drawer_layout),
                     "There isn't internet! Please, verify the connection! Action canceled!",
                     Snackbar.LENGTH_INDEFINITE);
@@ -1335,7 +1331,7 @@ public class MainActivity extends AppCompatActivity implements
         // save the total images to delete
         if (cursor != null) {
             totalImagesToDelete = cursor.getCount();
-            //cursor.close();
+            cursor.close();
         } else {
             totalImagesToDelete = 0;
         }
@@ -1427,7 +1423,6 @@ public class MainActivity extends AppCompatActivity implements
             // tablet visibility
             mainVisibility = VISIBLE; // the lesson list
             partsVisibility = VISIBLE; // the parts list
-            logVisibility = GONE; // the log view
         } else {
             // Phone visibility
             mainVisibility = GONE;
@@ -1498,6 +1493,7 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         int nRows = cursor.getCount();
+        cursor.close();
 
         // If in the local database, check if lesson has parts and ask to delete parts first
         if (nRows > 1 && databaseVisibility.equals(USER_DATABASE)) {
@@ -1686,6 +1682,8 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
 
+        cursor.close();
+
         // Deselect the last view selected
         partsFragment.deselectViews();
         selectedLessonPart_id = -1;
@@ -1824,12 +1822,7 @@ public class MainActivity extends AppCompatActivity implements
 
         outState.putString(DATABASE_VISIBILITY, databaseVisibility);
         outState.putString(USER_UID, mUserUid);
-
         outState.putBoolean(LOADING_INDICATOR, loadingIndicator);
-        outState.putInt(UPLOAD_COUNT, uploadCount);
-        outState.putInt(UPLOAD_COUNT_FINAL, uploadCountFinal);
-        outState.putInt(DOWNLOAD_COUNT, downloadCount);
-        outState.putInt(DOWNLOAD_COUNT_FINAL, downloadCountFinal);
 
         super.onSaveInstanceState(outState);
     }
@@ -2000,7 +1993,7 @@ public class MainActivity extends AppCompatActivity implements
 
 
     // Verify if there is internet
-    private boolean isOnline() {
+    private boolean isOffline() {
 
         ConnectivityManager connMgr = (ConnectivityManager)
                 getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -2022,13 +2015,13 @@ public class MainActivity extends AppCompatActivity implements
         Log.d(TAG, "Wifi connected: " + isWifiConn);
         Log.d(TAG, "Mobile connected: " + isMobileConn);
 
-        return isWifiConn || isMobileConn;
+        return !isWifiConn && !isMobileConn;
 
     }
 
 
     // Verify if there is wi-fi
-    private boolean isWifi() {
+    private boolean noWifi() {
 
         ConnectivityManager connMgr = (ConnectivityManager)
                 getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -2042,7 +2035,7 @@ public class MainActivity extends AppCompatActivity implements
         }
         Log.d(TAG, "Wifi connected: " + isWifiConn);
 
-        return (isWifiConn);
+        return (!isWifiConn);
     }
 
 

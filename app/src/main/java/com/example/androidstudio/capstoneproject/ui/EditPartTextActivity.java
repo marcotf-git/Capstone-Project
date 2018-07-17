@@ -10,7 +10,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.example.androidstudio.capstoneproject.R;
@@ -26,7 +25,6 @@ public class EditPartTextActivity extends AppCompatActivity {
 
     private Uri updateUri;
     private EditText myEditText;
-    private LinearLayout buttonsBar;
 
 
     @Override
@@ -35,7 +33,6 @@ public class EditPartTextActivity extends AppCompatActivity {
         setContentView(R.layout.activity_edit_part_text);
 
         myEditText = findViewById(R.id.editTextLessonPartTitle);
-        buttonsBar = findViewById(R.id.linearLayout);
 
         // Recover information from caller activity
         Intent intentThatStartedThisActivity = getIntent();
