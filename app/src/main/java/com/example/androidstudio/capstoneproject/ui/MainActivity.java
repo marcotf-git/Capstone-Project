@@ -66,8 +66,8 @@ import static android.view.View.VISIBLE;
  * can download that content, and save it locally in the device, including the images or videos,
  * for attending the classes.
  *
- * The process requires login to the remote server, in case, the Firebase (https://firebase.google.com),
- * that handles all the login and logout, and stores the data.
+ * The process requires login to the remote server, in case, the Firebase
+ * (https://firebase.google.com), that handles all the login and logout, and stores the data.
  *
  * The app has two modes: 'view' mode and 'create' mode.
  *
@@ -100,13 +100,10 @@ import static android.view.View.VISIBLE;
  * if the app is closed, and has an pending intent incorporated, to open the app.
  *
  * In the 'create' mode, if the user selects the option to add a lesson title, it will open another
- * activity AddLessonActivity to add the title.
- *
- * If the user select to delete and then click on an item, the item will be deleted after a
- * confirmation. The confirmation is handled by a Dialog fragment.
- *
- * If the user select to edit and then click, it will open an activity EditLessonActivity to edit
- * that item.
+ * activity AddLessonActivity to add the title. If the user select to delete and then click on an
+ * item, the item will be deleted after a confirmation. The confirmation is handled by a Dialog
+ * fragment. If the user selects to edit and then click, it will open an activity EditLessonActivity
+ * to edit that item.
  *
  * There are specific rules in the app and in Firebase protecting the data of one user from another.
  *
@@ -144,18 +141,24 @@ import static android.view.View.VISIBLE;
  * (http://square.github.io/picasso/) will get that file uri, and load the file from local folder
  * into the specific view.
  *
- * To delete a user lesson (a complex task!), the app has the algorithm:
+ * To delete a user lesson, the app has the algorithm:
  * a) it is possible to delete or locally, or in the cloud
- * 1) only delete if there are no parts
- * 2) when deleting the part, store the reference of the file, that will be used to delete the file
- * in the cloud, when the user choose to do it
- * 3) when the user choose to delete the lesson from the cloud, it won't be deleted locally
- * 4) when the user choose to delete in the cloud, it will also delete the files in the Storage:
- * 4.1) delete from cloud database and save the uri's of the files in a specific local table, that
- * will store the files for future deletion
- * 4.2) query that table, and with the information, delete from the Storage
  *
- * To edit the local data, the user can edit only their table my_...
+ * a.1) when deleting user lesson locally:
+ * 1) only delete if there are no parts
+ * 2) when deleting the lesson part row, store the reference of the cloud file uri Storage (reading
+ * it from the lesson parts table) in an specific table, which will be used to delete the file in
+ * the cloud, when the user choose to do it in future
+ *
+ * When the user chooses to delete the lesson from the cloud, it will also delete the files in the
+ * Storage, but it won't be deleted locally.
+ *
+ * a.2) when deleting user lesson only in the cloud:
+ * 1) delete from cloud Database and save the uri's of the files in a specific local table, that
+ * will store the files for deletion from Storage
+ * 2) query that table, and with the information, delete from the Storage
+ *
+ * To edit the local data, the user can edit only their tables:
  * 1) choose what to edit and edit (select choose the option in the menu)
  * 2) choose to pick another image
  * 2.1) the old image, if has cloud uri, will be deleted but its reference will be saved in that
@@ -170,8 +173,8 @@ import static android.view.View.VISIBLE;
  *
  * The app menu is contextual: the options change according to the user actions.
  *
- * Finally, the cloud communication is saved in a log file, that can be viewed by an option in the
- * drawer menu.
+ * Finally, the cloud communication is saved in a log table, updated at the same time as the
+ * services are been executed, that can be viewed by an option in the drawer menu.
  *
  */
 
