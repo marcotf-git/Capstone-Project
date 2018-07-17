@@ -82,12 +82,12 @@
             android:layout_marginEnd="16dp"
             android:layout_marginTop="16dp"
             android:layout_weight="1"
+            app:backgroundTint="@color/colorAccentLight"
             android:clickable="true"
             android:focusable="true"
             app:elevation="@dimen/fab_elevation"
             app:fabSize="normal"
             app:pressedTranslationZ="@dimen/fab_press_translation_z"
-            android:color="@color/colorAccentLight"
             android:contentDescription="@string/cancel"
             android:onClick="onClickCancel"
             app:srcCompat="@android:drawable/ic_menu_close_clear_cancel" />

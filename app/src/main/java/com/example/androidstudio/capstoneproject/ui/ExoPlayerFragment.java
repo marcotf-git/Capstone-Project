@@ -178,7 +178,8 @@ public class ExoPlayerFragment extends Fragment {
     private MediaSource buildMediaSource(Uri uri) {
 
 
-        ApplicationInfo applicationInfo = getContext().getApplicationInfo();
+        ApplicationInfo applicationInfo;
+        applicationInfo = getContext().getApplicationInfo();
         int stringId = applicationInfo.labelRes;
         String appName = (stringId == 0 ?
                 applicationInfo.nonLocalizedLabel.toString() : getContext().getString(stringId));

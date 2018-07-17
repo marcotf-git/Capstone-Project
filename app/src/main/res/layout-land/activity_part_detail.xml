@@ -114,6 +114,7 @@
         android:contentDescription="@string/action_add"
         android:src="@drawable/ic_action_add"
         app:elevation="@dimen/fab_elevation"
+        android:visibility="gone"
         app:fabSize="normal" />
 
 </FrameLayout>

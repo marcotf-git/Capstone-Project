@@ -71,6 +71,7 @@ public class PartDetailActivity extends AppCompatActivity implements
     private int mPlayerViewVisibility;
     private int imageViewVisibility;
     private int errorMessageViewVisibility;
+    private boolean isLandscape;
 
     // Menus and buttons
     private Menu mMenu;
@@ -112,6 +113,8 @@ public class PartDetailActivity extends AppCompatActivity implements
 
          // Set the main view
         setContentView(R.layout.activity_part_detail);
+
+        isLandscape = (findViewById(R.id.view_activity_part_detail_landscape)!=null);
 
         mContext = this;
 
@@ -368,7 +371,11 @@ public class PartDetailActivity extends AppCompatActivity implements
                         });
             } else {
                 // There is no image to load
-                errorMessageView.setVisibility(View.GONE);
+                if (isLandscape) {
+                    errorMessageView.setVisibility(View.VISIBLE);
+                } else {
+                    errorMessageView.setVisibility(View.GONE);
+                }
             }
         }
     }
