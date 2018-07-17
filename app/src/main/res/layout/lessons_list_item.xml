@@ -12,8 +12,6 @@
         android:id="@+id/cv_lesson_title"
         android:layout_gravity="center"
         android:layout_width="match_parent"
-        android:layout_marginStart="@dimen/lesson_card_margin_horizontal"
-        android:layout_marginEnd="@dimen/lesson_card_margin_horizontal"
         android:layout_height="@dimen/part_card_height"
         card_view:cardCornerRadius="4dp">
 

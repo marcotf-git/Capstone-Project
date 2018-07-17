@@ -969,7 +969,7 @@ public class MainActivity extends AppCompatActivity implements
             editLesson(selectedLesson_id);
         } else {
             Toast.makeText(this,
-                    "Please, select an item to delete!", Toast.LENGTH_LONG).show();
+                    "Please, select an item to edit!", Toast.LENGTH_LONG).show();
         }
     }
 

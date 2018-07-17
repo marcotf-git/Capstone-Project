@@ -12,10 +12,8 @@
         style="?android:attr/textAppearanceMedium"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="@dimen/part_text_inner_horiz_margin"
-        android:layout_marginRight="@dimen/part_text_inner_horiz_margin"
-        android:paddingBottom="@dimen/part_text_body_bottom_margin"
-        android:paddingTop="@dimen/part_text_body_top_margin"
+        android:layout_marginEnd="@dimen/part_text_inner_horiz_margin"
+        android:layout_marginStart="@dimen/part_text_inner_horiz_margin"
         android:textColorLink="?colorAccent"
         android:textColor="@android:color/secondary_text_light"
         android:lineSpacingMultiplier="@fraction/part_text_line_spacing_multiplier" />
