@@ -27,7 +27,7 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
+         </activity>
         <activity
             android:name=".ui.AddLessonActivity"
             android:label="@string/title_activity_add_lesson"
