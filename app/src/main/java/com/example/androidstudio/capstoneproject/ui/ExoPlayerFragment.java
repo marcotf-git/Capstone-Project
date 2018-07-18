@@ -37,6 +37,8 @@ import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.util.Util;
 
+import java.util.Objects;
+
 
 /**
  * This fragment will play the video with Url in mediaUrl variable, using the ExoPlayer library.
@@ -179,7 +181,7 @@ public class ExoPlayerFragment extends Fragment {
 
 
         ApplicationInfo applicationInfo;
-        applicationInfo = getContext().getApplicationInfo();
+        applicationInfo = Objects.requireNonNull(getContext()).getApplicationInfo();
         int stringId = applicationInfo.labelRes;
         String appName = (stringId == 0 ?
                 applicationInfo.nonLocalizedLabel.toString() : getContext().getString(stringId));

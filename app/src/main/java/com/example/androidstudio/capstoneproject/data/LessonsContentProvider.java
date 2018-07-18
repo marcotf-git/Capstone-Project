@@ -19,17 +19,17 @@ public class LessonsContentProvider extends ContentProvider {
     // and related ints (101, 102, ..) for items in that directory.
     public static final int MY_LESSONS = 100;
     public static final int MY_LESSON_WITH_ID = 101;
-    public static final int MY_LESSON_PARTS = 200;
-    public static final int MY_LESSON_PART_WITH_ID = 201;
-    public static final int MY_LESSON_PARTS_BY_LESSON_ID = 202;
-    public static final int GROUP_LESSONS = 300;
-    public static final int GROUP_LESSON_WITH_ID = 301;
-    public static final int GROUP_LESSON_PARTS = 400;
-    public static final int GROUP_LESSON_PART_WITH_ID = 401;
-    public static final int MY_LOG = 500;
-    public static final int MY_LOG_WITH_ID = 501;
-    public static final int MY_CLOUD_FILES_TO_DELETE = 600;
-    public static final int MY_CLOUD_FILES_TO_DELETE_WITH_ID = 601;
+    private static final int MY_LESSON_PARTS = 200;
+    private static final int MY_LESSON_PART_WITH_ID = 201;
+    private static final int MY_LESSON_PARTS_BY_LESSON_ID = 202;
+    private static final int GROUP_LESSONS = 300;
+    private static final int GROUP_LESSON_WITH_ID = 301;
+    private static final int GROUP_LESSON_PARTS = 400;
+    private static final int GROUP_LESSON_PART_WITH_ID = 401;
+    private static final int MY_LOG = 500;
+    private static final int MY_LOG_WITH_ID = 501;
+    private static final int MY_CLOUD_FILES_TO_DELETE = 600;
+    private static final int MY_CLOUD_FILES_TO_DELETE_WITH_ID = 601;
 
 
     // Declare a static variable for the Uri matcher

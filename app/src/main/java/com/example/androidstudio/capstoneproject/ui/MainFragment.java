@@ -67,10 +67,10 @@ public class MainFragment extends Fragment implements
     private LessonsListAdapter mAdapter;
     private Context mContext;
 
-    AppWidgetManager appWidgetManager;
+    private AppWidgetManager appWidgetManager;
 
     // Interfaces for communication with the main activity (sending data)
-    OnLessonListener mLessonCallback;
+    private OnLessonListener mLessonCallback;
 
 
     // Interfaces for communication with the MainActivity (sending data)

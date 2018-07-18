@@ -27,7 +27,7 @@ public class DeleteLessonOnCloudDialogFragment extends DialogFragment {
     }
 
     // Use this instance of the interface to deliver action events
-    DeleteLessonCloudDialogListener mListener;
+    private DeleteLessonCloudDialogListener mListener;
 
     @Override
     public void onAttach(Context context) {

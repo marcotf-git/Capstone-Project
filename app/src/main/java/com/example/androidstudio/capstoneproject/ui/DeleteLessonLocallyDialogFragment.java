@@ -27,7 +27,7 @@ public class DeleteLessonLocallyDialogFragment extends DialogFragment {
     }
 
     // Use this instance of the interface to deliver action events
-    DeleteLessonDialogListener mListener;
+    private DeleteLessonDialogListener mListener;
 
     @Override
     public void onAttach(Context context) {

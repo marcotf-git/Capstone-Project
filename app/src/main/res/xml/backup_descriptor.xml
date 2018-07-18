@@ -5,6 +5,11 @@
         domain="database"
         path="lessons.db" />
 
+    <exclude
+        domain="file"
+        path="google-services.json" />
+
     <!-- Exclude specific shared preferences that contain GCM registration Id -->
+
 
 </full-backup-content>

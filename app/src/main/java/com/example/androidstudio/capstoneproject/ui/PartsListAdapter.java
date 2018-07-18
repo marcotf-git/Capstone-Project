@@ -188,9 +188,9 @@ public class PartsListAdapter extends RecyclerView.Adapter<PartsListAdapter.Less
             implements View.OnClickListener, View.OnLongClickListener {
 
         //private ImageView partImageView;
-        private TextView partTextView;
+        private final TextView partTextView;
         //private TextView errorTextView;
-        private View parentView;
+        private final View parentView;
 
         final Context context;
 

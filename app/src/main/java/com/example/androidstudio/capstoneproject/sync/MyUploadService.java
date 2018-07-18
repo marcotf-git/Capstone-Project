@@ -89,12 +89,6 @@ public class MyUploadService extends IntentService {
 
     }
 
-    @Override
-    public void onCreate() {
-
-        super.onCreate();
-    }
-
 
     // this is called by Intent (in MainActivity)
     @Override

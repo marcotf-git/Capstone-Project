@@ -16,6 +16,7 @@ import java.util.Locale;
 /**
  * This class inserts fake data in the local database for testing.
  */
+@SuppressWarnings("SpellCheckingInspection")
 public class InsertTestDataUtil {
 
     private static final String TAG = InsertTestDataUtil.class.getSimpleName();

@@ -26,7 +26,7 @@ public class DeletePartDialogFragment extends DialogFragment {
     }
 
     // Use this instance of the interface to deliver action events
-    DeletePartDialogListener mListener;
+    private DeletePartDialogListener mListener;
 
     @Override
     public void onAttach(Context context) {

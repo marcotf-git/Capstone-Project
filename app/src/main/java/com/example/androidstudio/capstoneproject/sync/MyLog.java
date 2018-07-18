@@ -20,7 +20,7 @@ public class MyLog {
     // This limits the number of rows in the log table
     private static final int MAX_ROWS_LOG_TABLE = 200;
 
-    private Context mContext;
+    private final Context mContext;
 
 
     public MyLog(Context mContext) {

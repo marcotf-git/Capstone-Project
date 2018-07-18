@@ -185,9 +185,9 @@ public class LessonsListAdapter extends RecyclerView.Adapter<LessonsListAdapter.
             implements View.OnClickListener, View.OnLongClickListener {
 
         //private ImageView lessonImageView;
-        private TextView lessonTextView;
+        private final TextView lessonTextView;
         //private TextView errorTextView;
-        private View parentView;
+        private final View parentView;
 
         final Context context;
 

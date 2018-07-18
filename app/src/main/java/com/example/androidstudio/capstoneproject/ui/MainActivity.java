@@ -47,6 +47,7 @@ import com.example.androidstudio.capstoneproject.sync.ScheduledUtilities;
 import com.example.androidstudio.capstoneproject.utilities.MyFirebaseFragment;
 import com.example.androidstudio.capstoneproject.utilities.InsertTestDataUtil;
 import com.firebase.ui.auth.AuthUI;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -182,7 +183,7 @@ import static android.view.View.VISIBLE;
  * services are being executed. The log can be viewed by an option in the drawer menu.
  *
  * This app is for studying purposes.
- * Thanks very much to Udacity, and Google, and all others that make this app possible! :)
+ * Thanks to Udacity, and Google, and all others that make this app possible!
  *
  * Marcos Tewfiq
  *
@@ -219,10 +220,13 @@ public class MainActivity extends AppCompatActivity implements
 
     private static final String LOADING_INDICATOR = "loadingIndicator";
 
+    private static final String UPLOAD_ERROR = "UploadError";
+    private static final String DOWNLOAD_ERROR = "DownloadError";
+
     // Final strings
     private static final String USER_DATABASE = "userDatabase";
     private static final String GROUP_DATABASE = "groupDatabase";
-    public static final String ANONYMOUS = "anonymous";
+    private static final String ANONYMOUS = "anonymous";
 
     // App state information variables
     private long clickedLesson_id;
@@ -242,6 +246,10 @@ public class MainActivity extends AppCompatActivity implements
     private String mUsername;
     private String mUserEmail;
 
+    // Declare the FirebaseAnalytics
+    private FirebaseAnalytics mFirebaseAnalytics;
+
+    // Declare the FirebaseAuthentication
     private FirebaseAuth mFirebaseAuth;
     private FirebaseAuth.AuthStateListener mAuthStateListener;
 
@@ -281,6 +289,9 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // Obtain the FirebaseAnalytics instance
+        mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
 
         // Init the main view
         setContentView(R.layout.activity_main);
@@ -1269,7 +1280,7 @@ public class MainActivity extends AppCompatActivity implements
      * Helper methods for closing fragments.
      */
     // Helper method for hiding the PartsFragment
-    public void closePartsFragment() {
+    private void closePartsFragment() {
         Log.d(TAG, "closePartsFragment");
         // deselect the views on the fragment that will be closed
         partsFragment.deselectViews();
@@ -1882,7 +1893,7 @@ public class MainActivity extends AppCompatActivity implements
 
 
     // Define a receiver to listen for communication from the services (download service)
-    private BroadcastReceiver myDownloadReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver myDownloadReceiver = new BroadcastReceiver() {
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -1917,6 +1928,11 @@ public class MainActivity extends AppCompatActivity implements
                         }
                     });
                     snackBar.show();
+
+                    Bundle bundle = new Bundle();
+                    bundle.putString(FirebaseAnalytics.Param.ITEM_NAME,
+                            "Download of the user data has finished, but with error.");
+                    mFirebaseAnalytics.logEvent(DOWNLOAD_ERROR, bundle);
                 }
 
 
@@ -1944,6 +1960,11 @@ public class MainActivity extends AppCompatActivity implements
                         }
                     });
                     snackBar.show();
+
+                    Bundle bundle = new Bundle();
+                    bundle.putString(FirebaseAnalytics.Param.ITEM_NAME,
+                            "Download of the group data has finished, but with error.");
+                    mFirebaseAnalytics.logEvent(DOWNLOAD_ERROR, bundle);
                 }
             }
         }
@@ -1951,7 +1972,7 @@ public class MainActivity extends AppCompatActivity implements
 
 
     // Define a receiver to listen for communication from the services (upload service)
-    private BroadcastReceiver myUploadReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver myUploadReceiver = new BroadcastReceiver() {
 
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -1986,6 +2007,12 @@ public class MainActivity extends AppCompatActivity implements
                         }
                     });
                     snackBar.show();
+
+                    Bundle bundle = new Bundle();
+                    bundle.putString(FirebaseAnalytics.Param.ITEM_NAME,
+                            "Upload of the lesson has finished, but with error.");
+                    mFirebaseAnalytics.logEvent(UPLOAD_ERROR, bundle);
+
                 }
             }
         }

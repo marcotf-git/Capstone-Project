@@ -66,7 +66,7 @@ public class PartsFragment extends Fragment implements
 
 
     // Callbacks to send data to the main activity
-    OnLessonPartListener mPartCallback;
+    private OnLessonPartListener mPartCallback;
 
     // Interfaces for communication with the main activity (sending data)
     public interface OnLessonPartListener {
@@ -169,12 +169,6 @@ public class PartsFragment extends Fragment implements
         savedInstanceState.putString(DATABASE_VISIBILITY, databaseVisibility);
 
         super.onSaveInstanceState(savedInstanceState);
-    }
-
-    @Override
-    public void onDestroy() {
-
-        super.onDestroy();
     }
 
 

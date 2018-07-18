@@ -27,7 +27,7 @@
             <android.support.v7.widget.Toolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
+                android:layout_height="wrap_content"
                 android:background="@color/colorPrimary"
                 android:elevation="4dp"
                 app:contentInsetStart="72dp"
@@ -43,11 +43,11 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="horizontal"
+            android:layout_marginTop="?android:attr/actionBarSize"
+            android:layout_marginBottom="@dimen/main_margin_bottom"
             android:layout_marginStart="@dimen/main_margin_start"
             android:layout_marginEnd="@dimen/main_margin_end"
-            android:layout_marginBottom="@dimen/main_margin_bottom"
-            android:paddingTop="@dimen/main_margin_start"
-            android:layout_marginTop="?android:attr/actionBarSize">
+            android:paddingTop="@dimen/main_margin_start" >
 
             <FrameLayout
                 android:id="@+id/log_container"
@@ -100,6 +100,8 @@
         android:layout_gravity="start"
         android:fitsSystemWindows="true"
         app:menu="@menu/drawer_view"
-        app:headerLayout="@layout/nav_header" />
+        app:headerLayout="@layout/nav_header" >
+
+    </android.support.design.widget.NavigationView>
 
 </android.support.v4.widget.DrawerLayout>
