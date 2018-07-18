@@ -880,7 +880,7 @@ public class MyDownloadService extends IntentService {
 
         } else {
 
-            String message = "Error: download is been stopped!";
+            String message = "Error: download has been stopped!";
             myLog.addToLog(message);
 
             // cancel all tasks
