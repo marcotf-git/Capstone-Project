@@ -67,8 +67,6 @@ public class MainFragment extends Fragment implements
     private LessonsListAdapter mAdapter;
     private Context mContext;
 
-    private AppWidgetManager appWidgetManager;
-
     // Interfaces for communication with the main activity (sending data)
     private OnLessonListener mLessonCallback;
 
@@ -133,7 +131,6 @@ public class MainFragment extends Fragment implements
 
         // Inflate the fragment view
         View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-
 
         mErrorMessageDisplay = rootView.findViewById(R.id.tv_error_message_display);
         mLoadingIndicatorView = rootView.findViewById(R.id.pb_loading_indicator);
@@ -328,7 +325,7 @@ public class MainFragment extends Fragment implements
         ListRemoteViewsFactory.setWidgetProviderData(lessons);
 
         //Trigger data update to handle the View widgets and force a data refresh
-        appWidgetManager = AppWidgetManager.getInstance(mContext);
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(mContext);
         int[] appWidgetIds = appWidgetManager.getAppWidgetIds(
                 new ComponentName(mContext, LessonsWidgetProvider.class));
         appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.widget_list);
@@ -448,17 +445,14 @@ public class MainFragment extends Fragment implements
 
     }
 
-
     // This method is saving the position of the recycler view
     @Override
     public void onSaveInstanceState(@NonNull Bundle savedInstanceState) {
 
         Parcelable recyclerViewState = mClassesList.getLayoutManager().onSaveInstanceState();
         savedInstanceState.putParcelable(RECYCLER_VIEW_STATE, recyclerViewState);
-
         savedInstanceState.putLong(SELECTED_LESSON_ID, selectedLesson_id);
         savedInstanceState.putString(DATABASE_VISIBILITY, databaseVisibility);
-
         savedInstanceState.putBoolean(LOADING_INDICATOR, loadingIndicator);
 
         super.onSaveInstanceState(savedInstanceState);

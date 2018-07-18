@@ -14,7 +14,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-import com.example.androidstudio.capstoneproject.data.DownloadingImage;
 import com.example.androidstudio.capstoneproject.data.Image;
 import com.example.androidstudio.capstoneproject.data.Lesson;
 import com.example.androidstudio.capstoneproject.data.LessonPart;
@@ -709,13 +708,6 @@ public class MyDownloadService extends IntentService {
             final String fileUriString = fileUri.toString();
 
             Log.d(TAG, "downloadGroupImages fileUriString:" + fileUriString);
-
-            DownloadingImage downloadingImage = new DownloadingImage();
-            downloadingImage.setPartId(imageToDownload.getPart_id());
-            downloadingImage.setLessonId(imageToDownload.getLesson_id());
-            downloadingImage.setImageType(imageToDownload.getImageType());
-            downloadingImage.setStorageRefString(storageRef.toString());
-            downloadingImage.setFileUriString(fileUriString);
 
             // Call the task  (storage has activity scope to unregister the listeners when activity stops)
             FileDownloadTask downloadTask = storageRef.getFile(file);

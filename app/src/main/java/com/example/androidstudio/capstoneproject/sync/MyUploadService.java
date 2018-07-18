@@ -19,7 +19,6 @@ import com.example.androidstudio.capstoneproject.data.Image;
 import com.example.androidstudio.capstoneproject.data.Lesson;
 import com.example.androidstudio.capstoneproject.data.LessonPart;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
-import com.example.androidstudio.capstoneproject.data.UploadingImage;
 import com.example.androidstudio.capstoneproject.utilities.NotificationUtils;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -318,16 +317,6 @@ public class MyUploadService extends IntentService {
             }
 
             // Upload file to Firebase Storage
-
-            // Saves the metadata of the images being uploaded in the uploadingImages list
-            UploadingImage uploadingImage = new UploadingImage();
-
-            uploadingImage.setStorageRefString(storageRef.toString());
-            uploadingImage.setFileUriString(imageToUpload.getLocal_uri());
-            uploadingImage.setPartId(imageToUpload.getPart_id());
-            uploadingImage.setImageType(imageToUpload.getImageType());
-            uploadingImage.setLessonId(lesson_id);
-
             // Call the task  (storage has activity scope to unregister the listeners when activity stops)
             UploadTask uploadTask = storageRef.putFile(uri);
 

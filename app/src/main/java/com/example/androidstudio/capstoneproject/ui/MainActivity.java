@@ -648,9 +648,7 @@ public class MainActivity extends AppCompatActivity implements
                                     Snackbar.LENGTH_INDEFINITE);
                             snackBar.setAction("Dismiss", new View.OnClickListener() {
                                 @Override
-                                public void onClick(View v) {
-                                    snackBar.dismiss();
-                                }
+                                public void onClick(View v) {  snackBar.dismiss();  }
                             });
                             snackBar.show();
                             return;
@@ -662,9 +660,7 @@ public class MainActivity extends AppCompatActivity implements
                                     Snackbar.LENGTH_INDEFINITE);
                             snackBar.setAction("Dismiss", new View.OnClickListener() {
                                 @Override
-                                public void onClick(View v) {
-                                    snackBar.dismiss();
-                                }
+                                public void onClick(View v) { snackBar.dismiss(); }
                             });
                             snackBar.show();
                         } else  if (mUsername.equals(ANONYMOUS)) {
@@ -673,9 +669,7 @@ public class MainActivity extends AppCompatActivity implements
                                     Snackbar.LENGTH_INDEFINITE);
                             snackBarAnonymous.setAction("Dismiss", new View.OnClickListener() {
                                 @Override
-                                public void onClick(View v) {
-                                    snackBarAnonymous.dismiss();
-                                }
+                                public void onClick(View v) {  snackBarAnonymous.dismiss(); }
                             });
                             snackBarAnonymous.show();
                         } else {
@@ -689,9 +683,7 @@ public class MainActivity extends AppCompatActivity implements
                                     Snackbar.LENGTH_INDEFINITE);
                             snackBar.setAction("Dismiss", new View.OnClickListener() {
                                 @Override
-                                public void onClick(View v) {
-                                    snackBar.dismiss();
-                                }
+                                public void onClick(View v) { snackBar.dismiss(); }
                             });
                             snackBar.show();
 
@@ -699,9 +691,7 @@ public class MainActivity extends AppCompatActivity implements
                     }
                 })
                 .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-                        dialog.cancel();
-                    }
+                    public void onClick(DialogInterface dialog, int id) {  dialog.cancel(); }
                 });
 
         uploadJobDialog = builder.create();
@@ -1033,9 +1023,7 @@ public class MainActivity extends AppCompatActivity implements
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
                 @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
+                public void onClick(View v) {snackBar.dismiss();}
             });
             snackBar.show();
             return;
@@ -1047,9 +1035,7 @@ public class MainActivity extends AppCompatActivity implements
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
                 @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
+                public void onClick(View v) {snackBar.dismiss();}
             });
             snackBar.show();
             return;
@@ -1080,9 +1066,7 @@ public class MainActivity extends AppCompatActivity implements
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
                 @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
+                public void onClick(View v) {snackBar.dismiss();}
             });
             snackBar.show();
             return;
@@ -1094,9 +1078,7 @@ public class MainActivity extends AppCompatActivity implements
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
                 @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
+                public void onClick(View v) {snackBar.dismiss();}
             });
             snackBar.show();
             return;
@@ -1108,9 +1090,7 @@ public class MainActivity extends AppCompatActivity implements
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
                 @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
+                public void onClick(View v) {snackBar.dismiss();}
             });
             snackBar.show();
             return;
@@ -1158,9 +1138,7 @@ public class MainActivity extends AppCompatActivity implements
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
                 @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
+                public void onClick(View v) {snackBar.dismiss();}
             });
             snackBar.show();
             return;
@@ -1172,9 +1150,7 @@ public class MainActivity extends AppCompatActivity implements
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
                 @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
+                public void onClick(View v) {snackBar.dismiss();}
             });
             snackBar.show();
             return;
@@ -1321,9 +1297,7 @@ public class MainActivity extends AppCompatActivity implements
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
                 @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
+                public void onClick(View v) { snackBar.dismiss();}
             });
             snackBar.show();
             return;
@@ -1718,9 +1692,7 @@ public class MainActivity extends AppCompatActivity implements
                 Snackbar.LENGTH_INDEFINITE);
         snackBar.setAction("Dismiss", new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                snackBar.dismiss();
-            }
+            public void onClick(View v) { snackBar.dismiss();}
         });
         snackBar.show();
 
@@ -1743,9 +1715,7 @@ public class MainActivity extends AppCompatActivity implements
                 Snackbar.LENGTH_INDEFINITE);
         snackBar.setAction("Dismiss", new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                snackBar.dismiss();
-            }
+            public void onClick(View v) {snackBar.dismiss();}
         });
         snackBar.show();
 
@@ -1769,9 +1739,7 @@ public class MainActivity extends AppCompatActivity implements
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
                 @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
+                public void onClick(View v) { snackBar.dismiss();}
             });
             snackBar.show();
 
@@ -1782,9 +1750,7 @@ public class MainActivity extends AppCompatActivity implements
                     Snackbar.LENGTH_INDEFINITE);
             snackBar.setAction("Dismiss", new View.OnClickListener() {
                 @Override
-                public void onClick(View v) {
-                    snackBar.dismiss();
-                }
+                public void onClick(View v) {snackBar.dismiss();}
             });
             snackBar.show();
         }
@@ -1802,9 +1768,7 @@ public class MainActivity extends AppCompatActivity implements
                 Snackbar.LENGTH_INDEFINITE);
         snackBar.setAction("Dismiss", new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                snackBar.dismiss();
-            }
+            public void onClick(View v) {snackBar.dismiss();}
         });
         snackBar.show();
 
@@ -1910,9 +1874,7 @@ public class MainActivity extends AppCompatActivity implements
                             Snackbar.LENGTH_INDEFINITE);
                     snackBar.setAction("Dismiss", new View.OnClickListener() {
                         @Override
-                        public void onClick(View v) {
-                            snackBar.dismiss();
-                        }
+                        public void onClick(View v) { snackBar.dismiss();}
                     });
                     snackBar.show();
                 }
@@ -1923,9 +1885,7 @@ public class MainActivity extends AppCompatActivity implements
                                     " Please, see the log!", Snackbar.LENGTH_INDEFINITE);
                     snackBar.setAction("Dismiss", new View.OnClickListener() {
                         @Override
-                        public void onClick(View v) {
-                            snackBar.dismiss();
-                        }
+                        public void onClick(View v) { snackBar.dismiss();}
                     });
                     snackBar.show();
 
@@ -1942,9 +1902,7 @@ public class MainActivity extends AppCompatActivity implements
                             Snackbar.LENGTH_INDEFINITE);
                     snackBar.setAction("Dismiss", new View.OnClickListener() {
                         @Override
-                        public void onClick(View v) {
-                            snackBar.dismiss();
-                        }
+                        public void onClick(View v) {snackBar.dismiss();}
                     });
                     snackBar.show();
                 }
@@ -1955,9 +1913,8 @@ public class MainActivity extends AppCompatActivity implements
                                     " Please, see the log!", Snackbar.LENGTH_INDEFINITE);
                     snackBar.setAction("Dismiss", new View.OnClickListener() {
                         @Override
-                        public void onClick(View v) {
-                            snackBar.dismiss();
-                        }
+                        public void onClick(View v) {snackBar.dismiss();}
+
                     });
                     snackBar.show();
 
@@ -1989,9 +1946,7 @@ public class MainActivity extends AppCompatActivity implements
                             Snackbar.LENGTH_INDEFINITE);
                     snackBar.setAction("Dismiss", new View.OnClickListener() {
                         @Override
-                        public void onClick(View v) {
-                            snackBar.dismiss();
-                        }
+                        public void onClick(View v) { snackBar.dismiss();}
                     });
                     snackBar.show();
                 }
@@ -2002,9 +1957,7 @@ public class MainActivity extends AppCompatActivity implements
                                     " Please, see the log!", Snackbar.LENGTH_INDEFINITE);
                     snackBar.setAction("Dismiss", new View.OnClickListener() {
                         @Override
-                        public void onClick(View v) {
-                            snackBar.dismiss();
-                        }
+                        public void onClick(View v) {snackBar.dismiss();}
                     });
                     snackBar.show();
 

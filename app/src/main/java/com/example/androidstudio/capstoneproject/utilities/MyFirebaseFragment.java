@@ -11,10 +11,8 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 
-import com.example.androidstudio.capstoneproject.data.DownloadingImage;
 import com.example.androidstudio.capstoneproject.data.Image;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
-import com.example.androidstudio.capstoneproject.data.UploadingImage;
 import com.example.androidstudio.capstoneproject.sync.MyLog;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -36,35 +34,29 @@ public class MyFirebaseFragment extends Fragment {
 
     private static final String USER_UID = "userUid";
 
+    // Firebase vars
     private FirebaseFirestore mFirebaseDatabase;
     private FirebaseStorage mFirebaseStorage;
     private StorageReference mStorageReference;
-    // global ref to the storage
     private StorageReference storageRef;
 
     private String userUid;
     private Context mContext;
 
-    private static ContentResolver contentResolver;
-
-    private List<UploadingImage> uploadingImages;
-    private List<DownloadingImage> downloadingImages;
-
-    private OnCloudListener mCallback;
-
+    private ContentResolver contentResolver;
     private MyLog myLog;
 
+    private OnCloudListener mCallback;
 
 
     // Listener for sending information to the Activity
     public interface OnCloudListener {
-
         void onDeleteCloudDatabaseSuccess();
         void onDeleteCloudDatabaseFailure(@NonNull Exception e);
         void onDeleteCloudImagesSuccess(int nRowsDeleted);
         void onDeleteCloudImagesFailure(@NonNull Exception e);
-
     }
+
 
     // Constructor
     public MyFirebaseFragment() {
@@ -76,7 +68,7 @@ public class MyFirebaseFragment extends Fragment {
     public void onAttach(Context context) {
         super.onAttach(context);
 
-        // Saves the context of the caller
+        // Save the context of the caller
         mContext = context;
 
         try {
@@ -182,6 +174,7 @@ public class MyFirebaseFragment extends Fragment {
 
         } while (cursor.moveToNext());
 
+        cursor.close();
 
         // Delete the text from Database
         final String documentName = String.format(Locale.US, "%s_%03d",
@@ -206,7 +199,6 @@ public class MyFirebaseFragment extends Fragment {
                         mCallback.onDeleteCloudDatabaseFailure(e);
                     }
                 });
-
 
     }
 
@@ -261,6 +253,8 @@ public class MyFirebaseFragment extends Fragment {
                 // get the next image
             } while (mCursor.moveToNext());
         }
+
+        mCursor.close();
 
         if (!(nRows > 0)) {
             mCallback.onDeleteCloudImagesSuccess(nRows);
@@ -318,6 +312,7 @@ public class MyFirebaseFragment extends Fragment {
     }
 
 
+    // Delete local image files
     public void deleteImageLocalFilesOfGroupLesson(long lessonId) {
 
         // Query the parts table with the same lesson_id
@@ -334,15 +329,11 @@ public class MyFirebaseFragment extends Fragment {
                 selectionArgs,
                 null);
 
-        if (cursor == null) {
-            return;
-        }
+        if (cursor == null) { return; }
 
         long nRows = cursor.getCount();
 
-        if (nRows == 0) {
-            return;
-        }
+        if (nRows == 0) { return; }
 
         // Moves to the first part of that lesson
         cursor.moveToFirst();
@@ -389,6 +380,7 @@ public class MyFirebaseFragment extends Fragment {
             // get the next part
         } while (cursor.moveToNext());
 
+        cursor.close();
     }
 
 

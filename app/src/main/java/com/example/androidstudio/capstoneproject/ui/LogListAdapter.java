@@ -16,9 +16,6 @@ import com.example.androidstudio.capstoneproject.data.LessonsContract;
 public class LogListAdapter extends RecyclerView.Adapter<LogListAdapter.LogItemViewHolder>{
 
 
-    private static final String TAG = LogListAdapter.class.getSimpleName();
-
-
     /* The context we use to utility methods, app resources and layout inflaters */
     private final Context mContext;
 
@@ -26,7 +23,7 @@ public class LogListAdapter extends RecyclerView.Adapter<LogListAdapter.LogItemV
     private Cursor mCursor;
 
 
-    public LogListAdapter(Context context) {
+    LogListAdapter(Context context) {
         mContext = context;
     }
 
