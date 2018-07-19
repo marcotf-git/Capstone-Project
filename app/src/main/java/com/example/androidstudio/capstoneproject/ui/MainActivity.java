@@ -1637,7 +1637,7 @@ public class MainActivity extends AppCompatActivity implements
 
         ContentResolver contentResolver = mContext.getContentResolver();
 
-        // First, save the cloud file reference in the form "images/001/file_name" or
+        // First, save the cloud image file reference in the form "images/001/file_name" or
         // "videos/001/file_name" where 001 is the lesson_id (not the part_id) in the
         // var fileReference.
         // This reference is necessary to be able to delete from Firebase Storage.
@@ -1683,15 +1683,17 @@ public class MainActivity extends AppCompatActivity implements
 
             // Now,  store the fileRef (if it exists) in the my_cloud_files_to_delete
             // In case of success, delete the part from lesson parts table
+            Uri uri = null;
+            if (fileReference != null) {
+                // store the fileRef in the table my_cloud_files_to_delete
+                ContentValues content = new ContentValues();
+                content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE, fileReference);
+                content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID, lesson_id);
+                uri = contentResolver.insert(LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI, content);
+                Log.d(TAG, "onDialogDeletePartPositiveClick inserted uri:" + uri);
+            }
 
-            // store the fileRef in the table my_cloud_files_to_delete
-            ContentValues content = new ContentValues();
-            content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE, fileReference);
-            content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID, lesson_id);
-            Uri uri = contentResolver.insert(LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI, content);
-            Log.d(TAG, "onDialogDeletePartPositiveClick inserted uri:" + uri);
-
-            if (uri != null) {
+            if ((uri != null) || (fileReference == null)) {
 
                 // delete from local database
                 Uri uriToDelete = null;
@@ -1733,7 +1735,7 @@ public class MainActivity extends AppCompatActivity implements
         Toast.makeText(mContext,
                 "Canceled!", Toast.LENGTH_LONG).show();
     }
-    
+
     /**
      * Methods for handling the activity state change
      */

@@ -213,11 +213,6 @@ public class LessonsContentProvider extends ContentProvider {
                         null,
                         null,
                         sortOrder);
-
-                // SQL reference:
-                // public Cursor rawQuery (String sql,
-                //    String[] selectionArgs)
-                //String SQL_QUERY_ENTRIES = "SELECT * FROM " + LessonsContract.MyLessonsEntry.TABLE_NAME;
                 break;
 
             case MY_LESSON_WITH_ID:
@@ -231,11 +226,6 @@ public class LessonsContentProvider extends ContentProvider {
                         null,
                         null,
                         null);
-
-                //String SQL_QUERY_WITH_ID_ENTRIES = "SELECT * FROM " + LessonsContract.MyLessonsEntry.TABLE_NAME +
-                //        " WHERE " + LessonsContract.MyLessonsEntry._ID + "=?";
-                //String[] argsQueryWithId = {lesson_id};
-                //retCursor = db.rawQuery(SQL_QUERY_WITH_ID_ENTRIES, argsQueryWithId);
                 break;
 
             case MY_LESSON_PARTS:

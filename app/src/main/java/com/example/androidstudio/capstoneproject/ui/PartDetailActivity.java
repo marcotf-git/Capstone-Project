@@ -57,6 +57,8 @@ public class PartDetailActivity extends AppCompatActivity implements
     private static final String USER_DATABASE = "userDatabase";
     private static final String GROUP_DATABASE = "groupDatabase";
 
+    private static final int CODE_READ = 42;
+
     // Loader ids
     private static final int ID_LESSON_PARTS_LOADER = 2;
     private static final int ID_GROUP_LESSON_PARTS_LOADER = 20;
@@ -86,6 +88,8 @@ public class PartDetailActivity extends AppCompatActivity implements
 
     private PartDetailFragment partDetailFragment;
     private ExoPlayerFragment exoPlayerFragment;
+
+    private String localImageFile;
 
     private Context mContext;
 
@@ -328,6 +332,8 @@ public class PartDetailActivity extends AppCompatActivity implements
             if (null != localImageUri && !localImageUri.equals("")) {
 
                 Log.d(TAG, "updateView loading image localImageUri:" + localImageUri);
+
+                localImageFile = localImageUri;
 
                 Uri uri = Uri.parse(localImageUri);
                 // Refresh permissions
@@ -643,10 +649,10 @@ public class PartDetailActivity extends AppCompatActivity implements
         final Uri uri = data != null ? data.getData() : null;
         if (uri != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-                Log.d(TAG, "isDocumentUri=" + DocumentsContract.isDocumentUri(this, uri));
+                Log.d(TAG, "onActivityResult isDocumentUri=" + DocumentsContract.isDocumentUri(this, uri));
             }
         } else {
-            Log.e(TAG, "missing URI?");
+            Log.e(TAG, "onActivityResult missing URI?");
             return;
         }
 
@@ -657,7 +663,7 @@ public class PartDetailActivity extends AppCompatActivity implements
                 ContentResolver resolver = mContext.getContentResolver();
                 resolver.takePersistableUriPermission(uri, takeFlags);
             } catch (SecurityException e) {
-                Log.d(TAG, "onActivity takePersistableUriPermission alert:" + e.getMessage());
+                Log.d(TAG, "onActivityResult takePersistableUriPermission alert:" + e.getMessage());
             }
         }
 
@@ -673,11 +679,14 @@ public class PartDetailActivity extends AppCompatActivity implements
             Toast.makeText(this, "Canceled!", Toast.LENGTH_LONG).show();
         }
 
+
         super.onActivityResult(requestCode, resultCode, data);
 
     }
 
 
+    // Helper method for called from onActivityResult, for writing the uri of images/videos
+    // in the database
     private void insertBlobUriInDatabase(Intent data, String type) {
 
         Uri selectedBlobUri = data.getData();
