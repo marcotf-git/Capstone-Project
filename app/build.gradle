@@ -13,8 +13,13 @@ def keystoreProperties = new Properties()
 keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
 android {
+    // This sign config is only for testing purposes (It is signed with the name 'Udacity student').
+    // Please, see https://developer.android.com/studio/publish/app-signing
+    // In a non testing environment, please exclude the "keystore.properties" file from the
+    // repository (including this file in the .gitgnore), and exclude the keystore from the app
+    // folder and also from the repo.
     signingConfigs {
-        config_0 {
+        config {
             keyAlias keystoreProperties['keyAlias']
             keyPassword keystoreProperties['keyPassword']
             storeFile file(keystoreProperties['storeFile'])
@@ -35,7 +40,7 @@ android {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.config_0
+            signingConfig signingConfigs.config
         }
     }
 }
