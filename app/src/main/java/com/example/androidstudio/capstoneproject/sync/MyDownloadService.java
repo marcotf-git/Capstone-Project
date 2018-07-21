@@ -19,20 +19,18 @@ import com.example.androidstudio.capstoneproject.data.Lesson;
 import com.example.androidstudio.capstoneproject.data.LessonPart;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.example.androidstudio.capstoneproject.utilities.NotificationUtils;
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreSettings;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnPausedListener;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
-import com.google.gson.Gson;
 
 import java.io.File;
 import java.io.IOException;
@@ -67,7 +65,8 @@ public class MyDownloadService extends IntentService {
 
     // Automatic unregister listeners
     private FirebaseStorage mFirebaseStorage;
-    private FirebaseFirestore mFirebaseDatabase;
+    //private FirebaseFirestore mFirebaseDatabase;
+    private FirebaseDatabase mFirebaseDatabase;
     private List<FileDownloadTask> downloadTasks;
 
     private List<String> messages = new ArrayList<>();
@@ -138,7 +137,7 @@ public class MyDownloadService extends IntentService {
     }
 
 
-    // Helper method for refreshing the database from Cloud Firestore
+    // Helper method for refreshing the database from Firebase Realtime Database
     // Do not delete if existing in user table
     // Delete all in the group table (data and local files)
     public void downloadDatabase(final String userUid, final String databaseVisibility) {
@@ -170,89 +169,203 @@ public class MyDownloadService extends IntentService {
         Log.d(TAG, "callerType:" + callerType);
 
         // Initialize Firebase instances
-        mFirebaseDatabase = FirebaseFirestore.getInstance();
-        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
-                .setTimestampsInSnapshotsEnabled(true)
-                .build();
-        mFirebaseDatabase.setFirestoreSettings(settings);
+//        mFirebaseDatabase = FirebaseFirestore.getInstance();
+//        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
+//                .setTimestampsInSnapshotsEnabled(true)
+//                .build();
+//        mFirebaseDatabase.setFirestoreSettings(settings);
+        mFirebaseDatabase = FirebaseDatabase.getInstance();
         mFirebaseStorage = FirebaseStorage.getInstance();
 
-        // Get multiple documents (all the data in the database)
-        mFirebaseDatabase.collection("lessons")
-                //.whereEqualTo("field_name", true)
-                .get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
+        // get a root reference
+        DatabaseReference mDatabaseRef = mFirebaseDatabase.getReference();
+        // get the user lesson reference
+        DatabaseReference mUserLessonRef = mDatabaseRef.child(userUid);
 
-                            messages.add("onComplete collection task.isSuccessful");
-                            //mCallback.onDownloadDatabaseSuccess();
-                            sendMessages();
+        // load only the user lesson
+        if (databaseVisibility.equals(USER_DATABASE)) {
 
-                            if (databaseVisibility.equals(USER_DATABASE)) {
+            // return the entire list s a single snapshot
+            ValueEventListener loadUserLesson = new ValueEventListener() {
 
-                                for (QueryDocumentSnapshot document : task.getResult()) {
-                                    Log.d(TAG, "downloadDatabase onComplete document.getId():" +
-                                            document.getId() + " => " + document.getData());
-                                    Lesson lesson = document.toObject(Lesson.class);
-                                    String jsonString = serialize(lesson);
-                                    Log.v(TAG, "downloadDatabase onComplete lesson jsonString:"
-                                            + jsonString);
-                                    // refresh the lessons of the local user on its separate table
-                                    // this gives more security to the database
-                                    // --> filter by the user uid of the lesson downloaded
-                                    if (userUid.equals(lesson.getUser_uid())) {
-                                        refreshUserLesson(lesson);
-                                    }
-                                }
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    // the data exist
+                    if (dataSnapshot.exists()) {
+                        for (DataSnapshot lessonSnapshot : dataSnapshot.getChildren()) {
 
-                            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+                            Log.d(TAG, "lessonSnapshot:" + lessonSnapshot.toString());
 
-                                // refresh the lessons of the group table on its separate table
-                                // write the data to the database table
-                                // --> pass all the data
-                                refreshGroupLessons(task);
-
-                                // download the images and save in local files
-                                // write the files uri's in the database table, in the parts table
-                                downloadGroupImages(databaseVisibility); // this will use the counter
-
-                                // send the messages to the activity
-                                sendMessages();
-                            }
-
-                        } else {
-
-                            Log.d(TAG, "Error in getting documents: ", task.getException());
-                            if (task.getException() != null) {
-                                String message = task.getException().getMessage();
-                                messages.add(message);
-                                sendMessages();
-
-                                informFailure(databaseVisibility);
-
-                            } else {
-                                String message = "Error while querying Firebase Database";
-                                messages.add(message);
-                                sendMessages();
-
-                                informFailure(databaseVisibility);
-
+                            Lesson lesson = lessonSnapshot.getValue(Lesson.class);
+                            if (lesson != null) {
+                                Log.d(TAG, "lesson:" + lesson.toString());
+                                // with the lesson downloaded, refresh the user lesson tables
+                                refreshUserLesson(lesson);
                             }
                         }
                     }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(@NonNull Exception e) {
+                }
 
-                        Log.e(TAG, "onFailure: " + e.getMessage());
 
-                        informFailure(databaseVisibility);
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+                    Log.e(TAG, "loadUserLesson:onCancelled", databaseError.toException());
+
+                    String message = "Error while querying cloud database for user lessons" +
+                            "\nError:" + databaseError.toString();
+                    myLog.addToLog(message);
+
+                    informFailure(databaseVisibility);
+                }
+
+            };
+
+            // load only the user lesson: read once
+            mUserLessonRef.addListenerForSingleValueEvent(loadUserLesson);
+
+        // load all the lessons
+        } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+
+            // return the entire list s a single snapshot
+            ValueEventListener loadGroupLessons = new ValueEventListener() {
+
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+
+                    // the data exist
+                    if (dataSnapshot.exists()) {
+
+                        List<Lesson> lessons = new ArrayList<>();
+
+                        for (DataSnapshot lessonsSnapshot : dataSnapshot.getChildren()) {
+
+                            for (DataSnapshot lessonSnapshot : lessonsSnapshot.getChildren()) {
+
+                                Log.d(TAG, "lessonSnapshot:" + lessonSnapshot.toString());
+
+                                Lesson lesson = lessonSnapshot.getValue(Lesson.class);
+                                if (lesson != null) {
+                                    Log.d(TAG, "lesson:" + lesson.toString());
+                                }
+
+                                lessons.add(lesson);
+
+                            }
+
+                        }
+
+                        // Now we have the List of all the lessons in the lessons array list
+
+                        // refresh the lessons of the group table on its separate table
+                        // write the data to the database table
+                        // --> pass all the data
+
+                        refreshGroupLessons(lessons);
+
+                        // download the images and save in local files
+                        // write the files uri's in the database table, in the parts table
+
+                        downloadGroupImages(databaseVisibility); // this will use the counter
 
                     }
-                });
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+                    Log.e(TAG, "loadLessons:onCancelled", databaseError.toException());
+
+                    String message = "Error while querying cloud database for group lessons:" +
+                            "\nError:" + databaseError.toString();
+                    myLog.addToLog(message);
+
+                    informFailure(databaseVisibility);
+
+                }
+
+            };
+
+            // load all the lessons: read once
+            mDatabaseRef.addListenerForSingleValueEvent(loadGroupLessons);
+
+        }
+
+
+        // Get multiple documents (all the data in the database)
+//        mFirebaseDatabase.collection("lessons")
+//                //.whereEqualTo("field_name", true)
+//                .get()
+//                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+//                    @Override
+//                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+//                        if (task.isSuccessful()) {
+//
+//                            messages.add("onComplete collection task.isSuccessful");
+//                            //mCallback.onDownloadDatabaseSuccess();
+//                            sendMessages();
+//
+//                            if (databaseVisibility.equals(USER_DATABASE)) {
+//
+//                                for (QueryDocumentSnapshot document : task.getResult()) {
+//                                    Log.d(TAG, "downloadDatabase onComplete document.getId():" +
+//                                            document.getId() + " => " + document.getData());
+//                                    Lesson lesson = document.toObject(Lesson.class);
+//                                    String jsonString = serialize(lesson);
+//                                    Log.v(TAG, "downloadDatabase onComplete lesson jsonString:"
+//                                            + jsonString);
+//                                    // refresh the lessons of the local user on its separate table
+//                                    // this gives more security to the database
+//                                    // --> filter by the user uid of the lesson downloaded
+//                                    if (userUid.equals(lesson.getUser_uid())) {
+//                                        refreshUserLesson(lesson);
+//                                    }
+//                                }
+//
+//                            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+//
+//                                // refresh the lessons of the group table on its separate table
+//                                // write the data to the database table
+//                                // --> pass all the data
+//                                refreshGroupLessons(task);
+//
+//                                // download the images and save in local files
+//                                // write the files uri's in the database table, in the parts table
+//                                downloadGroupImages(databaseVisibility); // this will use the counter
+//
+//                                // send the messages to the activity
+//                                sendMessages();
+//                            }
+//
+//                        } else {
+//
+//                            Log.d(TAG, "Error in getting documents: ", task.getException());
+//                            if (task.getException() != null) {
+//                                String message = task.getException().getMessage();
+//                                messages.add(message);
+//                                sendMessages();
+//
+//                                informFailure(databaseVisibility);
+//
+//                            } else {
+//                                String message = "Error while querying Firebase Database";
+//                                messages.add(message);
+//                                sendMessages();
+//
+//                                informFailure(databaseVisibility);
+//
+//                            }
+//                        }
+//                    }
+//                })
+//                .addOnFailureListener(new OnFailureListener() {
+//                    @Override
+//                    public void onFailure(@NonNull Exception e) {
+//
+//                        Log.e(TAG, "onFailure: " + e.getMessage());
+//
+//                        informFailure(databaseVisibility);
+//
+//                    }
+//                });
 
     }
 
@@ -383,7 +496,7 @@ public class MyDownloadService extends IntentService {
     // Helper method called by downloadDatabase
     // Save the data in the database
     // In case of group lessons, clear the existing table and insert new data
-    private void refreshGroupLessons(Task<QuerySnapshot> task) {
+    private void refreshGroupLessons(List<Lesson> lessons) {
 
         Log.v(TAG, "refreshGroupLesson");
 
@@ -426,15 +539,13 @@ public class MyDownloadService extends IntentService {
         Log.v(TAG, "refreshGroupLesson numberOfLessonsDeleted:" + numberOfLessonsDeleted);
 
         // Insert the new data
-        for (QueryDocumentSnapshot document : task.getResult()) {
+        for (Lesson lesson:lessons) {
 
-            Log.d(TAG, "refreshGroupLessons onComplete document.getId():" +
-                    document.getId() + " => " + document.getData());
+            Log.d(TAG, "refreshGroupLessons onComplete lesson.getLesson_id():" +
+                    lesson.getLesson_id());
 
             // recover the Lesson instance
-            Lesson lesson = document.toObject(Lesson.class);
-            String jsonString = serialize(lesson);
-            Log.v(TAG, "refreshGroupLessons onComplete lesson jsonString:" + jsonString);
+            Log.v(TAG, "refreshGroupLessons onComplete lesson:" + lesson.toString());
 
             // Insert the data in the clean table
             /* Create values to insert */
@@ -593,13 +704,15 @@ public class MyDownloadService extends IntentService {
 
         if (mCursor == null) {
             Log.d(TAG, "Failed to get cursor for group_lesson_parts");
-            messages.add("Error: downloadGroupImages: Failed to get cursor for group_lesson_parts");
-            sendMessages();
+            myLog.addToLog("Failed to get cursor for group_lesson_parts");
+            informFailure(databaseVisibility);
             return;
         }
 
         int nRows = mCursor.getCount();
         mCursor.moveToFirst();
+
+        // control the number of images to download
         nImagesToDownload = 0;
 
         // Get all the parts and sore all image cloud uri's in an array of Image instances
@@ -608,6 +721,7 @@ public class MyDownloadService extends IntentService {
 
         downloadTasks = new ArrayList<>();
 
+        // nRows is the number of lesson parts
         if (nRows > 0) {
 
             do {
@@ -645,20 +759,26 @@ public class MyDownloadService extends IntentService {
             } while (mCursor.moveToNext());
 
         } else {
-            // return if there are no images to download
+
+            // return if there are no parts to download
+            myLog.addToLog("No parts to download!");
             myLog.addToLog("DOWNLOAD IMAGES/VIDEOS FINISHED");
-            messages.add("DOWNLOAD IMAGES/VIDEOS FINISHED");
-            sendMessages();
-            if(callerType.equals(SCHEDULED_DOWNLOAD_SERVICE)) {
-                // notify the user that the task (synchronized) has finished
-                NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
-            }
+
+            informSuccess(databaseVisibility);
+
             return;
         }
 
+        if (nImagesToDownload == 0) {
 
-        // tell to the main activity the state and the number of images to download for control
-        if (nImagesToDownload == 0) { return; }
+            // return if there isn't images to download
+            myLog.addToLog("There aren't images to download!");
+            myLog.addToLog("ALL DOWNLOAD TASKS FINISHED");
+
+            informSuccess(databaseVisibility);
+
+            return;
+        }
 
         // set the counter that will control the final message about the download
         nImagesDownloaded = 0;
@@ -671,7 +791,6 @@ public class MyDownloadService extends IntentService {
         for (int imgIndex = 0; imgIndex < images.size(); imgIndex++) {
 
             final Image imageToDownload = images.get(imgIndex);
-
             final int currentImg = imgIndex;
             final int finalImg = images.size() - 1;
 
@@ -698,8 +817,6 @@ public class MyDownloadService extends IntentService {
                 Log.e(TAG, "downloadGroupImages error creating file: file not created");
                 String message = "Error: downloadGroupImages error creating file: file not created";
                 myLog.addToLog(message);
-                messages.add(message);
-                sendMessages();
                 informFailure(databaseVisibility);
                 return;
             }
@@ -712,6 +829,7 @@ public class MyDownloadService extends IntentService {
             // Call the task  (storage has activity scope to unregister the listeners when activity stops)
             FileDownloadTask downloadTask = storageRef.getFile(file);
 
+            // save a reference to the tasks for use when canceling the tasks (when error occurs)
             downloadTasks.add(downloadTask);
 
             downloadTask.addOnProgressListener(new OnProgressListener<FileDownloadTask.TaskSnapshot>() {
@@ -746,6 +864,7 @@ public class MyDownloadService extends IntentService {
 
                     Log.d(TAG, "currentImg:" + currentImg + " finalImg:" + finalImg);
 
+
                 }
             }).addOnFailureListener(new OnFailureListener() {
                 @Override
@@ -761,11 +880,8 @@ public class MyDownloadService extends IntentService {
                             imageToDownload.getLesson_id(),
                             databaseVisibility);
 
-                    Log.e(TAG, "Error: currentImg:" + currentImg + " finalImg:" + finalImg, exception);
-
-                    String message = "Error:" + exception.getMessage();
-                    messages.add(message);
-                    sendMessages();
+                    Log.e(TAG, "Error: currentImg:" + currentImg + " finalImg:" +
+                            finalImg, exception);
 
                 }
             });
@@ -821,30 +937,14 @@ public class MyDownloadService extends IntentService {
         Log.d(TAG, "Updated " + numberOfImagesUpdated + " item(s) in the database");
 
         if (nImagesToDownload == nImagesDownloaded) {
-            // all tasks finished
+
+            // log that all tasks finished
             String message = "ALL DOWNLOAD TASKS HAVE FINISHED";
             myLog.addToLog(message);
-            messages.add(message);
-            sendMessages();
 
-            // Trigger the snack bar in MainActivity
-            if (databaseVisibility.equals(USER_DATABASE)) {
-                messages.add("REFRESH USER FINISHED OK");
-            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
-                messages.add("REFRESH GROUP FINISHED OK");
-            }
-            sendMessages();
+            // inform main activity that the task has finished ok
+            informSuccess(databaseVisibility);
 
-            // Notify the user in case if Job Scheduled
-            if(callerType.equals(SCHEDULED_DOWNLOAD_SERVICE)) {
-                if (databaseVisibility.equals(USER_DATABASE)) {
-                    // notify the user that the task (synchronized) has finished
-                    NotificationUtils.notifyUserBecauseSyncUserFinished(mContext);
-                } else if (databaseVisibility.equals(GROUP_DATABASE)) {
-                    // notify the user that the task (synchronized) has finished
-                    NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
-                }
-            }
         }
 
     }
@@ -873,9 +973,8 @@ public class MyDownloadService extends IntentService {
             // all tasks finished
             String message = "ALL DOWNLOAD TASKS HAVE FINISHED";
             myLog.addToLog(message);
-            messages.add(message);
-            sendMessages();
 
+            // inform to main activity
             informFailure(databaseVisibility);
 
         } else {
@@ -890,8 +989,10 @@ public class MyDownloadService extends IntentService {
                 }
             }
 
+            // inform to main activity
             informFailure(databaseVisibility);
 
+            // stop the service (don't try to load more images)
             stopSelf();
 
         }
@@ -922,6 +1023,29 @@ public class MyDownloadService extends IntentService {
         }
     }
 
+    // Inform the MainActivity about the end of the service with success
+    private void informSuccess(String databaseVisibility) {
+
+        // Trigger the snack bar in MainActivity
+        if (databaseVisibility.equals(USER_DATABASE)) {
+            messages.add("REFRESH USER FINISHED OK");
+        } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+            messages.add("REFRESH GROUP FINISHED OK");
+        }
+        sendMessages();
+
+        // Notify the user in case if Job Scheduled
+        if(callerType.equals(SCHEDULED_DOWNLOAD_SERVICE)) {
+            if (databaseVisibility.equals(USER_DATABASE)) {
+                // notify the user that the task (synchronized) has finished
+                NotificationUtils.notifyUserBecauseSyncUserFinished(mContext);
+            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
+                // notify the user that the task (synchronized) has finished
+                NotificationUtils.notifyUserBecauseSyncGroupFinished(mContext);
+            }
+        }
+    }
+
 
     private void sendMessages() {
 
@@ -935,10 +1059,5 @@ public class MyDownloadService extends IntentService {
         messages.clear();
     }
 
-
-    static private <T> String serialize(T obj) {
-        Gson gson = new Gson();
-        return gson.toJson(obj);
-    }
 
 }

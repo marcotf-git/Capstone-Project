@@ -305,9 +305,6 @@ public class PartsFragment extends Fragment implements
             Log.e(TAG, "onLoadFinished cursor: null");
         }
 
-        // Send to the main activity the order to setting the idling resource state
-        //mIdlingCallback.onIdlingResource(true);
-
         // Pass the data to the adapter
         setCursor(data);
         mAdapter.setSelectedItemId(selectedLessonPart_id);

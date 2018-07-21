@@ -19,3 +19,13 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Used by Firebase Realtime database:
+# (see https://firebase.google.com/docs/database/android/start/)
+-keepattributes Signature
+
+# This rule will properly ProGuard all the model classes in
+# the package class com.example.androidstudio.capstoneproject.data.
+-keepclassmembers class com.example.androidstudio.capstoneproject.data.** {
+    *;
+}

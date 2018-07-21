@@ -86,8 +86,9 @@
     <string name="refresh_job_type">Start a background download of the group lessons?</string>
     <string name="upload_job_type">Start a background upload of the selected user lesson?</string>
 
-    <string name="upload_confirm">Upload the lesson selected?</string>
+    <string name="upload_confirm">Upload the selected lesson?</string>
     <string name="upload">Upload</string>
+
     <string name="view_mode_option">View Mode option</string>
     <string name="create_mode_option">Create Mode option</string>
     <string name="cancel_option">Cancel option</string>
