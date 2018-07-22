@@ -65,7 +65,6 @@ public class MyDownloadService extends IntentService {
 
     // Automatic unregister listeners
     private FirebaseStorage mFirebaseStorage;
-    //private FirebaseFirestore mFirebaseDatabase;
     private FirebaseDatabase mFirebaseDatabase;
     private List<FileDownloadTask> downloadTasks;
 
@@ -169,11 +168,6 @@ public class MyDownloadService extends IntentService {
         Log.d(TAG, "callerType:" + callerType);
 
         // Initialize Firebase instances
-//        mFirebaseDatabase = FirebaseFirestore.getInstance();
-//        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
-//                .setTimestampsInSnapshotsEnabled(true)
-//                .build();
-//        mFirebaseDatabase.setFirestoreSettings(settings);
         mFirebaseDatabase = FirebaseDatabase.getInstance();
         mFirebaseStorage = FirebaseStorage.getInstance();
 
@@ -288,84 +282,6 @@ public class MyDownloadService extends IntentService {
             mDatabaseRef.addListenerForSingleValueEvent(loadGroupLessons);
 
         }
-
-
-        // Get multiple documents (all the data in the database)
-//        mFirebaseDatabase.collection("lessons")
-//                //.whereEqualTo("field_name", true)
-//                .get()
-//                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-//                    @Override
-//                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-//                        if (task.isSuccessful()) {
-//
-//                            messages.add("onComplete collection task.isSuccessful");
-//                            //mCallback.onDownloadDatabaseSuccess();
-//                            sendMessages();
-//
-//                            if (databaseVisibility.equals(USER_DATABASE)) {
-//
-//                                for (QueryDocumentSnapshot document : task.getResult()) {
-//                                    Log.d(TAG, "downloadDatabase onComplete document.getId():" +
-//                                            document.getId() + " => " + document.getData());
-//                                    Lesson lesson = document.toObject(Lesson.class);
-//                                    String jsonString = serialize(lesson);
-//                                    Log.v(TAG, "downloadDatabase onComplete lesson jsonString:"
-//                                            + jsonString);
-//                                    // refresh the lessons of the local user on its separate table
-//                                    // this gives more security to the database
-//                                    // --> filter by the user uid of the lesson downloaded
-//                                    if (userUid.equals(lesson.getUser_uid())) {
-//                                        refreshUserLesson(lesson);
-//                                    }
-//                                }
-//
-//                            } else if (databaseVisibility.equals(GROUP_DATABASE)) {
-//
-//                                // refresh the lessons of the group table on its separate table
-//                                // write the data to the database table
-//                                // --> pass all the data
-//                                refreshGroupLessons(task);
-//
-//                                // download the images and save in local files
-//                                // write the files uri's in the database table, in the parts table
-//                                downloadGroupImages(databaseVisibility); // this will use the counter
-//
-//                                // send the messages to the activity
-//                                sendMessages();
-//                            }
-//
-//                        } else {
-//
-//                            Log.d(TAG, "Error in getting documents: ", task.getException());
-//                            if (task.getException() != null) {
-//                                String message = task.getException().getMessage();
-//                                messages.add(message);
-//                                sendMessages();
-//
-//                                informFailure(databaseVisibility);
-//
-//                            } else {
-//                                String message = "Error while querying Firebase Database";
-//                                messages.add(message);
-//                                sendMessages();
-//
-//                                informFailure(databaseVisibility);
-//
-//                            }
-//                        }
-//                    }
-//                })
-//                .addOnFailureListener(new OnFailureListener() {
-//                    @Override
-//                    public void onFailure(@NonNull Exception e) {
-//
-//                        Log.e(TAG, "onFailure: " + e.getMessage());
-//
-//                        informFailure(databaseVisibility);
-//
-//                    }
-//                });
 
     }
 

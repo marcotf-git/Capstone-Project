@@ -3,7 +3,6 @@ package com.example.androidstudio.capstoneproject.sync;
 import android.app.Activity;
 import android.app.IntentService;
 import android.content.ContentResolver;
-import android.content.ContentUris;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -15,30 +14,14 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.example.androidstudio.capstoneproject.data.Image;
-import com.example.androidstudio.capstoneproject.data.Lesson;
-import com.example.androidstudio.capstoneproject.data.LessonPart;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
-import com.example.androidstudio.capstoneproject.utilities.NotificationUtils;
-import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreSettings;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.OnPausedListener;
-import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
-import com.google.gson.Gson;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -61,7 +44,6 @@ public class MyDeleteService extends IntentService {
     private static final String USER_UID = "userUid";
 
     // Automatic unregister listeners
-    //private FirebaseFirestore mFirebaseDatabase;
     private FirebaseDatabase mFirebaseDatabase;
     private FirebaseStorage mFirebaseStorage;
     private StorageReference mStorageReference;
@@ -99,12 +81,6 @@ public class MyDeleteService extends IntentService {
         String userUid = null;
 
         // Initialize Firebase components
-        //mFirebaseDatabase = FirebaseFirestore.getInstance();
-//        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
-////                .setTimestampsInSnapshotsEnabled(true)
-////                .build();
-////        mFirebaseDatabase.setFirestoreSettings(settings);
-
         mFirebaseDatabase = FirebaseDatabase.getInstance();
         mFirebaseStorage = FirebaseStorage.getInstance();
 
@@ -256,49 +232,6 @@ public class MyDeleteService extends IntentService {
                         deleteImageFilesFromStorage(userUid, lesson_id);
                     }
                 });
-
-
-//        // Delete the text from Database
-//        final String documentName = String.format(Locale.US, "%s_%03d",
-//                userUid, lesson_id);
-//
-//        Log.v(TAG, "deleteLessonFromCloudDatabase documentName:" + documentName);
-
-        // Delete in the Firebase Database
-//        mFirebaseDatabase.collection("lessons").document(documentName)
-//                .delete()
-//                .addOnSuccessListener(new OnSuccessListener<Void>() {
-//                    @Override
-//                    public void onSuccess(Void aVoid) {
-//                        Log.d(TAG, "deleteLessonFromCloudDatabase: DocumentSnapshot successfully deleted!");
-//
-//                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
-//                                .format(new Date());
-//
-//                        myLog.addToLog( time_stamp + ":\nLesson id:" + lesson_id + "\nText " +
-//                                "successfully deleted from cloud");
-//                        myLog.addToLog("Now it will try to delete the images/videos...");
-//
-//                        deleteImageFilesFromStorage(userUid, lesson_id);
-//                    }
-//                })
-//                .addOnFailureListener(new OnFailureListener() {
-//                    @Override
-//                    public void onFailure(@NonNull Exception e) {
-//
-//                        Log.e(TAG, "deleteLessonFromCloudDatabase: Error deleting document", e);
-//
-//                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
-//                                .format(new Date());
-//
-//                        myLog.addToLog( time_stamp + ":\nLesson id:" + lesson_id + "\nError " +
-//                                "on deleting the text from cloud:" + "\n" + e.getMessage());
-//
-//                        myLog.addToLog("Now it will try to delete the images/videos...");
-//
-//                        deleteImageFilesFromStorage(userUid, lesson_id);
-//                    }
-//                });
 
     }
 

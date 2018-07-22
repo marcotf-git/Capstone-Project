@@ -6,7 +6,7 @@ The program uses:
 
 * **Firebase Authentication** for the login/logout process (https://firebase.google.com).
 
-* **Firebase Database Cloud Firestore (beta)** for storing the text data on the cloud.
+* **Firebase Realtime Database** for storing the text data on the cloud.
 
 * **Firebase Storage** for storing the images or video files on the cloud.
 
@@ -29,18 +29,23 @@ The program uses:
 
 * Create an account in the **Firebase** and a `project`, according to the instructions provided.
 
-* Set the **Cloud Firestore** for the `project`, with the rules:
+* Set the **Firebase Realtime Database** for the `project`, with the rules:
 
-    service cloud.firestore {
-      match /databases/{database}/documents {
-        match /lessons/{lessons=**} {
-          allow create, read: if request.auth.uid != null;
-          allow update, delete: if request.auth.uid == resource.data.user_uid;
+    {
+      "rules": {
+        "$uid":{
+                ".read": "auth != null",
+                "$lesson": {
+    					".write": "
+                  			auth.uid == $uid &&
+                  			newData.child('user_uid').exists() &&
+                            auth.uid == newData.child('user_uid').val()"
+                }
         }
       }
     }
 
-* Set the **Storage**, with the rules:
+* Set the **Firebase Storage**, with the rules:
 
     service firebase.storage {
       match /b/{bucket}/o {
@@ -118,7 +123,7 @@ In the 'create' mode, if the user selects the option to add a lesson title, it w
 
 There are specific rules in the app and in Firebase protecting the data of one user from another. The user only can upload or download data from the cloud when logged. The login process is handled by the Firebase Authentication.
 
-The cloud data is divided between the Firebase Database Cloud Firestore (text), and the Firebase Storage (images and videos). The local data is divided between:
+The cloud data is divided between the Firebase Realtime Database (text), and the Firebase Storage (images and videos). The local data is divided between:
  - a table with the lesson data (text)
  - a table with the lesson parts data (text)
  - the local folders for file (blob) storage
@@ -169,9 +174,9 @@ To edit the local data, the user can edit only their tables:
   2.1) the old image, if it has cloud URI, will be deleted but its reference will be saved in that specific table, for future deletion from Storage
   2.2) the new one (or the new video) take the place
 
-So, the app implements CRUD on local user data, and in user cloud data, managing the deletion from Storage for when deleting the whole lesson from Database Firestore.
+So, the app implements `CRUD` on local user data, and `read` (download), `write` (upload) and `delete` in user cloud data, managing the deletion from Firebase Storage for when deleting the whole lesson from Firebase Database.
 
-And the app implements only QUERY from the cloud, in case of group data (inside the group will be also the user same lessons, but saved in the group table.
+And the app implements only `read` from the cloud, in case of group data. In the group there will be also the user lessons, but saved in the group table.
 
 The app menu is contextual: the options change according to the user actions.
 
@@ -215,7 +220,7 @@ https://material.io/develop/android/components/collapsing-toolbar-layout/
 
 https://firebase.google.com/docs/
 
-https://firebase.google.com/docs/firestore/manage-data/add-data
+https://firebase.google.com/docs/database/video-series/
 
 https://github.com/VisualGhost/Firebase-Storage/wiki/Handle-Activity-Lifecycle-Changes
 

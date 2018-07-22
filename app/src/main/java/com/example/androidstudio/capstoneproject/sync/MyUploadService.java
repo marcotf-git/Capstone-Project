@@ -22,19 +22,13 @@ import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.example.androidstudio.capstoneproject.utilities.NotificationUtils;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnPausedListener;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
-import com.google.gson.Gson;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -62,7 +56,6 @@ public class MyUploadService extends IntentService {
     private static final String SCHEDULED_UPLOAD_SERVICE = "ScheduledUploadService";
 
     // Automatic unregister listeners
-    //private FirebaseFirestore mFirebaseDatabase;
     private FirebaseDatabase mFirebaseDatabase;
     private FirebaseStorage mFirebaseStorage;
     private List<UploadTask> uploadtasks;
@@ -165,12 +158,7 @@ public class MyUploadService extends IntentService {
         }
 
         // Initialize tre Firebase instances
-        //mFirebaseDatabase = FirebaseFirestore.getInstance();
-//        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
-//                .setTimestampsInSnapshotsEnabled(true)
-//                .build();
         mFirebaseDatabase = FirebaseDatabase.getInstance();
-        //mFirebaseDatabase.setFirestoreSettings(settings);
         mFirebaseStorage = FirebaseStorage.getInstance();
 
         // First, upload the images
@@ -453,9 +441,7 @@ public class MyUploadService extends IntentService {
         lesson.setLesson_title(lesson_title);
         lesson.setTime_stamp(time_stamp);
 
-        String jsonString = serialize(lesson);
-
-        Log.d(TAG, "uploadImagesAndDatabase lesson jsonString:" + jsonString);
+        Log.d(TAG, "uploadImagesAndDatabase lesson:" + lesson.toString());
 
         // Load lesson parts from local database into the Lesson instance
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
@@ -520,10 +506,6 @@ public class MyUploadService extends IntentService {
         Log.v(TAG, "uploadLesson (to database): lesson title:" + lesson.getLesson_title());
 
         // Upload the Lesson instance to Firebase Database
-//        final String documentName = String.format( Locale.US, "%s_%03d",
-//                lesson.getUser_uid(), lesson.getLesson_id());
-
-        //Log.d(TAG, "uploadImagesAndDatabase documentName:" + documentName);
 
         final String logText = lesson.getLesson_title();
 
@@ -586,60 +568,6 @@ public class MyUploadService extends IntentService {
                         }
                     }
                 });
-
-
-//        mFirebaseDatabase.collection("lessons").document(documentName)
-//                .set(lesson)
-//                .addOnSuccessListener(new OnSuccessListener<Void>() {
-//                    @Override
-//                    public void onSuccess(Void aVoid) {
-//                        Log.d(TAG, "DocumentSnapshot successfully written with name:" + documentName);
-//                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
-//                                .format(new Date());
-//                        myLog.addToLog(time_stamp + ":\nLesson " + logText +
-//                                "\nDocumentSnapshot successfully written with name:" + documentName);
-//
-//                        Log.d(TAG, "OnSuccessListener onSuccess");
-//                        myLog.addToLog("ALL UPLOAD TASKS HAVE FINISHED");
-//
-//                        // Trigger the snack bar in MainActivity
-//                        messages.add("UPLOAD LESSON FINISHED OK");
-//                        sendMessages();
-//
-//                        // Notify the user in case of Job Scheduled
-//                        if (callerType.equals(SCHEDULED_UPLOAD_SERVICE)) {
-//                            // notify the user that the task (synchronized) has finished
-//                            NotificationUtils.notifyUserBecauseUploadFinished(mContext);
-//                        }
-//                    }
-//                })
-//                .addOnFailureListener(new OnFailureListener() {
-//                    @Override
-//                    public void onFailure(@NonNull Exception e) {
-//                        Log.e(TAG, "Error writing document on Firebase:", e);
-//                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
-//                                .format(new Date());
-//                        myLog.addToLog(time_stamp + ":\nLesson " + logText +
-//                                "\nError writing document on Firebase!" +
-//                                "\nDocument name:" + documentName +"\n" + e.getMessage());
-//
-//                        Log.e(TAG, "Error:" + e.getMessage());
-//                        myLog.addToLog("Error:" + e.getMessage());
-//                        messages.add("Error:" + e.getMessage());
-//                        sendMessages();
-//
-//                        // Trigger the snack bar in MainActivity
-//                        messages.add("UPLOAD LESSON FINISHED WITH ERROR");
-//                        sendMessages();
-//
-//                        // Notify the user in case of Job Scheduled
-//                        if (callerType.equals(SCHEDULED_UPLOAD_SERVICE)) {
-//                            // notify the user that the task (synchronized) has finished
-//                            NotificationUtils.notifyUserBecauseUploadFinished(mContext);
-//                        }
-//
-//                    }
-//                });
 
     }
 
@@ -797,12 +725,6 @@ public class MyUploadService extends IntentService {
         LocalBroadcastManager.getInstance(mContext).sendBroadcast(in);
 
         messages.clear();
-    }
-
-
-    static private <T> String serialize(T obj) {
-        Gson gson = new Gson();
-        return gson.toJson(obj);
     }
 
 

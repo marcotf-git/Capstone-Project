@@ -61,12 +61,9 @@ dependencies {
     implementation 'com.android.support.constraint:constraint-layout:1.1.2'
     // For Gradle library compatibility issue
     implementation "com.android.support:exifinterface:$androidSupportVersion"
-    // Gson library
-    implementation 'com.google.code.gson:gson:2.8.5'
     // Firebase
     implementation 'com.google.firebase:firebase-core:16.0.1'
     implementation 'com.google.firebase:firebase-database:16.0.1'
-    implementation 'com.google.firebase:firebase-firestore:17.0.3'
     implementation 'com.google.firebase:firebase-storage:16.0.1'
     implementation 'com.google.firebase:firebase-auth:16.0.2'
     implementation 'com.firebaseui:firebase-ui-auth:4.1.0'
