@@ -50,8 +50,6 @@ import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.FirebaseFirestoreSettings;
 
 import java.io.File;
 import java.util.Arrays;
@@ -447,13 +445,6 @@ public class MainActivity extends AppCompatActivity implements
         Log.d(TAG, "lessonsContainer visibility:" + lessonsContainer.getVisibility());
         Log.d(TAG, "partsContainer visibility:" + partsContainer.getVisibility());
         Log.d(TAG, "logContainer visibility:" + logContainer.getVisibility());
-
-        // Initialize Firebase components
-        FirebaseFirestore mFirebaseDatabase = FirebaseFirestore.getInstance();
-        final FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
-                .setTimestampsInSnapshotsEnabled(true)
-                .build();
-        mFirebaseDatabase.setFirestoreSettings(settings);
 
         // Initialize the FirebaseAuth instance and the AuthStateListener method so
         // we can track whenever the user signs in or out.
