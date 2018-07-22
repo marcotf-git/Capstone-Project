@@ -210,7 +210,7 @@ public class MyDeleteService extends IntentService {
 
                         myLog.addToLog( time_stamp + ":\nLesson id:" + lesson_id + "\nText " +
                                 "successfully deleted from cloud");
-                        myLog.addToLog("Now it will try to delete the images/videos...");
+                        myLog.addToLog("Now it will delete the images/videos...");
 
                         deleteImageFilesFromStorage(userUid, lesson_id);
 
@@ -227,9 +227,10 @@ public class MyDeleteService extends IntentService {
                         myLog.addToLog( time_stamp + ":\nLesson id:" + lesson_id + "\nError " +
                                 "on deleting the text from cloud:" + "\n" + e.getMessage());
 
-                        myLog.addToLog("Now it will try to delete the images/videos...");
+                        // Trigger the snack bar in MainActivity
+                        messages.add("DELETE LESSON FINISHED WITH ERROR");
+                        sendMessages();
 
-                        deleteImageFilesFromStorage(userUid, lesson_id);
                     }
                 });
 

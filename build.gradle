@@ -4,30 +4,29 @@ buildscript {
     repositories {
         jcenter()
         google()
+        // For Crashlytics
         maven {
             url 'https://maven.fabric.io/public'
         }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.1.3'
-        // Firebase (add plug-in)
+        // Firebase (google-services plug-in)
         classpath 'com.google.gms:google-services:4.0.1'
         // Crashlytics
-        classpath 'io.fabric.tools:gradle:1.25.1'
+        classpath 'io.fabric.tools:gradle:1.25.4'
     }
 }
 
 allprojects {
     repositories {
-        mavenCentral()
-        // For Firebase
+        jcenter()
+        google()
+        // For Crashlytics
         maven {
             url 'https://maven.google.com/'
         }
-        jcenter()
-        google()
     }
-
     ext {
         androidSupportVersion = "27.1.1"
     }

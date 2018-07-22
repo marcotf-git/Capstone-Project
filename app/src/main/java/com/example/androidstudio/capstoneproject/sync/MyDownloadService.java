@@ -173,8 +173,14 @@ public class MyDownloadService extends IntentService {
 
         // get a root reference
         DatabaseReference mDatabaseRef = mFirebaseDatabase.getReference();
+
         // get the user lesson reference
         DatabaseReference mUserLessonRef = mDatabaseRef.child(userUid);
+
+        // get the group lessons reference (all the lessons)
+        DatabaseReference mGroupLessonsRef = mDatabaseRef.getRoot();
+
+        Log.d(TAG, "downloadDatabase mGroupLessonsRef:" + mGroupLessonsRef.toString());
 
         // load only the user lesson
         if (databaseVisibility.equals(USER_DATABASE)) {
@@ -279,7 +285,7 @@ public class MyDownloadService extends IntentService {
             };
 
             // load all the lessons: read once
-            mDatabaseRef.addListenerForSingleValueEvent(loadGroupLessons);
+            mGroupLessonsRef.addListenerForSingleValueEvent(loadGroupLessons);
 
         }
 

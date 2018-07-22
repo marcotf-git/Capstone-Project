@@ -33,27 +33,33 @@ The program uses:
 
     {
       "rules": {
-        "$uid":{
-                ".read": "auth != null",
-                "$lesson": {
-    					".write": "
-                  			auth.uid == $uid &&
-                  			newData.child('user_uid').exists() &&
-                            auth.uid == newData.child('user_uid').val()"
-                }
-        }
+        	// Only authenticated users can read
+    		".read": "auth != null",
+        	"$uid":{
+    	 		"$lesson": {
+                    // For writing, make sure the uid of the requesting user
+                    // matches path title of root
+                    ".write": "auth.uid === $uid &&
+                              // Consistency check of the 'user_uid' field
+                              (!newData.child('user_uid').exists() ||
+                               auth.uid === newData.child('user_uid').val())"
+            	}
+        	}
       }
     }
+
 
 * Set the **Firebase Storage**, with the rules:
 
     service firebase.storage {
-      match /b/{bucket}/o {
-        match /{userId}/{allPaths=**} {
-          allow create, read: if request.auth != null;
-          allow update, delete: if request.auth.uid == userId;
-        }
-      }
+          match /b/{bucket}/o {
+                // Forwriting, make sure the uid of the requesting user matches
+                // path title of root
+                match /{userId}/{allPaths=**} {
+                  allow read: if request.auth != null;
+                  allow write: if request.auth.uid == userId;
+                }
+          }
     }
 
 * Download the `google-service.json` and install it in the `app` folder.

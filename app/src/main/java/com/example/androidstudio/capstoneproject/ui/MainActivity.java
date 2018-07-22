@@ -112,7 +112,7 @@ import static android.view.View.VISIBLE;
  * The user only can upload or download data from the cloud when logged. The login process is
  * handled by the Firebase Authentication.
  *
- * The cloud data is divided between the Firebase Database Cloud Firestore (text), and the Firebase
+ * The cloud data is divided between the Firebase Realtime Database (text), and the Firebase
  * Storage (images and videos). The local data is divided between:
  * - a table with the lesson data (text)
  * - a table with the lesson parts data (text)
@@ -170,11 +170,12 @@ import static android.view.View.VISIBLE;
  * specific table, for future deletion from Storage
  * 2.2) the new one (or the new video) take the place
  *
- * So, the app implements CRUD on local user data, and in user cloud data, managing the deletion
- * from Storage for when deleting the whole lesson from Database Firestore.
- *
- * And the app implements only QUERY from the cloud, in case of group data (inside the group will be
- * also the user same lessons, but saved in the group table.
+ * So, the app implements `CRUD` on local user data, and `read` (download), `write` (upload) and
+ * `delete` in user cloud data, managing the deletion of the images or videos from Firebase Storage
+ * for when deleting the whole lesson data from Firebase Database.
+ * 
+ * And the app implements only `read` from the cloud, in case of group data (inside the group there
+ * will be also the user lessons, but saved in the group tables).
  *
  * The app menu is contextual: the options change according to the user actions.
  *
