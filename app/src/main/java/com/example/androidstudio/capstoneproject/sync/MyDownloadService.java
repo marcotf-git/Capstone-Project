@@ -682,7 +682,7 @@ public class MyDownloadService extends IntentService {
     // Helper method called by downloadDatabase
     // It will download all the images and save in local files
     // Then, will save the path (local uri's) in the group lesson table
-    // The file will be read and showed in the view of the lesson part
+    // The file will be read and shown in the view of the lesson part
     private void downloadGroupImages(final String databaseVisibility) {
 
         // open the group_lesson_parts table and for each row, download the file that has its
@@ -762,7 +762,7 @@ public class MyDownloadService extends IntentService {
 
             // return if there are no parts to download
             myLog.addToLog("No parts to download!");
-            myLog.addToLog("DOWNLOAD IMAGES/VIDEOS FINISHED");
+            myLog.addToLog("Download of Images/Videos has finished.");
 
             informSuccess(databaseVisibility);
 

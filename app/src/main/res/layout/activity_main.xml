@@ -6,7 +6,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-
+    android:background="@color/colorBackground"
     tools:context=".ui.MainActivity">
 
     <!-- The main content view -->
@@ -46,8 +46,7 @@
             android:layout_marginTop="?android:attr/actionBarSize"
             android:layout_marginBottom="@dimen/main_margin_bottom"
             android:layout_marginStart="@dimen/main_margin_start"
-            android:layout_marginEnd="@dimen/main_margin_end"
-            android:paddingTop="@dimen/main_margin_start" >
+            android:layout_marginEnd="@dimen/main_margin_end">
 
             <FrameLayout
                 android:id="@+id/log_container"

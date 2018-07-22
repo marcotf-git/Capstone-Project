@@ -23,6 +23,8 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
@@ -59,7 +61,8 @@ public class MyDeleteService extends IntentService {
     private static final String USER_UID = "userUid";
 
     // Automatic unregister listeners
-    private FirebaseFirestore mFirebaseDatabase;
+    //private FirebaseFirestore mFirebaseDatabase;
+    private FirebaseDatabase mFirebaseDatabase;
     private FirebaseStorage mFirebaseStorage;
     private StorageReference mStorageReference;
     private StorageReference storageRef;
@@ -96,11 +99,13 @@ public class MyDeleteService extends IntentService {
         String userUid = null;
 
         // Initialize Firebase components
-        mFirebaseDatabase = FirebaseFirestore.getInstance();
-        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
-                .setTimestampsInSnapshotsEnabled(true)
-                .build();
-        mFirebaseDatabase.setFirestoreSettings(settings);
+        //mFirebaseDatabase = FirebaseFirestore.getInstance();
+//        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
+////                .setTimestampsInSnapshotsEnabled(true)
+////                .build();
+////        mFirebaseDatabase.setFirestoreSettings(settings);
+
+        mFirebaseDatabase = FirebaseDatabase.getInstance();
         mFirebaseStorage = FirebaseStorage.getInstance();
 
         // Recover information from caller activity
@@ -143,11 +148,10 @@ public class MyDeleteService extends IntentService {
             return;
         }
 
+        // First, get the cloud file reference from table lesson parts and save it in the form
+        // "images/001/file_name" or "videos/001/file_name", where 001 is the lesson_id
+        // (not the part_id) in the var fileReference, in the table my_cloud_files_to_delete.
 
-        // First, save the cloud file reference in the form "images/001/file_name" or
-        // "videos/001/file_name" where 001 is the lesson_id (not the part_id) in the
-        // var fileReference
-        // This is necessary to be able to delete from Firebase Storage
         ContentResolver contentResolver = mContext.getContentResolver();
         String selection = LessonsContract.MyLessonPartsEntry.COLUMN_LESSON_ID + "=?";
         String[] selectionArgs = {Long.toString(lesson_id)};
@@ -160,61 +164,69 @@ public class MyDeleteService extends IntentService {
                     null);
         }
 
-        String fileReference;
 
-        if (cursor == null) { return; }  // no files in the table
+        if ((cursor != null) && (cursor.getCount() >0)) {
 
-        cursor.moveToFirst();
+            // Save the Firebase Storage file reference in this var
+            String fileReference;
 
-        do {
-            // get info to build the fileRef
-            String cloud_image_uri = cursor.getString(cursor.
-                    getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
-            String cloud_video_uri = cursor.getString(cursor.
-                    getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
+            cursor.moveToFirst();
 
-            // build the fileRef
-            if (cloud_image_uri != null) {
-                String[] filePathParts = cloud_image_uri.split("/");
-                fileReference = filePathParts[1] + "/" + filePathParts[2] + "/" + filePathParts[3];
+            do {
+                // get info to build the fileRef
+                String cloud_image_uri = cursor.getString(cursor.
+                        getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_IMAGE_URI));
+                String cloud_video_uri = cursor.getString(cursor.
+                        getColumnIndex(LessonsContract.MyLessonPartsEntry.COLUMN_CLOUD_VIDEO_URI));
 
-                // store the fileRef in the table my_cloud_files_to_delete
-                ContentValues content = new ContentValues();
-                content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE, fileReference);
-                content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID, lesson_id);
-                Uri uri = contentResolver.insert(LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI, content);
-                Log.d(TAG, "deleteLessonFromCloudDatabase inserted uri:" + uri);
-                Log.d(TAG, "deleteLessonFromCloudDatabase fileReference:" + fileReference);
-            }
+                // build the fileRef for images and store
+                if (cloud_image_uri != null) {
+                    String[] filePathParts = cloud_image_uri.split("/");
+                    fileReference = filePathParts[1] + "/" + filePathParts[2] + "/" + filePathParts[3];
 
-            if (cloud_video_uri != null) {
-                String[] filePathParts = cloud_video_uri.split("/");
-                fileReference = filePathParts[1] + "/" + filePathParts[2] + "/" + filePathParts[3];
+                    // store the fileRef in the table my_cloud_files_to_delete
+                    ContentValues content = new ContentValues();
+                    content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE, fileReference);
+                    content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID, lesson_id);
+                    Uri uri = contentResolver.insert(LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI, content);
+                    Log.d(TAG, "deleteLessonFromCloudDatabase inserted uri:" + uri);
+                    Log.d(TAG, "deleteLessonFromCloudDatabase fileReference:" + fileReference);
+                }
 
-                // store the fileRef in the table my_cloud_files_to_delete
-                ContentValues content = new ContentValues();
-                content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE, fileReference);
-                content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID, lesson_id);
-                Uri uri = contentResolver.insert(LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI, content);
-                Log.d(TAG, "deleteLessonFromCloudDatabase inserted uri:" + uri);
-                Log.d(TAG, "deleteLessonFromCloudDatabase fileReference:" + fileReference);
-            }
+                // build the fileRef for videos and store
+                if (cloud_video_uri != null) {
+                    String[] filePathParts = cloud_video_uri.split("/");
+                    fileReference = filePathParts[1] + "/" + filePathParts[2] + "/" + filePathParts[3];
 
-        } while (cursor.moveToNext());
+                    // store the fileRef in the table my_cloud_files_to_delete
+                    ContentValues content = new ContentValues();
+                    content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE, fileReference);
+                    content.put(LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID, lesson_id);
+                    Uri uri = contentResolver.insert(LessonsContract.MyCloudFilesToDeleteEntry.CONTENT_URI, content);
+                    Log.d(TAG, "deleteLessonFromCloudDatabase inserted uri:" + uri);
+                    Log.d(TAG, "deleteLessonFromCloudDatabase fileReference:" + fileReference);
+                }
 
+            } while (cursor.moveToNext());
 
-        // Delete the text from Database
-        final String documentName = String.format(Locale.US, "%s_%03d",
-                userUid, lesson_id);
+        }
 
-        Log.v(TAG, "deleteLessonFromCloudDatabase documentName:" + documentName);
+        // Delete the lesson from Firebase Database
 
-        // Delete in the Firebase Database
-        mFirebaseDatabase.collection("lessons").document(documentName)
-                .delete()
+        // The root reference
+        DatabaseReference databaseRef = mFirebaseDatabase.getReference();
+
+        // The lesson reference is the the (userUid).(lesson_id formatted as %03d)
+        final DatabaseReference lessonRef = databaseRef
+                .child(userUid)
+                .child(String.format( Locale.US, "%03d", lesson_id));
+
+        // Write the object and add the listeners
+        lessonRef.setValue(null)
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
+
                         Log.d(TAG, "deleteLessonFromCloudDatabase: DocumentSnapshot successfully deleted!");
 
                         String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
@@ -225,12 +237,12 @@ public class MyDeleteService extends IntentService {
                         myLog.addToLog("Now it will try to delete the images/videos...");
 
                         deleteImageFilesFromStorage(userUid, lesson_id);
+
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
-
                         Log.e(TAG, "deleteLessonFromCloudDatabase: Error deleting document", e);
 
                         String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
@@ -244,6 +256,49 @@ public class MyDeleteService extends IntentService {
                         deleteImageFilesFromStorage(userUid, lesson_id);
                     }
                 });
+
+
+//        // Delete the text from Database
+//        final String documentName = String.format(Locale.US, "%s_%03d",
+//                userUid, lesson_id);
+//
+//        Log.v(TAG, "deleteLessonFromCloudDatabase documentName:" + documentName);
+
+        // Delete in the Firebase Database
+//        mFirebaseDatabase.collection("lessons").document(documentName)
+//                .delete()
+//                .addOnSuccessListener(new OnSuccessListener<Void>() {
+//                    @Override
+//                    public void onSuccess(Void aVoid) {
+//                        Log.d(TAG, "deleteLessonFromCloudDatabase: DocumentSnapshot successfully deleted!");
+//
+//                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+//                                .format(new Date());
+//
+//                        myLog.addToLog( time_stamp + ":\nLesson id:" + lesson_id + "\nText " +
+//                                "successfully deleted from cloud");
+//                        myLog.addToLog("Now it will try to delete the images/videos...");
+//
+//                        deleteImageFilesFromStorage(userUid, lesson_id);
+//                    }
+//                })
+//                .addOnFailureListener(new OnFailureListener() {
+//                    @Override
+//                    public void onFailure(@NonNull Exception e) {
+//
+//                        Log.e(TAG, "deleteLessonFromCloudDatabase: Error deleting document", e);
+//
+//                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+//                                .format(new Date());
+//
+//                        myLog.addToLog( time_stamp + ":\nLesson id:" + lesson_id + "\nError " +
+//                                "on deleting the text from cloud:" + "\n" + e.getMessage());
+//
+//                        myLog.addToLog("Now it will try to delete the images/videos...");
+//
+//                        deleteImageFilesFromStorage(userUid, lesson_id);
+//                    }
+//                });
 
     }
 
@@ -355,7 +410,6 @@ public class MyDeleteService extends IntentService {
         }
 
     }
-
 
 
     // Handle the download image task success

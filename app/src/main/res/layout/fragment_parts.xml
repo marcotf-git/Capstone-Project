@@ -8,6 +8,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".ui.PartsFragment"
+    android:background="@color/colorBackground"
     android:focusable="true">
 
     <android.support.design.widget.AppBarLayout

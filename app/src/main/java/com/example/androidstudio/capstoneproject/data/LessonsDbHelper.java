@@ -10,7 +10,7 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "lessons.db";
 
     // If you change the database schema, you must increment the database version
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 1;
 
     // Singleton Pattern
     private static LessonsDbHelper sInstance;
@@ -184,7 +184,8 @@ public class LessonsDbHelper extends SQLiteOpenHelper {
 
                         LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE + " TEXT NOT NULL," +
 
-                        " UNIQUE (" + LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE +") " +
+                        " UNIQUE (" +  LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_LESSON_ID + "," +
+                         LessonsContract.MyCloudFilesToDeleteEntry.COLUMN_FILE_REFERENCE + ") " +
 
                         " ON CONFLICT REPLACE" +
 

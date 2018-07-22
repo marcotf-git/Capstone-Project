@@ -192,9 +192,9 @@ public class ExoPlayerFragment extends Fragment {
 //                new DefaultHttpDataSourceFactory(userAgent))
 //                .createMediaSource(uri);
 
-        DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
+        //DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
         return new ExtractorMediaSource.Factory(
-        new DefaultDataSourceFactory(getContext(), userAgent, bandwidthMeter))
+        new DefaultDataSourceFactory(getContext(), userAgent))
         .createMediaSource(uri);
 
     }

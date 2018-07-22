@@ -804,7 +804,6 @@ public class PartDetailActivity extends AppCompatActivity implements
 
             }
 
-            cursor.close();
         }
 
 

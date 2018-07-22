@@ -705,7 +705,7 @@ public class MyUploadService extends IntentService {
 
         if (nImagesToUpload == nImagesUploaded) {
             // all tasks finished
-            String message = "IMAGES/VIDEOS UPLOAD TASKS HAVE FINISHED";
+            String message = "Images/Videos upload has finished.";
             myLog.addToLog(message);
             messages.add(message);
             sendMessages();

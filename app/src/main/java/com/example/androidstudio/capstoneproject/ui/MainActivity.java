@@ -1447,7 +1447,6 @@ public class MainActivity extends AppCompatActivity implements
         }
 
         int nRows = cursor.getCount();
-        cursor.close();
 
         // If in the local database, check if lesson has parts and ask to delete parts first
         if (nRows > 1 && databaseVisibility.equals(USER_DATABASE)) {
@@ -1564,7 +1563,6 @@ public class MainActivity extends AppCompatActivity implements
             // get the next part
         } while (cursor.moveToNext());
 
-        cursor.close();
     }
 
 
@@ -1722,7 +1720,6 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
 
-        cursor.close();
 
         // Deselect the last view selected
         partsFragment.deselectViews();

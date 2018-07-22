@@ -8,7 +8,6 @@
     <item android:drawable="@color/colorItemSelected" android:state_selected="true" />
 
     <!-- Add one more item for the default (unselected) state -->
-    <!-- This should have a default drawable color = "@android:color/background_light" -->
-    <item android:drawable="@android:color/background_light" />
+    <item android:drawable="@android:color/transparent" />
 
 </selector>
