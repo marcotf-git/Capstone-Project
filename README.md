@@ -6,17 +6,17 @@ The program uses:
 
 * **Firebase Authentication** for the login/logout process (https://firebase.google.com).
 
-* **Firebase Realtime Database** for storing the text data on the cloud (https://firebase.google.com).
+* **Firebase Realtime Database** for storing the text data on the cloud.
 
-* **Firebase Storage** for storing the images or video files on the cloud (https://firebase.google.com).
+* **Firebase Storage** for storing the images or video files on the cloud.
 
-* **Firebase Analytics** and **Crashlytics** for monitoring the app (https://firebase.google.com).
+* **Firebase Analytics** and **Crashlytics** for monitoring the app.
 
 * **ExoPlayer** for playing the videos (https://github.com/google/ExoPlayer).
 
-* **Picasso** library for handling image loading (<http://square.github.io/picasso/).
+* **Picasso** library for handling image loading (http://square.github.io/picasso/).
 
-* **SQLite**  for the database engine (<https://www.sqlite.org/index.html>).
+* **SQLite**  for the database engine (https://www.sqlite.org/index.html).
 
 * **Java** programming language (http://www.oracle.com/technetwork/java/basicjava1-135508.html).
 

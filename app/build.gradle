@@ -16,7 +16,7 @@ android {
     // This sign config is only for testing purposes (It is signed with the name 'Udacity student').
     // Please, see https://developer.android.com/studio/publish/app-signing
     // In a non testing environment, please exclude the "keystore.properties" file from the
-    // repository (including this file in the .gitgnore), and exclude the keystore from the app
+    // repository (including this file in the .gitignore), and exclude the keystore from the app
     // folder and also from the repo.
     signingConfigs {
         config {
@@ -35,6 +35,7 @@ android {
         versionName "2.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
+        signingConfig signingConfigs.config
     }
     buildTypes {
         release {
@@ -42,6 +43,8 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.config
         }
+    }
+    productFlavors {
     }
 }
 
