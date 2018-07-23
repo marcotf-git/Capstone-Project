@@ -36,7 +36,7 @@ The program uses:
             	// Only authenticated users can read
         		".read": "auth != null",
             	"$uid":{
-        	 		"$lesson": {
+        	 	 "$lesson": {
                         // For writing, make sure the uid of the requesting user
                         // matches path title of root
                         ".write": "auth.uid === $uid &&
