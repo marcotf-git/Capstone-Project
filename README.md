@@ -6,11 +6,11 @@ The program uses:
 
 * **Firebase Authentication** for the login/logout process (https://firebase.google.com).
 
-* **Firebase Realtime Database** for storing the text data on the cloud.
+* **Firebase Realtime Database** for storing the text data on the cloud (https://firebase.google.com).
 
-* **Firebase Storage** for storing the images or video files on the cloud.
+* **Firebase Storage** for storing the images or video files on the cloud (https://firebase.google.com).
 
-* **Firebase Analytics** and **Crashlytics** for monitoring the app.
+* **Firebase Analytics** and **Crashlytics** for monitoring the app (https://firebase.google.com).
 
 * **ExoPlayer** for playing the videos (https://github.com/google/ExoPlayer).
 
@@ -53,7 +53,7 @@ The program uses:
 
     service firebase.storage {
           match /b/{bucket}/o {
-                // Forwriting, make sure the uid of the requesting user matches
+                // For writing, make sure the uid of the requesting user matches
                 // path title of root
                 match /{userId}/{allPaths=**} {
                   allow read: if request.auth != null;
