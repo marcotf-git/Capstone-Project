@@ -43,6 +43,7 @@ import com.example.androidstudio.capstoneproject.R;
 import com.example.androidstudio.capstoneproject.data.LessonsContract;
 import com.example.androidstudio.capstoneproject.sync.MyDeleteService;
 import com.example.androidstudio.capstoneproject.sync.MyDownloadService;
+import com.example.androidstudio.capstoneproject.sync.MyLog;
 import com.example.androidstudio.capstoneproject.sync.MyUploadService;
 import com.example.androidstudio.capstoneproject.sync.ScheduledUtilities;
 import com.example.androidstudio.capstoneproject.utilities.InsertTestDataUtil;
@@ -52,7 +53,10 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.Locale;
 
 import static android.view.View.GONE;
 import static android.view.View.INVISIBLE;
@@ -280,6 +284,8 @@ public class MainActivity extends AppCompatActivity implements
     private PartsFragment partsFragment;
     private LogFragment logFragment;
 
+    private MyLog myLog;
+
     // Context
     private Context mContext;
 
@@ -290,6 +296,9 @@ public class MainActivity extends AppCompatActivity implements
 
         // Obtain the FirebaseAnalytics instance
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
+
+        // Obtain a myLog instance
+        myLog = new MyLog(this);
 
         // Init the main view
         setContentView(R.layout.activity_main);
@@ -594,6 +603,13 @@ public class MainActivity extends AppCompatActivity implements
                             return;
                         }
 
+                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                                .format(new Date());
+                        myLog.addToLog(time_stamp + "\nThe download are going to start in the " +
+                                "next " + ScheduledUtilities.SYNC_INTERVAL_SECONDS + "s" +
+                                " approximately, on non-metered networks, and by a scheduled" +
+                                " and more battery friendly process.");
+
                         // call the job for sync the group table
                         ScheduledUtilities.scheduleDownloadDatabase(mContext, mUserUid, databaseVisibility);
 
@@ -662,6 +678,13 @@ public class MainActivity extends AppCompatActivity implements
                             snackBarAnonymous.show();
                             return;
                         }
+
+                        String time_stamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss", Locale.US)
+                                .format(new Date());
+                        myLog.addToLog(time_stamp + "\nThe upload are going to start in the " +
+                                        "next " + ScheduledUtilities.SYNC_INTERVAL_SECONDS + "s" +
+                                        " approximately, on non-metered networks, and by a scheduled" +
+                                        " and more battery friendly process.");
 
                         // call the job for upload the selected user lesson (images and text)
                         ScheduledUtilities.scheduleUploadLesson(mContext, mUserUid, selectedLesson_id);
