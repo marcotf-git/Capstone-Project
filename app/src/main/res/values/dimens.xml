@@ -22,12 +22,12 @@
 
     <dimen name="main_margin_start">16dp</dimen>
     <dimen name="main_margin_end">16dp</dimen>
-    <dimen name="main_margin_top">0dp</dimen>
+    <dimen name="main_margin_top">16dp</dimen>
     <dimen name="main_margin_bottom">16dp</dimen>
 
     <dimen name="main_image_layout_height">200dp</dimen>
     <dimen name="image_layout_margin_bottom">0dp</dimen>
-    <dimen name="image_layout_margin_top">16dp</dimen>
+    <dimen name="image_layout_margin_top">0dp</dimen>
 
     <dimen name="edit_text_margin_start">0dp</dimen>
     <dimen name="edit_text_margin_end">0dp</dimen>

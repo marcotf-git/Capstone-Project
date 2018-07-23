@@ -43,6 +43,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="horizontal"
+            android:paddingTop="@dimen/main_margin_top"
             android:layout_marginTop="?android:attr/actionBarSize"
             android:layout_marginBottom="@dimen/main_margin_bottom"
             android:layout_marginStart="@dimen/main_margin_start"
@@ -53,8 +54,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_margin="0dp"
-                android:padding="0dp">
-            </FrameLayout>
+                android:padding="0dp"/>
 
             <FrameLayout
                 android:id="@+id/lessons_container"

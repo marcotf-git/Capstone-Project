@@ -173,7 +173,7 @@ import static android.view.View.VISIBLE;
  * So, the app implements `CRUD` on local user data, and `read` (download), `write` (upload) and
  * `delete` in user cloud data, managing the deletion of the images or videos from Firebase Storage
  * for when deleting the whole lesson data from Firebase Database.
- * 
+ *
  * And the app implements only `read` from the cloud, in case of group data (inside the group there
  * will be also the user lessons, but saved in the group tables).
  *
@@ -1927,7 +1927,6 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
     };
-
 
     // Define a receiver to listen for communication from the services (delete service)
     private final BroadcastReceiver myDeleteReceiver = new BroadcastReceiver() {

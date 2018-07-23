@@ -39,7 +39,7 @@ public class PartsFragment extends Fragment implements
     private static final String GROUP_DATABASE = "groupDatabase";
 
     private static final String REFERENCE_LESSON_ID = "referenceLesson_id";
-    private static final String REFERENCE_LESSON_NAME = "referenceLessonName";
+    private static final String REFERENCE_LESSON_TITLE = "referenceLessonTitle";
     private static final String SELECTED_LESSON_PART_ID = "selectedLessonPartId";
     private static final String DATABASE_VISIBILITY = "databaseVisibility";
 
@@ -50,7 +50,7 @@ public class PartsFragment extends Fragment implements
     // State vars
     private View mSelectedView; // not saved
     private long referenceLesson_id;
-    private String referenceLessonName;
+    private String referenceLessonTitle;
     private long selectedLessonPart_id;
     private String databaseVisibility;
 
@@ -96,7 +96,7 @@ public class PartsFragment extends Fragment implements
             selectedLessonPart_id = savedInstanceState.getLong(SELECTED_LESSON_PART_ID);
             databaseVisibility = savedInstanceState.getString(DATABASE_VISIBILITY);
             referenceLesson_id = savedInstanceState.getLong(REFERENCE_LESSON_ID);
-            referenceLessonName = savedInstanceState.getString(REFERENCE_LESSON_NAME);
+            referenceLessonTitle = savedInstanceState.getString(REFERENCE_LESSON_TITLE);
 
         } else {
             // Initialize the state vars
@@ -150,6 +150,10 @@ public class PartsFragment extends Fragment implements
             Log.v(TAG, "recovering savedInstanceState");
             Parcelable recyclerViewState = savedInstanceState.getParcelable(RECYCLER_VIEW_STATE);
             mPartsList.getLayoutManager().onRestoreInstanceState(recyclerViewState);
+
+            mLessonTitle.setText(referenceLessonTitle);
+        } else {
+            mLessonTitle.setText("");
         }
 
         // Return root view
@@ -165,7 +169,7 @@ public class PartsFragment extends Fragment implements
 
         savedInstanceState.putLong(SELECTED_LESSON_PART_ID, selectedLessonPart_id);
         savedInstanceState.putLong(REFERENCE_LESSON_ID, referenceLesson_id);
-        savedInstanceState.putString(REFERENCE_LESSON_NAME, referenceLessonName);
+        savedInstanceState.putString(REFERENCE_LESSON_TITLE, referenceLessonTitle);
         savedInstanceState.putString(DATABASE_VISIBILITY, databaseVisibility);
 
         super.onSaveInstanceState(savedInstanceState);
@@ -418,7 +422,7 @@ public class PartsFragment extends Fragment implements
         referenceLesson_id = _id;
 
         // Write the lesson title in the view of the by fragment_parts layout
-        referenceLessonName = lessonName;
+        referenceLessonTitle = lessonName;
         mLessonTitle.setText(lessonName);
 
         if(null != getActivity()) {

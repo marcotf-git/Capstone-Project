@@ -44,7 +44,7 @@
             android:layout_height="match_parent"
             android:orientation="horizontal"
             android:padding="0dp"
-            android:layout_marginTop="?attr/actionBarSize">
+            android:layout_marginTop="?android:attr/actionBarSize">
 
             <FrameLayout
                 android:id="@+id/log_container"
