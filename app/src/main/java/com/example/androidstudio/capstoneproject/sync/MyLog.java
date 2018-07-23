@@ -18,7 +18,7 @@ public class MyLog {
     private static final String TAG = MyLog.class.getSimpleName();
 
     // This limits the number of rows in the log table
-    private static final int MAX_ROWS_LOG_TABLE = 200;
+    private static final int MAX_ROWS_LOG_TABLE = 1000;
 
     private final Context mContext;
 

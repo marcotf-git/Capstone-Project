@@ -167,6 +167,11 @@ public class MyDownloadService extends IntentService {
 
         Log.d(TAG, "callerType:" + callerType);
 
+        if (callerType.equals(SCHEDULED_DOWNLOAD_SERVICE)) {
+            myLog.addToLog("Starting the download of lessons in the background, on " +
+                    "non-metered networks, and by a scheduled and more battery friendly process.");
+        }
+
         // Initialize Firebase instances
         mFirebaseDatabase = FirebaseDatabase.getInstance();
         mFirebaseStorage = FirebaseStorage.getInstance();

@@ -14,9 +14,10 @@
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/lesson_card_margin_horizontal"
+        android:layout_marginTop="@dimen/lesson_card_margin_vertical"
         android:layout_marginStart="@dimen/lesson_card_margin_horizontal"
         android:layout_marginEnd="@dimen/lesson_card_margin_horizontal"
+        android:layout_marginBottom="@dimen/lesson_card_margin_vertical"
         android:layout_gravity="top"
         android:background="@android:color/transparent"
         app:elevation="0dp">
@@ -40,6 +41,7 @@
         android:id="@+id/fl_parts"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:paddingBottom="32dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <android.support.v7.widget.RecyclerView

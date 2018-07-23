@@ -157,6 +157,13 @@ public class MyUploadService extends IntentService {
             callerType = SCHEDULED_UPLOAD_SERVICE;
         }
 
+        Log.d(TAG, "callerType:" + callerType);
+
+        if (callerType.equals(SCHEDULED_UPLOAD_SERVICE)) {
+            myLog.addToLog("Starting the upload of lesson in the background, on " +
+                    "non-metered networks, and by a scheduled and more battery friendly process.");
+        }
+
         // Initialize tre Firebase instances
         mFirebaseDatabase = FirebaseDatabase.getInstance();
         mFirebaseStorage = FirebaseStorage.getInstance();
